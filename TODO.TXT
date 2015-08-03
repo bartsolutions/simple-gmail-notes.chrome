@@ -1,0 +1,7 @@
+1. get the email id using gmailr?
+2. try to create file using pure JS
+3. query back the file using pure URL?
+4. may be pass the request object?
+5. request manual revoke
+
+https://security.google.com/settings/security/permissions?hl=en&pli=1
