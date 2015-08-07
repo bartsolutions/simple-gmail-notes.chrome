@@ -50,11 +50,15 @@ function setupNotes(){
     "color": "gray",
     "margin": "5px"
   }).blur(function(){
-		sendMessage({action:"post_message", content:$(this).val(), messageId:messageId});
+    var gdriveNoteId = $("#sgn_gdrive_note_id").val();
+    var gdriveFolderId = $("#sgn_gdrive_folder_id").val();
+    var content = $(this).val();
+		sendMessage({action:"post_message", messageId:messageId, 
+            gdriveNoteId:gdriveNoteId, gdriveFolderId:gdriveFolderId, content:content});
+
 	  return true;
 	});
 
-  currentAccount = "[unknown]";
   var logoutPrompt = $("<div id='sgn_prompt_logout'/></div>" )
       .html("Connected to Google Drive of '<span id='sgn_user'></span>'. " +
       "Click <a id='sgn_logout' class='sgn_action'>here</a> to disconnect.")
@@ -73,6 +77,11 @@ function setupNotes(){
       "margin": "5px"
       });
 
+  var noteIdNode = $("<input type=hidden id='sgn_gdrive_note_id/>");
+  var folderIdNode = $("<input type=hidden id='sgn_gdrive_folder_id/>");
+
+  injectionNode.prepend(folderIdNode);
+  injectionNode.prepend(noteIdNode);
   injectionNode.prepend(textAreaNode);
   injectionNode.prepend(loginPrompt);
   injectionNode.prepend(logoutPrompt);
@@ -107,7 +116,7 @@ $(document).ready(function(){
   Gmailr.init(function(G) {
     //set up notes if changed to conversatioview
     G.observe(G.EVENT_VIEW_CHANGED, function(type){
-      console.log("@2, event triggered: ", type);
+      console.log("@2, event triggered: ", type, G.currentView());
       //console.log("@84, ", G.email());
       if(type == Gmailr.VIEW_CONVERSATION){
         setupNotes();
@@ -145,10 +154,14 @@ $(document).ready(function(){
           break;
         case "update_user":
           $("#sgn_user").text(request.email);
+          break;
+        case "update_content":
+          $("#sgn_input").val(request.content);
 					break;
-			  case "update_content":
-					$("#sgn_input").val(request.content);
-					break;
+        case "update_gdrive_note_info":
+          $("#sgn_gdrive_note_id").val(request.gdrive_note_id);
+          $("#sgn_gdrive_folder_id").val(request.gdrive_folder_id);
+          break;
       }
 
     }
