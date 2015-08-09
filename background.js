@@ -117,7 +117,7 @@ function updateRefreshTokenFromCode(email, messageId){
         console.log(data);
         setStorage(email, "refresh_token", data.refresh_token);
         setStorage(email, "access_token", data.access_token);
-        initialize(email);
+        initialize(email, messageId);
 
       }
     }
@@ -275,6 +275,10 @@ function setupNotesFolder(email){
         }),
         url: "https://www.googleapis.com/drive/v2/files",
        success: function(data){
+         var gdriveFolderId = data.id;
+          sendMessage({action:"update_gdrive_note_info", 
+              gdriveNoteId:"", gdriveFolderId:gdriveFolderId});
+
          console.log("@276", data);
        }
     })
@@ -317,23 +321,30 @@ function searchMessage(email, messageId){
 					console.log("@277", messageId);
 					for(var i=0; i<data.items.length; i++){
 						var currentItem = data.items[i];
+            console.log("@330", currentItem.title, messageId, currentItem.parents[0].id, gdriveFolderId);
+            console.log("@325", currentItem == messageId);
+            console.log("@325", currentItem.parents[0].id == gdriveFolderId);
 						if(currentItem.title == messageId 
-                            && currentItem.parents[0].id){
+                            && currentItem.parents[0].id == gdriveFolderId){
 							gdriveNoteId = currentItem.id;
+              break;
 						}
 					}
+
+          console.log("@330", gdriveNoteId);
+
+          sendMessage({action:"update_gdrive_note_info", 
+              gdriveNoteId:gdriveNoteId, gdriveFolderId:gdriveFolderId});
+
+          if(gdriveNoteId){
+            loadMessage(email, gdriveNoteId);
+          }
 				}
 
 				//setStorage(email, "folder_id", gdriveFolderId);
 
                 //if not found, an empty value needs to be set
 				//setStorage(email, "note_id", gdriveNoteId);
-        sendMessage({action:"update_gdrive_note_info", 
-            gdriveNoteId:gdriveNoteId, gdriveFolderId:gdriveFolderId});
-
-				if(gdriveNoteId){
-					loadMessage(email, gdriveNoteId);
-				}
 			},
 			error:function(data){
 				showRefreshTokenError(JSON.stringify(data));
@@ -392,7 +403,7 @@ $(window).load(function(){
           logoutGoogleDrive(email);
           break;
         case "login":
-          loginGoogleDrive(email, requset.messageId);
+          loginGoogleDrive(email, request.messageId);
           break;
         case "post_note":
           postNote(email, request.messageId, 
