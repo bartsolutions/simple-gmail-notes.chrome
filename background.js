@@ -251,7 +251,7 @@ function loadMessage(email, gdriveNoteId){
 		success: function(data) {
 			console.log("@268", data);
 			sendMessage({action:"update_content", content:data});
-      sendMessage({action:"enable_edit"});  //ready for write new message
+      sendMessage({action:"enable_edit", email:email});  //ready for write new message
 		},
 		error: function(data){
 			sendMessage({action:"show_error", 
@@ -341,7 +341,7 @@ function searchMessage(email, messageId){
             loadMessage(email, gdriveNoteId);
           }
           else{
-            sendMessage({action:"enable_edit"});  //ready for write new message
+            sendMessage({action:"enable_edit", email:email});  //ready for write new message
           }
 				}
 
@@ -366,7 +366,7 @@ function initialize(email, messageId){
   if(getStorage(email, "refresh_token")){
     console.log("@253, refresh token:", getStorage(email, "refresh_token"), 
         "access_token", getStorage(email, "access_token"))
-    sendMessage({action:"show_log_out_prompt"});
+    //sendMessage({action:"show_log_out_prompt"});
     //sendMessage({action:"enable_edit"});
     updateUserInfo(email);
     searchMessage(email, messageId);

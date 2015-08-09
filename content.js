@@ -6,11 +6,17 @@
 function disableEdit()
 {
   $("#sgn_input").prop("disabled", true);
+  $("#sgn_input").hide();
 }
 
 function enableEdit()
 {
   $("#sgn_input").prop("disabled", false);
+  $("#sgn_input").show();
+
+  if(!$("#sgn_input").is(":disabled")){  //keep trying until it's visible
+    setTimeout(enableEdit, 100);
+  }
 }
 
 function showLoginPrompt(){
@@ -19,16 +25,17 @@ function showLoginPrompt(){
 	disableEdit();
 }
 
-function showLogoutPrompt(){
+function showLogoutPrompt(email){
   $("#sgn_prompt_logout").show();
   $("#sgn_prompt_login").hide();
+
+  if(email)
+    $("#sgn_prompt_logout").find("#sgn_user").text(email);
 	//enableEdit();
 
-  /*
   if(!$("#sgn_prompt_logout").is(":visible")){  //keep trying until it's visible
-    setTimeout(showLogoutPrompt, 100);
+    setTimeout(showLogoutPrompt, 100, email);
   }
-  */
 }
 
 
@@ -44,8 +51,8 @@ function setupNotes(email, messageId){
   console.log("@45", email);
 
   if($("#sgn_input").length){
-    console.log("give up the set up");
-    return;
+    //console.log("give up the set up");
+    //return;
   }
 
 
@@ -59,7 +66,7 @@ function setupNotes(email, messageId){
     "width": "100%", 
     "height": "150px",
     "color": "gray",
-    "margin": "5px"
+    "margin": "5px",
   }).blur(function(){
     //var gdriveNoteId = $("#sgn_gdrive_note_id").val();
     //var gdriveFolderId = $("#sgn_gdrive_folder_id").val();
@@ -162,6 +169,7 @@ function setupListeners(){
             break;
         case "enable_edit":
             enableEdit();
+            showLogoutPrompt(request.email)
             break;
         case "show_log_out_prompt":
           showLogoutPrompt();
@@ -181,6 +189,7 @@ function setupListeners(){
         case "update_content":
           gPreviousContent = request.content;
           $("#sgn_input").val(request.content);
+          showLogoutPrompt(request.email);
 					break;
         case "update_gdrive_note_info":
           console.log("@166", request.gdriveFolderId, request.gdriveFolderId);
@@ -218,12 +227,8 @@ window.addEventListener('message', function(event) {
   // Event listener for page
   document.addEventListener('SGN_setup_notes', function(e) {
       var email = e.detail.email;
-      var pageMessageId = e.detail.pageMessageId;
+      var messageId = e.detail.messageId;
       
-      var currentHref = window.location.href;
-      var messageId = currentHref.substring(currentHref.lastIndexOf("/")+1);
-      console.log("@186", email, messageId, pageMessageId);
-
       setupNotes(email, messageId);
   });
 
