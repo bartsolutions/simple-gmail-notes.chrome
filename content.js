@@ -6,15 +6,23 @@
 function disableEdit()
 {
   $("#sgn_input").prop("disabled", true);
-  $("#sgn_input").hide();
+//  $("#sgn_input").hide();
+ // $("#sgn_padding").hide();
+
+  if(!$("#sgn_input").is(":disabled") || $("#sgn_padding").is(":visible")){  //keep trying until it's visible
+    console.log("retry disable edit");
+    setTimeout(disableEdit, 100);
+  }
 }
 
 function enableEdit()
 {
   $("#sgn_input").prop("disabled", false);
-  $("#sgn_input").show();
+  //$("#sgn_input").show();
+//  $("#sgn_padding").hide();
 
-  if(!$("#sgn_input").is(":disabled")){  //keep trying until it's visible
+  if($("#sgn_input").is(":disabled")){  //keep trying until it's visible
+    console.log("retry enable edit");
     setTimeout(enableEdit, 100);
   }
 }
@@ -22,18 +30,25 @@ function enableEdit()
 function showLoginPrompt(){
   $("#sgn_prompt_login").show();
   $("#sgn_prompt_logout").hide();
-	disableEdit();
+  $("#sgn_padding").hide();
+  console.log("@34, show login", $("#sgn_prompt_login").is(":visible"));
+  if(!$("#sgn_prompt_login").is(":visible")){  //keep trying until it's visible
+    console.log("retry show prompt login");
+    setTimeout(showLoginPrompt, 100);
+  }
 }
 
 function showLogoutPrompt(email){
   $("#sgn_prompt_logout").show();
   $("#sgn_prompt_login").hide();
+  $("#sgn_padding").hide();
 
   if(email)
     $("#sgn_prompt_logout").find("#sgn_user").text(email);
 	//enableEdit();
 
   if(!$("#sgn_prompt_logout").is(":visible")){  //keep trying until it's visible
+    console.log("retry show prompt");
     setTimeout(showLogoutPrompt, 100, email);
   }
 }
@@ -98,6 +113,7 @@ function setupNotes(email, messageId){
       "margin": "5px"
       });
 
+  var emptyPrompt = $("<div id='sgn_padding'>&nbsp;<div>").css({"margin":"5px"});
   //var noteIdNode = $("<input type=hidden id='sgn_gdrive_note_id/>");
   //var folderIdNode = $("<input type=hidden id='sgn_gdrive_folder_id/>");
 
@@ -111,6 +127,7 @@ function setupNotes(email, messageId){
   injectionNode.prepend(textAreaNode);
   injectionNode.prepend(loginPrompt);
   injectionNode.prepend(logoutPrompt);
+  injectionNode.prepend(emptyPrompt);
 
   //chrome.runtime.sendMessage({action:"setup_email", email:email},  handleResponse)
 
@@ -177,6 +194,7 @@ function setupListeners(){
         case "show_log_in_prompt":
           console.log("@20, show login");
           showLoginPrompt();
+          disableEdit();
           break;
         case "show_error":
           var errorMessage = request.message;
