@@ -251,6 +251,7 @@ function loadMessage(email, gdriveNoteId){
 		success: function(data) {
 			console.log("@268", data);
 			sendMessage({action:"update_content", content:data});
+      sendMessage({action:"enable_edit"});  //ready for write new message
 		},
 		error: function(data){
 			sendMessage({action:"show_error", 
@@ -321,9 +322,9 @@ function searchMessage(email, messageId){
 					console.log("@277", messageId);
 					for(var i=0; i<data.items.length; i++){
 						var currentItem = data.items[i];
-            console.log("@330", currentItem.title, messageId, currentItem.parents[0].id, gdriveFolderId);
-            console.log("@325", currentItem == messageId);
-            console.log("@325", currentItem.parents[0].id == gdriveFolderId);
+            //console.log("@330", currentItem.title, messageId, currentItem.parents[0].id, gdriveFolderId);
+            //console.log("@325", currentItem == messageId);
+            //console.log("@325", currentItem.parents[0].id == gdriveFolderId);
 						if(currentItem.title == messageId 
                             && currentItem.parents[0].id == gdriveFolderId){
 							gdriveNoteId = currentItem.id;
@@ -338,6 +339,9 @@ function searchMessage(email, messageId){
 
           if(gdriveNoteId){
             loadMessage(email, gdriveNoteId);
+          }
+          else{
+            sendMessage({action:"enable_edit"});  //ready for write new message
           }
 				}
 
@@ -363,7 +367,7 @@ function initialize(email, messageId){
     console.log("@253, refresh token:", getStorage(email, "refresh_token"), 
         "access_token", getStorage(email, "access_token"))
     sendMessage({action:"show_log_out_prompt"});
-    sendMessage({action:"enable_edit"});
+    //sendMessage({action:"enable_edit"});
     updateUserInfo(email);
     searchMessage(email, messageId);
   }

@@ -22,7 +22,13 @@ function showLoginPrompt(){
 function showLogoutPrompt(){
   $("#sgn_prompt_logout").show();
   $("#sgn_prompt_login").hide();
-	enableEdit();
+	//enableEdit();
+
+  /*
+  if(!$("#sgn_prompt_logout").is(":visible")){  //keep trying until it's visible
+    setTimeout(showLogoutPrompt, 100);
+  }
+  */
 }
 
 
@@ -47,7 +53,8 @@ function setupNotes(email, messageId){
 
   var textAreaNode = $("<textarea></textarea>", {
     "id": "sgn_input",
-    "text": ""
+    "text": "",
+    "disabled":"disabled"
   }).css({
     "width": "100%", 
     "height": "150px",
