@@ -153,8 +153,7 @@ function executeIfValidToken(email, command){
             "refresh_token":getStorage(email, "refresh_token"),
             "client_id":"38131814991-p4u809qrr5ee1bsehregd4os69jf2n7i.apps.googleusercontent.com",
             "client_secret":"mdA0U_jSkAjI_1x8pdgtrx02",
-            "redirect_uri":"https://" + 
-                chrome.runtime.id + ".chromiumapp.org/provider_cb",
+            "redirect_uri":"https://jfjkcbkgjohminidbpendlodpfacgmlm.chromiumapp.org/provider_cb",
             "grant_type":"refresh_token"
         },
         url: "https://www.googleapis.com/oauth2/v3/token",

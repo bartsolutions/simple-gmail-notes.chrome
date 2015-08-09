@@ -4,6 +4,9 @@
  * Copyright (C) 2015 Walty Yeung <walty8@gmail.com>
  */
 
+//for use gmail.js
+var gmail;
+
 function disableEdit()
 {
   $("#sgn_input").prop("disabled", true);
@@ -31,8 +34,7 @@ var gEmailReg = /([\w-\.]+)@((?:[\w]+\.)+)([a-zA-Z]{2,4})/g;
 
 function setupNotes(){
   console.log("@8, start to set up notes");
-  var title = $(document).attr("title");
-  var email = title.match(gEmailReg)[0];
+  var email = gmail.get.user_email();
 
   console.log("@45", email);
 
@@ -40,7 +42,7 @@ function setupNotes(){
 	var messageId = currentHref.substring(currentHref.lastIndexOf("/")+1);
 
 
-  var injectionNode = Gmailr.$(".nH.if"); //hopefully this one is stable
+  var injectionNode = $(".nH.if"); //hopefully this one is stable
   var textAreaNode = $("<textarea></textarea>", {
     "id": "sgn_input",
     "text": ""
@@ -97,7 +99,9 @@ function setupNotes(){
   });
 
   //load initial message
+  console.log("@102");
   sendMessage({action:"initialize", email: email, messageId:messageId});
+  console.log("@104");
 
   //auto-save every 5 seconds, change detection is done by backend
   /*
@@ -111,6 +115,7 @@ function setupNotes(){
 }
 
 /*  for messaging between background and content script */
+/*
 $(document).ready(function(){
   //gmailr by joscha
   Gmailr.init(function(G) {
@@ -124,9 +129,10 @@ $(document).ready(function(){
     });
   });
 });
+*/
 
 
-$(document).ready(function(){
+function setupListeners(){
   chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
       console.log(sender.tab ?
@@ -134,12 +140,12 @@ $(document).ready(function(){
         "from the extension");
       console.log("@14, handle request", request);
       switch(request.action){
-				case "disable_edit":
-					disableEdit();
-					break;
-			  case "enable_edit":
-					enableEdit();
-					break;
+        case "disable_edit":
+            disableEdit();
+            break;
+        case "enable_edit":
+            enableEdit();
+            break;
         case "show_log_out_prompt":
           showLogoutPrompt();
           break;
@@ -168,12 +174,37 @@ $(document).ready(function(){
 
   )
 
-});
+    var gmail = Gmail();
+    console("@172", gmail.get.user_email());
+      
+}
 
 function sendMessage(object)
 {
-  chrome.runtime.sendMessage(object, function(response){
+    console.log("@184", chrome.runtime.id);
+      chrome.runtime.sendMessage(object, function(response){
     console.log("response", response);
   });
 }
 
+
+function setupPage(){
+    var j = document.createElement('script');
+    j.src = chrome.extension.getURL('lib/jquery-1.11.3.min.js');
+    (document.head || document.documentElement).appendChild(j);
+
+    var j = document.createElement('script');
+    j.src = chrome.extension.getURL('lib/gmail.js');
+    (document.head || document.documentElement).appendChild(j);
+
+    var j = document.createElement('script');
+    j.src = chrome.extension.getURL('page.js');
+    (document.head || document.documentElement).appendChild(j);
+
+
+}
+
+$(document).ready(function(){
+    setupListeners();
+    setupPage();
+});
