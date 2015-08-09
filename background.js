@@ -84,8 +84,7 @@ function showRefreshTokenError(error){
   errorMessage = "Failed to connect to Google Drive using generated token, " +
                     "please disconnect and connect again. \n" +
                     "If error persists, please manually remove the token from here: \n" +
-                    "https://accounts.google.com/b/0/IssuedAuthSubTokens?hl=en" + 
-                    "ERROR: " + error;
+                    "https://accounts.google.com/b/0/IssuedAuthSubTokens" 
              
   sendMessage({action:"show_log_out_prompt"});
   sendMessage({action:"disable_edit"});
