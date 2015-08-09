@@ -12,17 +12,26 @@ function setStorage(email, key, value)
   localStorage[storageKey] = value;
 }
 
-function getStorage(email, key, value)
+function getStorage(email, key)
 {
+  if(!email || email.indexOf("@") < 0){
+    console.log("email not found!");
+  }
+
   var storageKey = email + "||" + key;
-  return localStorage[storageKey]
+  value = localStorage[storageKey];
+
+  console.log("@20, gets storage", email, key, value);
+  return value;
 }
 
 //post message to google drive
 //reference: https://developers.google.com/drive/web/quickstart/quickstart-js
-function postMessage(email, messageId, gdriveFolderId, gdriveNoteId, content){
+function postNote(email, messageId, gdriveFolderId, gdriveNoteId, content){
 	console.log("@34, post content", content);
-	executeIfValidToken(function(data){
+	console.log("@32, ", gdriveFolderId);
+
+	executeIfValidToken(email, function(data){
 		var uploadUrl =  "https://www.googleapis.com/upload/drive/v2/files";
 		var methodType = "POST"
 
@@ -83,7 +92,7 @@ function showRefreshTokenError(error){
   sendMessage({action:"show_error", message: errorMessage});
 }
 
-function updateRefreshTokenFromCode(email){
+function updateRefreshTokenFromCode(email, messageId){
   $.ajax({
     type: "POST",
     contentType: "application/x-www-form-urlencoded",
@@ -121,7 +130,7 @@ function updateUserInfo(email){
     return;
   }
 
-  executeIfValidToken(function(data){
+  executeIfValidToken(email, function(data){
     $.ajax({
       url:"https://www.googleapis.com/drive/v2/about?access_token=" + 
         getStorage(email, "access_token"),
@@ -172,7 +181,7 @@ function executeIfValidToken(email, command){
 
 }
 
-function loginGoogleDrive(email){
+function loginGoogleDrive(email, messageId){
   //alert(chrome.identity.launchWebAuthFlow);
   console.log("@38");
   chrome.identity.launchWebAuthFlow(
@@ -199,7 +208,7 @@ function loginGoogleDrive(email){
         code = code.replace(/[#]/g, "");
         console.log("@53:" + code);
         setStorage(email, "code", code);
-        updateRefreshTokenFromCode(email);
+        updateRefreshTokenFromCode(email, messageId);
       }
 
     }
@@ -264,14 +273,17 @@ function setupNotesFolder(email){
               "parents": [{"id":"root"}],
               "mimeType": "application/vnd.google-apps.folder"
         }),
-        url: "https://www.googleapis.com/drive/v2/files"
+        url: "https://www.googleapis.com/drive/v2/files",
+       success: function(data){
+         console.log("@276", data);
+       }
     })
 
 }
 
 //list the files created by this app only (as restricted by permission)
 function searchMessage(email, messageId){
-	executeIfValidToken(function(data){
+	executeIfValidToken(email, function(data){
 		$.ajax({
 			type:"GET",
 			dataType: 'json',
@@ -316,12 +328,11 @@ function searchMessage(email, messageId){
 
                 //if not found, an empty value needs to be set
 				//setStorage(email, "note_id", gdriveNoteId);
-				
-                sendMessage({action:"update_gdrive_note_info", 
-                    gdriveNoteId:gdriveNoteId, gdriveFolderId:gdriveFolderId});
+        sendMessage({action:"update_gdrive_note_info", 
+            gdriveNoteId:gdriveNoteId, gdriveFolderId:gdriveFolderId});
 
 				if(gdriveNoteId){
-					loadMessage(gdriveNoteId);
+					loadMessage(email, gdriveNoteId);
 				}
 			},
 			error:function(data){
@@ -334,7 +345,7 @@ function searchMessage(email, messageId){
 
 
 //do as much initilization as possible, while not trigger login page
-function initialize(email){
+function initialize(email, messageId){
 	//var messageId = getStorage(email, "message_id");
   //var refresh_token = getStorage("refresh_token");
   if(getStorage(email, "refresh_token")){
@@ -343,7 +354,7 @@ function initialize(email){
     sendMessage({action:"show_log_out_prompt"});
     sendMessage({action:"enable_edit"});
     updateUserInfo(email);
-    searchMessage(email);
+    searchMessage(email, messageId);
   }
   else{ //no refresh token
     if(getStorage(email, "access_token")){
@@ -381,14 +392,14 @@ $(window).load(function(){
           logoutGoogleDrive(email);
           break;
         case "login":
-          loginGoogleDrive(email);
+          loginGoogleDrive(email, requset.messageId);
           break;
-        case "post_message":
-          postMessage(email, request.messageId, 
+        case "post_note":
+          postNote(email, request.messageId, 
                   request.gdriveFolderId, request.gdriveNoteId, request.content);
           break;
         case "initialize":
-          initialize(email);
+          initialize(email, request.messageId);
           break;
 
       }
@@ -401,7 +412,7 @@ function sendMessage(message)
   console.log("@401");
 
   /*
-   window.postMessage({ type: 'sgn_page_js_type',
+   window.postNote({ type: 'sgn_page_js_type',
                          text: "Hello from the page's javascript!"},
                        '*' );
   */

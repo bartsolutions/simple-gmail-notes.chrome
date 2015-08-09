@@ -27,15 +27,20 @@ function showLogoutPrompt(){
 
 
 var gEmailReg = /([\w-\.]+)@((?:[\w]+\.)+)([a-zA-Z]{2,4})/g;
+var gCurrentGDriveNoteId = "";
+var gCurrentGDriveFolderId = "";
+var gPreviousContent = "";
 
-function setupNotes(email){
+function setupNotes(email, messageId){
   console.log("@8, start to set up notes");
   //var email = gmail.get.user_email();
 
   console.log("@45", email);
 
-	var currentHref = window.location.href;
-	var messageId = currentHref.substring(currentHref.lastIndexOf("/")+1);
+  if($("#sgn_input").length){
+    console.log("give up the set up");
+    return;
+  }
 
 
   var injectionNode = $(".nH.if"); //hopefully this one is stable
@@ -49,11 +54,14 @@ function setupNotes(email){
     "color": "gray",
     "margin": "5px"
   }).blur(function(){
-    var gdriveNoteId = $("#sgn_gdrive_note_id").val();
-    var gdriveFolderId = $("#sgn_gdrive_folder_id").val();
+    //var gdriveNoteId = $("#sgn_gdrive_note_id").val();
+    //var gdriveFolderId = $("#sgn_gdrive_folder_id").val();
     var content = $(this).val();
-		sendMessage({action:"post_message", messageId:messageId, 
-            gdriveNoteId:gdriveNoteId, gdriveFolderId:gdriveFolderId, content:content});
+    //console.log("@55", gdriveFolderId, gdriveNoteId);
+    if(gPreviousContent != content){
+      sendMessage({action:"post_note", email:email, messageId:messageId, 
+            gdriveNoteId:gCurrentGDriveNoteId, gdriveFolderId:gCurrentGDriveFolderId, content:content});
+    }
 
 	  return true;
 	});
@@ -76,11 +84,16 @@ function setupNotes(email){
       "margin": "5px"
       });
 
-  var noteIdNode = $("<input type=hidden id='sgn_gdrive_note_id/>");
-  var folderIdNode = $("<input type=hidden id='sgn_gdrive_folder_id/>");
+  //var noteIdNode = $("<input type=hidden id='sgn_gdrive_note_id/>");
+  //var folderIdNode = $("<input type=hidden id='sgn_gdrive_folder_id/>");
 
-  injectionNode.prepend(folderIdNode);
-  injectionNode.prepend(noteIdNode);
+  //injectionNode.prepend(folderIdNode);
+  //injectionNode.prepend(noteIdNode);
+  //
+  $("#sgn_input").remove();
+  $("#sgn_prompt_login").remove();
+  $("#sgn_prompt_logout").remove();
+
   injectionNode.prepend(textAreaNode);
   injectionNode.prepend(loginPrompt);
   injectionNode.prepend(logoutPrompt);
@@ -92,7 +105,7 @@ function setupNotes(email){
     "text-decoration":"underline"
   }).click(function(){
     var action = $(this).attr("id").substring(4);   //remove the sgn_ prefix
-    sendMessage({action: action, email: email});
+    sendMessage({action: action, email: email, messageId:messageId});
   });
 
   //load initial message
@@ -104,7 +117,7 @@ function setupNotes(email){
   /*
   setInterval(function(){
     if($("#sgn_input").is(":enabled")){
-      chrome.runtime.sendMessage({action:"post_message", email:email}, handleResponse);
+      chrome.runtime.sendMessage({action:"post_note", email:email}, handleResponse);
     };
 
   }, 50000);   
@@ -159,11 +172,13 @@ function setupListeners(){
           $("#sgn_user").text(request.email);
           break;
         case "update_content":
+          gPreviousContent = request.content;
           $("#sgn_input").val(request.content);
 					break;
         case "update_gdrive_note_info":
-          $("#sgn_gdrive_note_id").val(request.gdrive_note_id);
-          $("#sgn_gdrive_folder_id").val(request.gdrive_folder_id);
+          console.log("@166", request.gdriveFolderId, request.gdriveFolderId);
+          gCurrentGDriveFolderId = request.gdriveFolderId;
+          gCurrentGDriveNoteId = request.gdriveNoteId;
           break;
       }
 
@@ -171,7 +186,7 @@ function setupListeners(){
 
   )
 
-  /*
+    /*
   window.addEventListener('message', function(event) {
       console.log('content_script.js got message:', event);
       // check event.type and event.data
@@ -195,9 +210,14 @@ window.addEventListener('message', function(event) {
   
   // Event listener for page
   document.addEventListener('SGN_setup_notes', function(e) {
-      var email = e.detail.email
-      console.log("@186", email);
-      setupNotes(email);
+      var email = e.detail.email;
+      var pageMessageId = e.detail.pageMessageId;
+      
+      var currentHref = window.location.href;
+      var messageId = currentHref.substring(currentHref.lastIndexOf("/")+1);
+      console.log("@186", email, messageId, pageMessageId);
+
+      setupNotes(email, messageId);
   });
 
 }

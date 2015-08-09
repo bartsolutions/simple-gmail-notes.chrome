@@ -10,3 +10,5 @@ https://security.google.com/settings/security/permissions?hl=en&pli=1
 6. use gmail.js instead of gmailr.js
 
 https://github.com/KartikTalwar/gmail.js
+
+7. match email name 
