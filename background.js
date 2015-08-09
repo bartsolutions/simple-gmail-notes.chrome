@@ -75,7 +75,8 @@ function showRefreshTokenError(error){
   errorMessage = "Failed to connect to Google Drive using generated token, " +
                     "please disconnect and connect again. \n" +
                     "If error persists, please manually remove the token from here: \n" +
-                    "https://accounts.google.com/b/0/IssuedAuthSubTokens?hl=en"
+                    "https://accounts.google.com/b/0/IssuedAuthSubTokens?hl=en" + 
+                    "ERROR: " + error;
              
   sendMessage({action:"show_log_out_prompt"});
   sendMessage({action:"disable_edit"});
@@ -397,6 +398,19 @@ $(window).load(function(){
 
 function sendMessage(message)
 {
+  console.log("@401");
+
+  /*
+   window.postMessage({ type: 'sgn_page_js_type',
+                         text: "Hello from the page's javascript!"},
+                       '*' );
+  */
+  
+   /*
+ document.dispatchEvent(new CustomEvent('SGN_background_event', { detail: message} 
+    ));
+    */
+  
   console.log("@226", message);
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     chrome.tabs.sendMessage(tabs[0].id, message, function(response) {

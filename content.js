@@ -3,10 +3,6 @@
  * https://github.com/walty8
  * Copyright (C) 2015 Walty Yeung <walty8@gmail.com>
  */
-
-//for use gmail.js
-var gmail;
-
 function disableEdit()
 {
   $("#sgn_input").prop("disabled", true);
@@ -32,9 +28,9 @@ function showLogoutPrompt(){
 
 var gEmailReg = /([\w-\.]+)@((?:[\w]+\.)+)([a-zA-Z]{2,4})/g;
 
-function setupNotes(){
+function setupNotes(email){
   console.log("@8, start to set up notes");
-  var email = gmail.get.user_email();
+  //var email = gmail.get.user_email();
 
   console.log("@45", email);
 
@@ -43,11 +39,12 @@ function setupNotes(){
 
 
   var injectionNode = $(".nH.if"); //hopefully this one is stable
+
   var textAreaNode = $("<textarea></textarea>", {
     "id": "sgn_input",
     "text": ""
   }).css({
-    "width": injectionNode.width() + "px", 
+    "width": "100%", 
     "height": "150px",
     "color": "gray",
     "margin": "5px"
@@ -174,9 +171,35 @@ function setupListeners(){
 
   )
 
-    var gmail = Gmail();
-    console("@172", gmail.get.user_email());
-      
+  /*
+  window.addEventListener('message', function(event) {
+      console.log('content_script.js got message:', event);
+      // check event.type and event.data
+  });
+  */
+
+  /*
+  document.addEventListener('SGN_background_event', function(e) {
+      var detail = e.detail
+      console.log("@190", detail);
+      //setupNotes(de);
+  });
+  */
+
+  /*
+window.addEventListener('message', function(event) {
+    console.log('content_script.js got message:', event.type, event);
+    // check event.type and event.data
+});
+*/
+  
+  // Event listener for page
+  document.addEventListener('SGN_setup_notes', function(e) {
+      var email = e.detail.email
+      console.log("@186", email);
+      setupNotes(email);
+  });
+
 }
 
 function sendMessage(object)

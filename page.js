@@ -16,12 +16,24 @@ var main = function(){
   console.log('Hello,', gmail.get.user_email());
 
   gmail.observe.on('view_thread', function(obj){
-chrome.runtime.sendMessage("jfjkcbkgjohminidbpendlodpfacgmlm", {action: setupNotes},
-  function(response) {
-    if (!response.success)
-      handleError(url);
-  });
-      
+
+ document.dispatchEvent(new CustomEvent('SGN_setup_notes', {
+       detail: {email: gmail.get.user_email()} // Some variable from Gmail.
+    }));
+    
+    /*
+   window.postMessage({ type: 'page_js_type',
+                         text: "Hello from the page's javascript!"}, '*');
+                         */
+
+    
+                         /*
+    chrome.runtime.sendMessage("jfjkcbkgjohminidbpendlodpfacgmlm", {action: "setup_notes", email:gmail.get.user_email()},
+    function(response) {
+      if (!response.success)
+        handleError(url);
+    });*/
+
 
   });
 

@@ -3,9 +3,6 @@
   "name": "Simple Gmail Notes",
   "description": "Add notes to emails threads in GMail",
   "version": "0.0.0.1",
-    "background": { 
-        "scripts" : ["lib/jquery-1.11.3.min.js", "background.js"]
-    },
   "browser_action": {
     "default_icon": "icon.png",
     "default_popup": "popup.html"
@@ -15,20 +12,23 @@
     "activeTab",
     "tabs", 
     "identity",
-      "https://www.googleapis.com/auth/drive.file",  
-      "https://accounts.google.com/o/oauth2/auth"
+      "https://www.googleapis.com/*",  
+      "https://accounts.google.com/*"
   ],
-    "externally_connectable": {
-      "matches": ["https://mail.google.com/*"]
-    }
+  "externally_connectable": {
+    "matches": ["https://mail.google.com/*"]
+  },
   "web_accessible_resources": [
     "lib/jquery-1.11.3.min.js",
     "lib/gmail.js",
     "page.js"
   ],
+  "background": { 
+      "scripts" : ["lib/jquery-1.11.3.min.js", "background.js"]
+  },
   "content_scripts":  [{
       "matches": [ "https://mail.google.com/*"],
-      "js": [ "lib/jquery-1.11.3.min.js", "main.js"]
+      "js": [ "lib/jquery-1.11.3.min.js", "content.js"]
   }],
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgyUBS53d5P2ograP4JKK656jrrauipHsAdgcTZyL1j5MKBMD4yBmHl9BcmS+sfhmOE5fS38ng7XRZIErp8SrWbJwwstMWx+FTDKlrFS3J5so85CgOpRNge+Ge8UyhxAkPB7zui1AU3wD/XieaGN2L9pmT4MN1u6pPs2Lf/8i96Vp8YjUKaKIWmevKeqsGr1HNHZt41/dcBBIr6vW6OoWlViI1bae+p4Cv6VertdadkuW4hc7z8jVrlC0Lyu43oETmXWflUhw/hCctktI+KwJNk47Pm9vX2Bgw7EdovukrYPV+iNzzE49jirbQkZvMGuNV3fA+NbUwmo7c9dypCAweQIDAQAB"
 }
