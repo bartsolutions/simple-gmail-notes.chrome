@@ -117,7 +117,8 @@ function updateRefreshTokenFromCode(email, messageId){
         setStorage(email, "refresh_token", data.refresh_token);
         setStorage(email, "access_token", data.access_token);
         initialize(email, messageId);
-
+    //sendMessage({action:"show_log_out_prompt"});
+    //sendMessage({action:"enable_edit"});
       }
     }
   });
@@ -190,7 +191,8 @@ function loginGoogleDrive(email, messageId){
           "redirect_uri":"https://" + 
             chrome.runtime.id + ".chromiumapp.org/provider_cb",
           "response_type":"code",
-          "access_type":"offline"
+          "access_type":"offline",
+          "login_hint":email
       }), 
      "interactive": true
     },
@@ -208,6 +210,7 @@ function loginGoogleDrive(email, messageId){
         console.log("@53:" + code);
         setStorage(email, "code", code);
         updateRefreshTokenFromCode(email, messageId);
+        updateUserInfo(email);
       }
 
     }
@@ -221,6 +224,7 @@ function logoutGoogleDrive(email){
   var tokenValue = getStorage(email, "access_token");
   if(tokenValue){
     console.log("Revoking token: ", tokenValue);
+    chrome.identity.removeCachedAuthToken({'token':tokenValue}, function(){});
     $.ajax({
       url:"https://accounts.google.com/o/oauth2/revoke?token=" + tokenValue,
       complete:function(){
@@ -250,7 +254,7 @@ function loadMessage(email, gdriveNoteId){
 		success: function(data) {
 			console.log("@268", data);
 			sendMessage({action:"update_content", content:data});
-      sendMessage({action:"enable_edit", email:email});  //ready for write new message
+      sendMessage({action:"enable_edit", gdriveEmail:getStorage(email, "gdrive_email")});  //ready for write new message
 		},
 		error: function(data){
 			sendMessage({action:"show_error", 
@@ -340,7 +344,7 @@ function searchMessage(email, messageId){
             loadMessage(email, gdriveNoteId);
           }
           else{
-            sendMessage({action:"enable_edit", email:email});  //ready for write new message
+            sendMessage({action:"enable_edit", gdriveEmail:getStorage("gdrive_email")});  //ready for write new message
           }
 				}
 

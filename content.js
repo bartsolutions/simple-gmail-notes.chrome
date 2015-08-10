@@ -186,7 +186,7 @@ function setupListeners(){
             break;
         case "enable_edit":
             enableEdit();
-            showLogoutPrompt(request.email)
+            showLogoutPrompt(request.gdriveEmail)
             break;
         case "show_log_out_prompt":
           showLogoutPrompt();
