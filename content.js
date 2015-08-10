@@ -278,6 +278,14 @@ function setupPage(){
 }
 
 $(document).ready(function(){
+
     setupListeners();
     setupPage();
 });
+
+//disable logging
+//console.log("checking version @ content @ simple gmail notes", chrome.runtime.getManifest().version);
+if(chrome.runtime.getManifest().version != "0.0.0.1"){  
+  console = {};
+  console.log = function(){};
+}

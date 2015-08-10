@@ -445,4 +445,13 @@ function sendMessage(message)
 
 }
 
+//console.log("checking version @ background @ simple gmail notes", chrome.runtime.getManifest().version);
+//disable logging for production
+if(chrome.runtime.getManifest().version != "0.0.0.1"){  
+  console = {};
+  console.log = function(){};
+}
+
 console.log("@38, at background");
+
+

@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Simple Gmail Notes",
   "description": "Add notes to emails threads in Gmail",
-  "version": "0.1",
+  "version": "0.0.0.1",
   "icons": { "16": "icon16.png",
            "48": "icon48.png",
           "128": "icon128.png" },
@@ -12,6 +12,7 @@
     "activeTab",
     "tabs", 
     "identity",
+    "management",
       "https://www.googleapis.com/*",  
       "https://accounts.google.com/*"
   ],

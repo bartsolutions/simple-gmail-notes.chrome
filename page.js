@@ -1,3 +1,9 @@
+/*
+ * Simple Gmail Notes 
+ * https://github.com/walty8
+ * Copyright (C) 2015 Walty Yeung <walty8@gmail.com>
+ */
+
 var gmail;
 
 function refresh(f) {
@@ -10,7 +16,7 @@ function refresh(f) {
 
 
 function checkEmailId(){
-  console.log("@13 ", gmail.get.email_id());
+//  console.log("@13 ", gmail.get.email_id());
 }
 
 /*
@@ -32,12 +38,12 @@ function setupNotes(){
       setTimeout(function(){
         var currentPageMessageId = gmail.get.email_id();
 
-        console.log("@35", currentPageMessageId);
+        //console.log("@35", currentPageMessageId);
 
         if(!currentPageMessageId)  //do nothing
             return;
 
-        console.log("@19, viewthread", currentPageMessageId);
+        //console.log("@19, viewthread", currentPageMessageId);
        
         document.dispatchEvent(new CustomEvent('SGN_setup_notes', {
            detail: {email: gmail.get.user_email(), messageId:currentPageMessageId} // Some variable from Gmail.
@@ -53,7 +59,7 @@ var main = function(){
   // NOTE: Always use the latest version of gmail.js from
   // https://github.com/KartikTalwar/gmail.js
   gmail = new Gmail();
-  console.log('Hello,', gmail.get.user_email());
+  //console.log('Hello,', gmail.get.user_email());
 
   /*
 gmail.observe.on('view_thread', function(obj) {
@@ -63,7 +69,7 @@ gmail.observe.on('view_thread', function(obj) {
 
   gmail.observe.on('view_thread', function(obj){
     //el = obj.dom();
-    console.log("@63", obj);
+    //console.log("@63", obj);
     //setupNotes();
 
     /*
@@ -84,16 +90,20 @@ gmail.observe.on('view_thread', function(obj) {
 
 
   gmail.observe.on('open_email', function(obj){
-    console.log("@78@open email", obj);
+    //console.log("@78@open email", obj);
     setupNotes();
   });
 
   gmail.observe.on('load', function(obj){
     setupNotes();
-    console.log("@82@load");
+    //console.log("@82@load");
   });
 
 }
 
+//disable logging
+//console = {};
+//console.log = function(){};
 
 refresh(main);
+
