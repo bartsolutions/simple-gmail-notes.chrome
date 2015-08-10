@@ -117,6 +117,10 @@ function setupNotes(email, messageId){
   var emptyPrompt = $("<div id='sgn_padding'>&nbsp;<div>")
                       .css({"margin":"5px"});
   var errorPrompt = $("<div id='sgn_error'><div>")
+                      .html("Error connecting to Google Drive <span id='sgn_error_timestamp'></span>, " +
+                          "please try to <a id='sgn_reconnect' class='sgn_action'>connect</a> again. \n" +
+                          "If error persists after 5 attempts, you may try to manually " +
+                          "<a href='https://accounts.google.com/b/0/IssuedAuthSubTokens'>revoke</a> previous tokens.")
                       .css({"margin":"5px", "color":"red", "display":"none"});
   //var noteIdNode = $("<input type=hidden id='sgn_gdrive_note_id/>");
   //var folderIdNode = $("<input type=hidden id='sgn_gdrive_folder_id/>");
@@ -204,8 +208,10 @@ function setupListeners(){
         case "show_error":
           var errorMessage = request.message;
           console.log("Error in response:", errorMessage);
+          var date = new Date();
+          var timestamp = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
           //alert(errorMessage);
-          $("#sgn_error").html(errorMessage);
+          $("#sgn_error_timestamp").text("(" +  timestamp + ")");
           $("#sgn_error").show();
           break;
         case "update_user":

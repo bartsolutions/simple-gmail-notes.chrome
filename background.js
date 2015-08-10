@@ -411,6 +411,7 @@ $(window).load(function(){
         case "logout":
           logoutGoogleDrive(email);
           break;
+        case "reconnect":
         case "login":
           loginGoogleDrive(email, request.messageId);
           break;
