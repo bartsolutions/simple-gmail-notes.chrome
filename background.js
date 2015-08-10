@@ -80,14 +80,14 @@ function postNote(email, messageId, gdriveFolderId, gdriveNoteId, content){
 }
 
 
-function showRefreshTokenError(error){
-  errorMessage = "Failed to connect to Google Drive using generated token, " +
-                    "please disconnect and connect again. \n" +
-                    "If error persists, please manually remove the token from here: \n" +
-                    "https://accounts.google.com/b/0/IssuedAuthSubTokens" 
+function showRefreshTokenError(email, error){
+  logoutGoogleDrive(email);
+
+  errorMessage = "Error connecting to Google Drive. Please try to connect again. \n" +
+                    "If error persists, you may manually <a href='https://accounts.google.com/b/0/IssuedAuthSubTokens'>revoke</a> previous tokens.\n"
              
-  sendMessage({action:"show_log_out_prompt"});
-  sendMessage({action:"disable_edit"});
+  //sendMessage({action:"show_log_out_prompt"});
+  //sendMessage({action:"disable_edit"});
   sendMessage({action:"show_error", message: errorMessage});
 }
 
@@ -104,11 +104,11 @@ function updateRefreshTokenFromCode(email, messageId){
     },
     url: "https://www.googleapis.com/oauth2/v3/token",
     error: function(data){
-      showRefreshTokenError(JSON.stringify(data));
+      showRefreshTokenError(email, JSON.stringify(data));
     },
     success: function(data){
       if(!data.refresh_token){
-        showRefreshTokenError("Google Drive token could not be collected.");
+        showRefreshTokenError(email, "Google Drive token could not be collected.");
         setStorage(email, "access_token", data.access_token); //for future revoking
       }
       else{
@@ -174,7 +174,7 @@ function executeIfValidToken(email, command){
         },
         error:function(){
           //the refresh token is not valid somehow
-          showRefreshTokenError(JSON.stringify(data));
+          showRefreshTokenError(email, JSON.stringify(data));
         }
       });
     }
@@ -283,6 +283,8 @@ function setupNotesFolder(email){
           sendMessage({action:"update_gdrive_note_info", 
               gdriveNoteId:"", gdriveFolderId:gdriveFolderId});
 
+          sendMessage({action:"enable_edit", gdriveEmail:getStorage(email, "gdrive_email")});  //ready for write new message
+
          console.log("@276", data);
        }
     })
@@ -354,7 +356,7 @@ function searchMessage(email, messageId){
 				//setStorage(email, "note_id", gdriveNoteId);
 			},
 			error:function(data){
-				showRefreshTokenError(JSON.stringify(data));
+				showRefreshTokenError(email, JSON.stringify(data));
 			}
 		
 		});

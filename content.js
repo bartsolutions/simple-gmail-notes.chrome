@@ -42,6 +42,7 @@ function showLogoutPrompt(email){
   $("#sgn_prompt_logout").show();
   $("#sgn_prompt_login").hide();
   $("#sgn_padding").hide();
+  $("#sgn_error").hide();
 
   if(email)
     $("#sgn_prompt_logout").find("#sgn_user").text(email);
@@ -113,7 +114,10 @@ function setupNotes(email, messageId){
       "margin": "5px"
       });
 
-  var emptyPrompt = $("<div id='sgn_padding'>&nbsp;<div>").css({"margin":"5px"});
+  var emptyPrompt = $("<div id='sgn_padding'>&nbsp;<div>")
+                      .css({"margin":"5px"});
+  var errorPrompt = $("<div id='sgn_error'><div>")
+                      .css({"margin":"5px", "color":"red", "display":"none"});
   //var noteIdNode = $("<input type=hidden id='sgn_gdrive_note_id/>");
   //var folderIdNode = $("<input type=hidden id='sgn_gdrive_folder_id/>");
 
@@ -124,6 +128,7 @@ function setupNotes(email, messageId){
   $("#sgn_prompt_login").remove();
   $("#sgn_prompt_logout").remove();
 
+  injectionNode.prepend(errorPrompt);
   injectionNode.prepend(textAreaNode);
   injectionNode.prepend(loginPrompt);
   injectionNode.prepend(logoutPrompt);
@@ -199,7 +204,9 @@ function setupListeners(){
         case "show_error":
           var errorMessage = request.message;
           console.log("Error in response:", errorMessage);
-          alert(errorMessage);
+          //alert(errorMessage);
+          $("#sgn_error").html(errorMessage);
+          $("#sgn_error").show();
           break;
         case "update_user":
           $("#sgn_user").text(request.email);

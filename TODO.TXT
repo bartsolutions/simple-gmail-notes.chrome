@@ -16,3 +16,5 @@ https://github.com/KartikTalwar/gmail.js
 8. disable chrome log if unpacked mode:
 
 https://developer.chrome.com/extensions/management#method-get
+
+9. got problem with initial folder creation, enable edit 
