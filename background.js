@@ -193,7 +193,8 @@ function loginGoogleDrive(email, messageId){
             chrome.runtime.id + ".chromiumapp.org/provider_cb",
           "response_type":"code",
           "access_type":"offline",
-          "login_hint":email
+          "login_hint":email,
+          "prompt":"consent"
       }), 
      "interactive": true
     },
