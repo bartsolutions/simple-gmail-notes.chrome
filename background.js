@@ -117,6 +117,7 @@ function updateRefreshTokenFromCode(email, messageId){
         setStorage(email, "refresh_token", data.refresh_token);
         setStorage(email, "access_token", data.access_token);
         initialize(email, messageId);
+        updateUserInfo(email);
     //sendMessage({action:"show_log_out_prompt"});
     //sendMessage({action:"enable_edit"});
       }
@@ -210,7 +211,6 @@ function loginGoogleDrive(email, messageId){
         console.log("@53:" + code);
         setStorage(email, "code", code);
         updateRefreshTokenFromCode(email, messageId);
-        updateUserInfo(email);
       }
 
     }
@@ -344,7 +344,7 @@ function searchMessage(email, messageId){
             loadMessage(email, gdriveNoteId);
           }
           else{
-            sendMessage({action:"enable_edit", gdriveEmail:getStorage("gdrive_email")});  //ready for write new message
+            sendMessage({action:"enable_edit", gdriveEmail:getStorage(email, "gdrive_email")});  //ready for write new message
           }
 				}
 
@@ -371,7 +371,7 @@ function initialize(email, messageId){
         "access_token", getStorage(email, "access_token"))
     //sendMessage({action:"show_log_out_prompt"});
     //sendMessage({action:"enable_edit"});
-    updateUserInfo(email);
+    //updateUserInfo(email);
     searchMessage(email, messageId);
   }
   else{ //no refresh token
