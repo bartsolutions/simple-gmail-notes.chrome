@@ -12,3 +12,7 @@ https://security.google.com/settings/security/permissions?hl=en&pli=1
 https://github.com/KartikTalwar/gmail.js
 
 7. match email name 
+
+8. disable chrome log if unpacked mode:
+
+https://developer.chrome.com/extensions/management#method-get
