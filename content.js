@@ -119,8 +119,8 @@ function setupNotes(email, messageId){
 	});
 
   var logoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
-      .html("Connected to Google Drive of '<span class='sgn_user'></span>'. " +
-      "Click <a class='sgn_logout sgn_action'>here</a> to disconnect.")
+      .html("Simple Gmail Notes connecting to Google Drive of '<span class='sgn_user'></span>' " +
+      "(<a class='sgn_logout sgn_action'>Disconnect</a>)")
       .css({
       "display":"none",
       "color": "gray",
@@ -129,7 +129,7 @@ function setupNotes(email, messageId){
 
   var loginPrompt = $("<div class='sgn_prompt_login'/></div>" )
       .html("Please <a class='sgn_login sgn_action'>connect</a> to " +
-        "your Google Drive account to start using Simple Gmail Notes." )
+        "your Google Drive account to start using Simple Gmail Notes" )
       .css({
       "display":"none",
       "color": "gray",
@@ -166,8 +166,17 @@ function setupNotes(email, messageId){
     "cursor":"pointer",
     "text-decoration":"underline"
   }).click(function(){
-    var action = $(this).attr("id").substring(4);   //remove the sgn_ prefix
-    sendMessage({action: action, email: email, messageId:messageId});
+
+    var classList =$(this).attr('class').split(/\s+/);
+
+    console.log("@172", classList);
+    $.each(classList, function(index, item){
+        if(item != 'sgn_action'){
+            var action = item.substring(4);   //remove the sgn_ prefix
+            sendMessage({action: action, email: email, messageId:messageId});
+        }
+    });
+    
   });
 
   //load initial message
