@@ -10,11 +10,11 @@ function disableEdit(retryCount)
   if(retryCount == undefined)
       retryCount = 20;
 
-  $("#sgn_input").prop("disabled", true);
+  $(".sgn_input").prop("disabled", true);
 //  $("#sgn_input").hide();
  // $("#sgn_padding").hide();
 
-  if(!$("#sgn_input").is(":disabled") || $("#sgn_padding").is(":visible")){  //keep trying until it's visible
+  if(!$(".sgn_input").is(":disabled") || $(".sgn_padding").is(":visible")){  //keep trying until it's visible
     console.log("retry disable edit");
     retryCount = retryCount - 1;
     if(retryCount > 0 )
@@ -27,11 +27,11 @@ function enableEdit(retryCount)
   if(retryCount == undefined)
       retryCount = 20;
 
-  $("#sgn_input").prop("disabled", false);
+  $(".sgn_input").prop("disabled", false);
   //$("#sgn_input").show();
 //  $("#sgn_padding").hide();
 
-  if($("#sgn_input").is(":disabled")){  //keep trying until it's visible
+  if($(".sgn_input").is(":disabled")){  //keep trying until it's visible
     console.log("retry enable edit");
     retryCount = retryCount - 1;
     if(retryCount > 0 )
@@ -43,11 +43,11 @@ function showLoginPrompt(retryCount){
   if(retryCount == undefined)
       retryCount = 20;
 
-  $("#sgn_prompt_login").show();
-  $("#sgn_prompt_logout").hide();
-  $("#sgn_padding").hide();
-  console.log("@34, show login", $("#sgn_prompt_login").is(":visible"));
-  if(!$("#sgn_prompt_login").is(":visible")){  //keep trying until it's visible
+  $(".sgn_prompt_login").show();
+  $(".sgn_prompt_logout").hide();
+  $(".sgn_padding").hide();
+  console.log("@34, show login", $(".sgn_prompt_login").is(":visible"));
+  if(!$(".sgn_prompt_login").is(":visible")){  //keep trying until it's visible
     console.log("retry show prompt login");
     retryCount = retryCount - 1;
     if(retryCount > 0 )
@@ -59,16 +59,16 @@ function showLogoutPrompt(email, retryCount){
   if(retryCount == undefined)
       retryCount = 20;
 
-  $("#sgn_prompt_logout").show();
-  $("#sgn_prompt_login").hide();
-  $("#sgn_padding").hide();
-  $("#sgn_error").hide();
+  $(".sgn_prompt_logout").show();
+  $(".sgn_prompt_login").hide();
+  $(".sgn_padding").hide();
+  $(".sgn_error").hide();
 
   if(email)
-    $("#sgn_prompt_logout").find("#sgn_user").text(email);
+    $(".sgn_prompt_logout").find(".sgn_user").text(email);
 	//enableEdit();
 
-  if(!$("#sgn_prompt_logout").is(":visible")){  //keep trying until it's visible
+  if(!$(".sgn_prompt_logout").is(":visible")){  //keep trying until it's visible
     console.log("retry show prompt");
     retryCount = retryCount - 1;
     if(retryCount > 0 )
@@ -88,7 +88,7 @@ function setupNotes(email, messageId){
 
   console.log("@45", email);
 
-  if($("#sgn_input").length){
+  if($(".sgn_input").length){
     //console.log("give up the set up");
     //return;
   }
@@ -97,7 +97,7 @@ function setupNotes(email, messageId){
   var injectionNode = $(".nH.if"); //hopefully this one is stable
 
   var textAreaNode = $("<textarea></textarea>", {
-    "id": "sgn_input",
+    "class": "sgn_input",
     "text": "",
     "disabled":"disabled"
   }).css({
@@ -118,17 +118,17 @@ function setupNotes(email, messageId){
 	  return true;
 	});
 
-  var logoutPrompt = $("<div id='sgn_prompt_logout'/></div>" )
-      .html("Connected to Google Drive of '<span id='sgn_user'></span>'. " +
-      "Click <a id='sgn_logout' class='sgn_action'>here</a> to disconnect.")
+  var logoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
+      .html("Connected to Google Drive of '<span class='sgn_user'></span>'. " +
+      "Click <a class='sgn_logout sgn_action'>here</a> to disconnect.")
       .css({
       "display":"none",
       "color": "gray",
       "margin": "5px"
       });
 
-  var loginPrompt = $("<div id='sgn_prompt_login'/></div>" )
-      .html("Please <a id='sgn_login' class='sgn_action'>connect</a> to " +
+  var loginPrompt = $("<div class='sgn_prompt_login'/></div>" )
+      .html("Please <a class='sgn_login sgn_action'>connect</a> to " +
         "your Google Drive account to start using Simple Gmail Notes." )
       .css({
       "display":"none",
@@ -136,11 +136,11 @@ function setupNotes(email, messageId){
       "margin": "5px"
       });
 
-  var emptyPrompt = $("<div id='sgn_padding'>&nbsp;<div>")
+  var emptyPrompt = $("<div class='sgn_padding'>&nbsp;<div>")
                       .css({"margin":"5px"});
-  var errorPrompt = $("<div id='sgn_error'><div>")
-                      .html("Error connecting to Google Drive <span id='sgn_error_timestamp'></span>, " +
-                          "please try to <a id='sgn_reconnect' class='sgn_action'>connect</a> again. \n" +
+  var errorPrompt = $("<div class='sgn_error'><div>")
+                      .html("Error connecting to Google Drive <span class='sgn_error_timestamp'></span>, " +
+                          "please try to <a class='sgn_reconnect sgn_action'>connect</a> again. \n" +
                           "If error persists after 5 attempts, you may try to manually " +
                           "<a href='https://accounts.google.com/b/0/IssuedAuthSubTokens'>revoke</a> previous tokens.")
                       .css({"margin":"5px", "color":"red", "display":"none"});
@@ -150,9 +150,9 @@ function setupNotes(email, messageId){
   //injectionNode.prepend(folderIdNode);
   //injectionNode.prepend(noteIdNode);
   //
-  $("#sgn_input").remove();
-  $("#sgn_prompt_login").remove();
-  $("#sgn_prompt_logout").remove();
+  $(".sgn_input").remove();
+  $(".sgn_prompt_login").remove();
+  $(".sgn_prompt_logout").remove();
 
   injectionNode.prepend(errorPrompt);
   injectionNode.prepend(textAreaNode);
@@ -233,15 +233,15 @@ function setupListeners(){
           var date = new Date();
           var timestamp = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
           //alert(errorMessage);
-          $("#sgn_error_timestamp").text("(" +  timestamp + ")");
-          $("#sgn_error").show();
+          $(".sgn_error_timestamp").text("(" +  timestamp + ")");
+          $(".sgn_error").show();
           break;
         case "update_user":
-          $("#sgn_user").text(request.email);
+          $(".sgn_user").text(request.email);
           break;
         case "update_content":
           gPreviousContent = request.content;
-          $("#sgn_input").val(request.content);
+          $(".sgn_input").val(request.content);
           showLogoutPrompt(request.email);
 					break;
         case "update_gdrive_note_info":
