@@ -1,0 +1,2 @@
+- [ ] clean up debug log
+- [ ] fine tune styles for text area
