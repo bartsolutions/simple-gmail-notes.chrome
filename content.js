@@ -3,42 +3,62 @@
  * https://github.com/walty8
  * Copyright (C) 2015 Walty Yeung <walty8@gmail.com>
  */
-function disableEdit()
+MAX_RETRY_COUNT = 20
+
+function disableEdit(retryCount)
 {
+  if(retryCount == undefined)
+      retryCount = 20;
+
   $("#sgn_input").prop("disabled", true);
 //  $("#sgn_input").hide();
  // $("#sgn_padding").hide();
 
   if(!$("#sgn_input").is(":disabled") || $("#sgn_padding").is(":visible")){  //keep trying until it's visible
     console.log("retry disable edit");
-    setTimeout(disableEdit, 100);
+    retryCount = retryCount - 1;
+    if(retryCount > 0 )
+        setTimeout(disableEdit, 100, retryCount);
   }
 }
 
-function enableEdit()
+function enableEdit(retryCount)
 {
+  if(retryCount == undefined)
+      retryCount = 20;
+
   $("#sgn_input").prop("disabled", false);
   //$("#sgn_input").show();
 //  $("#sgn_padding").hide();
 
   if($("#sgn_input").is(":disabled")){  //keep trying until it's visible
     console.log("retry enable edit");
-    setTimeout(enableEdit, 100);
+    retryCount = retryCount - 1;
+    if(retryCount > 0 )
+        setTimeout(enableEdit, 100, retryCount);
   }
 }
 
-function showLoginPrompt(){
+function showLoginPrompt(retryCount){
+  if(retryCount == undefined)
+      retryCount = 20;
+
   $("#sgn_prompt_login").show();
   $("#sgn_prompt_logout").hide();
   $("#sgn_padding").hide();
   console.log("@34, show login", $("#sgn_prompt_login").is(":visible"));
   if(!$("#sgn_prompt_login").is(":visible")){  //keep trying until it's visible
     console.log("retry show prompt login");
-    setTimeout(showLoginPrompt, 100);
+    retryCount = retryCount - 1;
+    if(retryCount > 0 )
+        setTimeout(showLoginPrompt, 100, retryCount);
   }
 }
 
-function showLogoutPrompt(email){
+function showLogoutPrompt(email, retryCount){
+  if(retryCount == undefined)
+      retryCount = 20;
+
   $("#sgn_prompt_logout").show();
   $("#sgn_prompt_login").hide();
   $("#sgn_padding").hide();
@@ -50,7 +70,9 @@ function showLogoutPrompt(email){
 
   if(!$("#sgn_prompt_logout").is(":visible")){  //keep trying until it's visible
     console.log("retry show prompt");
-    setTimeout(showLogoutPrompt, 100, email);
+    retryCount = retryCount - 1;
+    if(retryCount > 0 )
+        setTimeout(showLogoutPrompt, 100, email, retryCount);
   }
 }
 
