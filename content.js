@@ -102,7 +102,7 @@ function setupNotes(email, messageId){
     "disabled":"disabled"
   }).css({
     "width": "100%", 
-    "height": "150px",
+    "height": "50px",
     "color": "gray",
     "margin": "5px",
   }).blur(function(){
