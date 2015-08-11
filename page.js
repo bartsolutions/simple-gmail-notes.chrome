@@ -90,13 +90,18 @@ gmail.observe.on('view_thread', function(obj) {
 
 
   gmail.observe.on('open_email', function(obj){
-    //console.log("@78@open email", obj);
+    console.log("simple-gmail-notes: open email event", obj);
     setupNotes();
   });
 
   gmail.observe.on('load', function(obj){
     setupNotes();
-    //console.log("@82@load");
+    console.log("simple-gmail-notes: load event");
+  });
+
+  gmail.observe.on('view_thread', function(obj){
+    console.log("simple-gmail-notes: view thread event");
+
   });
 
 }

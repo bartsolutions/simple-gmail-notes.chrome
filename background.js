@@ -169,7 +169,8 @@ function executeIfValidToken(email, command){
         },
         url: "https://www.googleapis.com/oauth2/v3/token",
         success:function(data){
-					setStorage(email, "access_token", data.access_token);
+          console.log("@172, renewed token");
+          setStorage(email, "access_token", data.access_token);
           command(data);
         },
         error:function(){
