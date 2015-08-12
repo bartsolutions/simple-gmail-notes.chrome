@@ -16,3 +16,12 @@
 
 - See the extension website for the source code repository.
 
+** Dependencies (included in source code) **
+
+- [jQuery](https://jquery.com/)
+
+- [gmail.js](https://github.com/KartikTalwar/gmail.js/tree/master)
+
+** Chrome Store **
+
+- [https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm](https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm)
