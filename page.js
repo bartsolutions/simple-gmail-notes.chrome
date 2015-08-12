@@ -106,7 +106,7 @@ gmail.observe.on('view_thread', function(obj) {
 
 }
 
-//disable logging
+//if disable logging in this way, it would affect other modules of the page
 //console = {};
 //console.log = function(){};
 
