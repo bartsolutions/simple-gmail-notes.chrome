@@ -1,3 +1,4 @@
 - [ ] clean up debug log
-- [ ] fine tune styles for text area
+- [ ] finetune styles for textarea
 - [ ] migration to extension of firefox
+
