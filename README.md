@@ -1,4 +1,4 @@
-** Simply adds notes to your Gmail conversations. One note per conversation. **
+**Simply adds notes to your Gmail conversations. One note per conversation.**
 
 - 100% free and open source! 
 
@@ -16,12 +16,12 @@
 
 - See the extension website for the source code repository.
 
-** Dependencies (included in source code) **
+**Dependencies (included in source code)**
 
 - [jQuery](https://jquery.com/)
 
 - [gmail.js](https://github.com/KartikTalwar/gmail.js/tree/master)
 
-** Chrome Store **
+**Chrome Store**
 
 - [https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm](https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm)
