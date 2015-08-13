@@ -1,4 +1,4 @@
-**Simply adds notes to your Gmail conversations. One note per conversation.**
+**This is a _Chrome exntension_ that adds notes to Gmail conversations. One note per conversation.**
 
 - 100% free and open source! 
 
