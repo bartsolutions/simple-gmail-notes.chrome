@@ -3,9 +3,9 @@
   "name": "Simple Gmail Notes",
   "description": "Add notes to emails threads in Gmail",
   "version": "0.0.0.1",
-  "icons": { "16": "icon/icon16.png",
-           "48": "icon/icon48.png",
-          "128": "icon/icon128.png" },
+  "icons": { "16": "icon-16.png",
+           "48": "icon-48.png",
+          "128": "icon-128.png" },
 
   "permissions": [
     "storage",
