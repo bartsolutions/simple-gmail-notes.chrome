@@ -25,3 +25,11 @@
 **Chrome Store**
 
 - [https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm](https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm)
+
+
+**Firefox Addon**
+
+- The corresponding Firefox Addon Could be found here:
+ * <https://github.com/walty8/simple-gmail-notes.firefox>
+
+- Since the notes are stored in Google Drive, it means the notes written in Chrome Extension could be retrieved from Firefox Addon.
