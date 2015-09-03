@@ -22,12 +22,16 @@
 
 - [gmail.js](https://github.com/KartikTalwar/gmail.js/tree/master)
 
+**More Technical Details**
+ - <http://blog.walty8.com/simple-gmail-notes-chrome-extension/>
+
 **Chrome Store**
 
 - [https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm](https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm)
 
+----
 
-**Firefox Addon**
+_Firefox Addon_
 
 - The corresponding Firefox Addon could be found here:
  * Store: <https://addons.mozilla.org/en-us/firefox/addon/simple-gmail-notes/>
