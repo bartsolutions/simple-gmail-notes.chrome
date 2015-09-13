@@ -119,7 +119,7 @@ function setupNotes(email, messageId){
 	});
 
   var logoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
-      .html("Simple Gmail Notes connecting to Google Drive of '<span class='sgn_user'></span>' " +
+      .html("Simple Gmail Notes connected to Google Drive of '<span class='sgn_user'></span>' " +
       "(<a class='sgn_logout sgn_action'>Disconnect</a>)")
       .css({
       "display":"none",
@@ -329,7 +329,7 @@ $(document).ready(function(){
 
 //disable logging
 //console.log("checking version @ content @ simple gmail notes", chrome.runtime.getManifest().version);
-if(chrome.runtime.getManifest().version != "0.0.0.1"){  
+if(chrome.runtime.getManifest().version != "0.0.1"){  
   console = {};
   console.log = function(){};
 }
