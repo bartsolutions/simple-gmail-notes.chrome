@@ -8,29 +8,25 @@ MAX_RETRY_COUNT = 20
 function disableEdit(retryCount)
 {
   if(retryCount == undefined)
-      retryCount = 20;
+    retryCount = MAX_RETRY_COUNT;
 
   $(".sgn_input").prop("disabled", true);
-//  $("#sgn_input").hide();
- // $("#sgn_padding").hide();
 
-  if(!$(".sgn_input").is(":disabled") || $(".sgn_padding").is(":visible")){  //keep trying until it's visible
+  //keep trying until it's visible
+  if(!$(".sgn_input").is(":disabled") || $(".sgn_padding").is(":visible")){  
     console.log("retry disable edit");
     retryCount = retryCount - 1;
     if(retryCount > 0 )
-        setTimeout(disableEdit, 100, retryCount);
+      setTimeout(disableEdit, 100, retryCount);
   }
 }
 
 function enableEdit(retryCount)
 {
   if(retryCount == undefined)
-      retryCount = 20;
+      retryCount = MAX_RETRY_COUNT;
 
   $(".sgn_input").prop("disabled", false);
-  //$("#sgn_input").show();
-//  $("#sgn_padding").hide();
-
   if($(".sgn_input").is(":disabled")){  //keep trying until it's visible
     console.log("retry enable edit");
     retryCount = retryCount - 1;
@@ -41,23 +37,23 @@ function enableEdit(retryCount)
 
 function showLoginPrompt(retryCount){
   if(retryCount == undefined)
-      retryCount = 20;
+      retryCount = MAX_RETRY_COUNT;
 
   $(".sgn_prompt_login").show();
   $(".sgn_prompt_logout").hide();
   $(".sgn_padding").hide();
-  console.log("@34, show login", $(".sgn_prompt_login").is(":visible"));
+  console.log("Login prompt visible", $(".sgn_prompt_login").is(":visible"));
   if(!$(".sgn_prompt_login").is(":visible")){  //keep trying until it's visible
-    console.log("retry show prompt login");
+    console.log("Retry to show login prompt");
     retryCount = retryCount - 1;
     if(retryCount > 0 )
-        setTimeout(showLoginPrompt, 100, retryCount);
+      setTimeout(showLoginPrompt, 100, retryCount);
   }
 }
 
 function showLogoutPrompt(email, retryCount){
   if(retryCount == undefined)
-      retryCount = 20;
+      retryCount = MAX_RETRY_COUNT;
 
   $(".sgn_prompt_logout").show();
   $(".sgn_prompt_login").hide();
@@ -66,10 +62,9 @@ function showLogoutPrompt(email, retryCount){
 
   if(email)
     $(".sgn_prompt_logout").find(".sgn_user").text(email);
-	//enableEdit();
 
   if(!$(".sgn_prompt_logout").is(":visible")){  //keep trying until it's visible
-    console.log("retry show prompt");
+    console.log("Retry to show prompt");
     retryCount = retryCount - 1;
     if(retryCount > 0 )
         setTimeout(showLogoutPrompt, 100, email, retryCount);
@@ -77,25 +72,16 @@ function showLogoutPrompt(email, retryCount){
 }
 
 
-var gEmailReg = /([\w-\.]+)@((?:[\w]+\.)+)([a-zA-Z]{2,4})/g;
+//global variables to mark the status of current tab
 var gCurrentGDriveNoteId = "";
 var gCurrentGDriveFolderId = "";
 var gPreviousContent = "";
 
 function setupNotes(email, messageId){
-  console.log("@8, start to set up notes");
-  //var email = gmail.get.user_email();
-
-  console.log("@45", email);
-
-  if($(".sgn_input").length){
-    //console.log("give up the set up");
-    //return;
-  }
-
+  console.log("Start to set up notes");
+  console.log("Email", email);
 
   var injectionNode = $(".nH.if"); //hopefully this one is stable
-
   var textAreaNode = $("<textarea></textarea>", {
     "class": "sgn_input",
     "text": "",
@@ -106,36 +92,28 @@ function setupNotes(email, messageId){
     "color": "gray",
     "margin": "5px",
   }).blur(function(){
-    //var gdriveNoteId = $("#sgn_gdrive_note_id").val();
-    //var gdriveFolderId = $("#sgn_gdrive_folder_id").val();
     var content = $(this).val();
-    //console.log("@55", gdriveFolderId, gdriveNoteId);
     if(gPreviousContent != content){
       sendMessage({action:"post_note", email:email, messageId:messageId, 
-            gdriveNoteId:gCurrentGDriveNoteId, gdriveFolderId:gCurrentGDriveFolderId, content:content});
+                   gdriveNoteId:gCurrentGDriveNoteId, 
+                   gdriveFolderId:gCurrentGDriveFolderId, content:content});
     }
-
 	  return true;
 	});
 
   var logoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
-      .html("Simple Gmail Notes connected to Google Drive of '<span class='sgn_user'></span>' " +
-      "(<a class='sgn_logout sgn_action'>Disconnect</a>)")
-      .css({
-      "display":"none",
-      "color": "gray",
-      "margin": "5px"
-      });
-
+      .html("Simple Gmail Notes connected to Google Drive of " +
+              "'<span class='sgn_user'></span>' " +
+              "(<a class='sgn_logout sgn_action'>Disconnect</a>)")
+      .css({"display":"none",
+            "color": "gray",
+            "margin": "5px"});
   var loginPrompt = $("<div class='sgn_prompt_login'/></div>" )
       .html("Please <a class='sgn_login sgn_action'>connect</a> to " +
-        "your Google Drive account to start using Simple Gmail Notes" )
-      .css({
-      "display":"none",
-      "color": "gray",
-      "margin": "5px"
-      });
-
+              "your Google Drive account to start using Simple Gmail Notes" )
+      .css({"display":"none",
+            "color": "gray",
+            "margin": "5px"});
   var emptyPrompt = $("<div class='sgn_padding'>&nbsp;<div>")
                       .css({"margin":"5px"});
   var errorPrompt = $("<div class='sgn_error'><div>")
@@ -144,12 +122,7 @@ function setupNotes(email, messageId){
                           "If error persists after 5 attempts, you may try to manually " +
                           "<a href='https://accounts.google.com/b/0/IssuedAuthSubTokens'>revoke</a> previous tokens.")
                       .css({"margin":"5px", "color":"red", "display":"none"});
-  //var noteIdNode = $("<input type=hidden id='sgn_gdrive_note_id/>");
-  //var folderIdNode = $("<input type=hidden id='sgn_gdrive_folder_id/>");
 
-  //injectionNode.prepend(folderIdNode);
-  //injectionNode.prepend(noteIdNode);
-  //
   $(".sgn_input").remove();
   $(".sgn_prompt_login").remove();
   $(".sgn_prompt_logout").remove();
@@ -160,66 +133,28 @@ function setupNotes(email, messageId){
   injectionNode.prepend(logoutPrompt);
   injectionNode.prepend(emptyPrompt);
 
-  //chrome.runtime.sendMessage({action:"setup_email", email:email},  handleResponse)
-
   $(".sgn_action").css({
     "cursor":"pointer",
     "text-decoration":"underline"
   }).click(function(){
-
     var classList =$(this).attr('class').split(/\s+/);
-
-    console.log("@172", classList);
     $.each(classList, function(index, item){
-        if(item != 'sgn_action'){
-            var action = item.substring(4);   //remove the sgn_ prefix
-            sendMessage({action: action, email: email, messageId:messageId});
-        }
-    });
-    
-  });
-
-  //load initial message
-  console.log("@102");
-  sendMessage({action:"initialize", email: email, messageId:messageId});
-  console.log("@104");
-
-  //auto-save every 5 seconds, change detection is done by backend
-  /*
-  setInterval(function(){
-    if($("#sgn_input").is(":enabled")){
-      chrome.runtime.sendMessage({action:"post_note", email:email}, handleResponse);
-    };
-
-  }, 50000);   
-  */
-}
-
-/*  for messaging between background and content script */
-/*
-$(document).ready(function(){
-  //gmailr by joscha
-  Gmailr.init(function(G) {
-    //set up notes if changed to conversatioview
-    G.observe(G.EVENT_VIEW_CHANGED, function(type){
-      console.log("@2, event triggered: ", type, G.currentView());
-      //console.log("@84, ", G.email());
-      if(type == Gmailr.VIEW_CONVERSATION){
-        setupNotes();
+      if(item != 'sgn_action'){
+          var action = item.substring(4);   //remove the 'sgn_' prefix
+          sendMessage({action: action, email: email, messageId:messageId});
       }
     });
   });
-});
-*/
 
+  //load initial message
+  console.log("Start to initailize");
+  sendMessage({action:"initialize", email: email, messageId:messageId});
+}
 
 function setupListeners(){
   chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-      console.log(sender.tab ?
-        "from a content script:" + sender.tab.url :
-        "from the extension");
-      console.log("@14, handle request", request);
+      console.log("Handle request", request);
       switch(request.action){
         case "disable_edit":
             disableEdit();
@@ -232,7 +167,7 @@ function setupListeners(){
           showLogoutPrompt();
           break;
         case "show_log_in_prompt":
-          console.log("@20, show login");
+          console.log("Show login");
           showLoginPrompt();
           disableEdit();
           break;
@@ -240,8 +175,8 @@ function setupListeners(){
           var errorMessage = request.message;
           console.log("Error in response:", errorMessage);
           var date = new Date();
-          var timestamp = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
-          //alert(errorMessage);
+          var timestamp = date.getHours() + ":" + date.getMinutes() + ":" + 
+                            date.getSeconds();
           $(".sgn_error_timestamp").text("(" +  timestamp + ")");
           $(".sgn_error").show();
           break;
@@ -254,38 +189,15 @@ function setupListeners(){
           showLogoutPrompt(request.email);
 					break;
         case "update_gdrive_note_info":
-          console.log("@166", request.gdriveFolderId, request.gdriveFolderId);
+          console.log("Update google drive note info", 
+                        request.gdriveFolderId, request.gdriveFolderId);
           gCurrentGDriveFolderId = request.gdriveFolderId;
           gCurrentGDriveNoteId = request.gdriveNoteId;
           break;
       }
-
     }
-
   )
 
-    /*
-  window.addEventListener('message', function(event) {
-      console.log('content_script.js got message:', event);
-      // check event.type and event.data
-  });
-  */
-
-  /*
-  document.addEventListener('SGN_background_event', function(e) {
-      var detail = e.detail
-      console.log("@190", detail);
-      //setupNotes(de);
-  });
-  */
-
-  /*
-window.addEventListener('message', function(event) {
-    console.log('content_script.js got message:', event.type, event);
-    // check event.type and event.data
-});
-*/
-  
   // Event listener for page
   document.addEventListener('SGN_setup_notes', function(e) {
       var email = e.detail.email;
@@ -293,17 +205,14 @@ window.addEventListener('message', function(event) {
       
       setupNotes(email, messageId);
   });
-
 }
 
 function sendMessage(object)
 {
-    console.log("@184", chrome.runtime.id);
-      chrome.runtime.sendMessage(object, function(response){
-    console.log("response", response);
+  chrome.runtime.sendMessage(object, function(response){
+    console.log("Message response", response);
   });
 }
-
 
 function setupPage(){
     var j = document.createElement('script');
@@ -317,12 +226,9 @@ function setupPage(){
     var j = document.createElement('script');
     j.src = chrome.extension.getURL('page.js');
     (document.head || document.documentElement).appendChild(j);
-
-
 }
 
 $(document).ready(function(){
-
     setupListeners();
     setupPage();
 });
