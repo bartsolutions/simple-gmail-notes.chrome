@@ -3,7 +3,7 @@
   "name": "Simple Gmail Notes",
   "short_name": "SGNotes",
   "description": "Add notes to email threads in Gmail.",
-  "version": "0.2.0",
+  "version": "0.0.1",
   "icons": { "16": "icon-16.png",
            "48": "icon-48.png",
           "128": "icon-128.png" },
@@ -26,11 +26,11 @@
     "page.js"
   ],
   "background": { 
-      "scripts" : ["lib/jquery-1.11.3.min.js", "background.js"]
+      "scripts" : ["lib/jquery-1.11.3.min.js", "common/background-common.js", "background.js"]
   },
   "content_scripts":  [{
       "matches": [ "https://mail.google.com/*"],
-      "js": [ "lib/jquery-1.11.3.min.js", "content.js"],
+      "js": [ "lib/jquery-1.11.3.min.js", "common/content-common.js", "content.js"],
       "run_at": "document_end"
   }],
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgyUBS53d5P2ograP4JKK656jrrauipHsAdgcTZyL1j5MKBMD4yBmHl9BcmS+sfhmOE5fS38ng7XRZIErp8SrWbJwwstMWx+FTDKlrFS3J5so85CgOpRNge+Ge8UyhxAkPB7zui1AU3wD/XieaGN2L9pmT4MN1u6pPs2Lf/8i96Vp8YjUKaKIWmevKeqsGr1HNHZt41/dcBBIr6vW6OoWlViI1bae+p4Cv6VertdadkuW4hc7z8jVrlC0Lyu43oETmXWflUhw/hCctktI+KwJNk47Pm9vX2Bgw7EdovukrYPV+iNzzE49jirbQkZvMGuNV3fA+NbUwmo7c9dypCAweQIDAQAB"
