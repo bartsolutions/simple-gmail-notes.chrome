@@ -23,7 +23,7 @@
   "web_accessible_resources": [
     "lib/jquery-1.11.3.min.js",
     "lib/gmail.js",
-    "page.js"
+    "common/page.js"
   ],
   "background": { 
       "scripts" : ["lib/jquery-1.11.3.min.js", "common/background-common.js", "background.js"]

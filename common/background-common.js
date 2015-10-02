@@ -81,7 +81,10 @@ postNote = function(sender, messageId, gdriveFolderId, gdriveNoteId, content){
       methodType = "PUT";
     }
 
-    var metadata = { title:messageId, parents:[{"id":gdriveFolderId}] };
+    var noteDescripton = content.substring(0,50);
+
+    var metadata = { title:messageId, parents:[{"id":gdriveFolderId}], 
+                     description: noteDescripton };
     var boundary = "-------314159265358979323846";
     var contentType = "text/plain";
     var delimiter = "\r\n--" + boundary + "\r\n";

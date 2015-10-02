@@ -35,7 +35,7 @@ function setupPage(){
     (document.head || document.documentElement).appendChild(j);
 
     var j = document.createElement('script');
-    j.src = chrome.extension.getURL('page.js');
+    j.src = chrome.extension.getURL('common/page.js');
     (document.head || document.documentElement).appendChild(j);
 }
 
