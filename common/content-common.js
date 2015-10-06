@@ -117,7 +117,7 @@ setupNotes = function(email, messageId){
     "disabled":"disabled"
   }).css({
     "width": "100%", 
-    "height": "50px",
+    "height": "72px",
     "color": "gray",
     "margin": "5px",
   }).blur(function(){
@@ -208,6 +208,10 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
   }
 
   var hasMarkedNote = function(mailNode){
+    return mailNode.find(".sgn").length > 0;
+
+    
+    /*
     var title = getTitleNode(mailNode).text();
     //debugLog("@211", title);
     if(title.indexOf("{")==0 && title.indexOf("}")>0){
@@ -215,12 +219,19 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
     }
 
     return false;
+    */
   }
 
   var markNote = function(mailNode, note){
     //console.log("@51, marking note", mailNode, note);
     var titleNode = getTitleNode(mailNode);
-    titleNode.text("{" + note + "} " + titleNode.text());
+    //titleNode.text("{" + note + "} " + titleNode.text());
+
+    var labelNode = $('<div class="ar as sgn"><div class="at" title="Simple Gmail Notes: ' + note + '" style="background-color: #ddd; border-color: #ddd;">' + 
+                            '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">[' + note.substring(0, 20) + ']</div></div>' + 
+                       '</div></div>');
+
+    titleNode.before(labelNode);
   }
 
   if(pulledNoteList && pulledNoteList.length){
@@ -229,7 +240,7 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
       //if(item.title && item.description){
         //two level pointers to set up the notes
         var emailKey = emailIdKeyDict[item.title];
-        emailKeyNoteDict[emailKey] = item.description.substring(0,20);  //take the first 20 characters for the summary excerpt
+        emailKeyNoteDict[emailKey] = item.description;  //take the first 20 characters for the summary excerpt
         //debugLog("@229", emailKey, emailKeyNoteDict[emailKey]);
       //}
     });
@@ -259,6 +270,11 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
 
 var emailIdKeyDict = {};
 pullNotes = function(userEmail, emailList){
+  if(!gCurrentGDriveFolderId){
+    debugLog("GDrive Folder ID not found, skip note pulling");
+    return;
+  }
+
   var pendingPullList = [];
 
   $.each(emailList, function(index, email){
@@ -338,10 +354,8 @@ setupListeners = function(){
           break;
         case "update_summary":
           debugLog("update summary from background call");
-          setTimeout(function(){
-            var noteList = request.noteList;
-            updateNotesOnSummary(request.email, noteList);
-          }, 1000);
+          var noteList = request.noteList;
+          updateNotesOnSummary(request.email, noteList);
           break;
         case "revoke_summary_note":
           debugLog("trying to revoke summary note", request);

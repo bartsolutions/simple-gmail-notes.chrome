@@ -131,6 +131,39 @@ var pullAndUpdateEmailSummaryNote = function(){
 }
 */
 
+var pullNotes = function(){
+  if(!SHOW_NOTE_ON_SUMMARY){
+    return;
+  }
+
+  if(!$("tr.zA").length || gmail.check.is_inside_email()){
+    return;
+  }
+  console.log("simple-gmail-notes: pull notes");
+
+  console.log("@119 start to set up summary page");
+
+  //skip the update if windows location (esp. hash part) is not changed
+  var currentURL = $(location).attr("href");
+  //always pull
+  if(true || currentURL != previousURL){
+    console.log("@125, pull and update");
+
+    gmail.get.visible_emails_async(function(emailList){
+      sendMessage("SGN_pull_notes", 
+                  {email: gmail.get.user_email(), emailList:emailList});
+    });
+
+    //pullAndUpdateEmailSummaryNote();
+    previousURL = currentURL;
+  }
+  else{
+    console.log("@130, update");
+    //updateEmailSummaryNote();
+    sendMessage("SGN_update_summary");
+  }
+}
+
 var main = function(){
   gmail = new Gmail();
 
@@ -148,43 +181,30 @@ var main = function(){
     console.log("simple-gmail-notes: view thread event");
   });
 
-
-
   gmail.observe.on('http_event', function(obj){
-    if(!SHOW_NOTE_ON_SUMMARY){
-      return;
-    }
-
-    if(!$("tr.zA").length || gmail.check.is_inside_email()){
-      return;
-    }
-    console.log("simple-gmail-notes: http_event");
-
-    console.log("@119 start to set up summary page");
-
-    //skip the update if windows location (esp. hash part) is not changed
-    var currentURL = $(location).attr("href");
-    //always pull
-    if(true || currentURL != previousURL){
-      console.log("@125, pull and update");
-
-      gmail.get.visible_emails_async(function(emailList){
-        sendMessage("SGN_pull_notes", 
-                    {email: gmail.get.user_email(), emailList:emailList});
-      });
-
-      //pullAndUpdateEmailSummaryNote();
-      previousURL = currentURL;
-    }
-    else{
-      console.log("@130, update");
-      //updateEmailSummaryNote();
-      sendMessage("SGN_update_summary");
-    }
-
-
-
+    console.log("@186", obj.url_raw);
+    pullNotes();
   }); //end of observer
+
+  /*
+  MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+
+  var observer = new MutationObserver(function(mutations, observer) {
+      // fired when a mutation occurs
+      console.log(mutations, observer);
+      //pullNotes();
+  });
+
+  // define what element should be observed by the observer
+  // and what types of mutations trigger the callback
+  
+  observer.observe(document, {
+    subtree: true,
+    attributes: true
+    //...
+  });
+  */
+  
 
 }
 

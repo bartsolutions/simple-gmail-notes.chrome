@@ -191,6 +191,14 @@ updateUserInfo = function(sender){
 }
 
 executeIfValidToken = function(sender, command){
+  if(!getStorage(sender, "access_token") && 
+     !getStorage(sender, "refresh_token")){  //if acccess token not found
+      
+    debugLog("@197, no token found, skip the verification");
+    showRefreshTokenError(sender, "No token found.");
+    return;
+  }
+
   sendAjax({
     url:"https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=" + 
           getStorage(sender, "access_token"),
@@ -423,7 +431,9 @@ initialize = function(sender, messageId){
 pullNotes = function(sender, pendingPullList){
   if(pendingPullList.length == 0){
     debugLog("Empty id list found, skipped request");
-    sendMessage(sender, {action:"update_summary"})
+    setTimeout(function(){
+      sendMessage(sender, {action:"update_summary"})
+    }, 500);
     return;
   }
 
@@ -458,7 +468,6 @@ pullNotes = function(sender, pendingPullList){
 
         result.push({"title":title, "description":description});
       }
-
 
       sendMessage(sender, {action:"update_summary", noteList:result})
     },
