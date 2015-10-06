@@ -429,6 +429,8 @@ setupListeners = function(sender, request){
     case "initialize":
       initialize(sender, request.messageId);
       break;
+    case "search":
+      search(sender, pullList);
     default:
       debugLog("unknown request to background", request);
       break;

@@ -6,7 +6,7 @@
 
 var gmail;
 
-function refresh(f) {
+var refresh = function(f) {
   if( (/in/.test(document.readyState)) || (undefined === window.Gmail) ) {
     setTimeout('refresh(' + f + ')', 10);
   } else {
@@ -14,26 +14,33 @@ function refresh(f) {
   }
 }
 
-function setupNotes(){
+var sendMessage = function(eventName, eventDetail){
+  if(eventDetail == undefined){
+    eventDetail = {}
+  }
+
+  eventDetail.email = gmail.get.user_email();
+  document.dispatchEvent(new CustomEvent(eventName,  
+                                         {detail: eventDetail}
+  ));
+}
+
+var setupNotes = function(){
   setTimeout(function(){
     var currentPageMessageId = gmail.get.email_id();
 
     if(!currentPageMessageId)  //do nothing
         return;
    
-    document.dispatchEvent(new CustomEvent('SGN_setup_notes', {
-       detail: {email: gmail.get.user_email(), 
-                messageId:currentPageMessageId}}
-    ));
-
+    sendMessage('SGN_setup_notes', {messageId:currentPageMessageId})
   }, 0);
 }
 
-//for note display on summary page
-var emailInfoDict = {};
+
 var previousURL = "";
 var SHOW_NOTE_ON_SUMMARY = true;
 
+/*
 var getTitleNode = function(mailNode){
   return $(mailNode).find(".xT .y6").find("span").first();
 }
@@ -66,9 +73,9 @@ var getEmailNote = function(mailNode){
   var time = mailNode.find(".xW").find("span").last().attr("title");
   var emailKey = title + "|" + sender + "|" + time;
 
-  var note = emailInfoDict[emailKey];
+  var note = emailKeyNoteDict[emailKey];
   //console.log("@62", emailKey);
-  //console.log("@62", emailInfoDict);
+  //console.log("@62", emailKeyNoteDict);
   return note;
 }
 
@@ -78,7 +85,7 @@ var updateEmailSummaryNote = function(){
   $("tr.zA").each(function(){
     if(!hasMarkedNote($(this))){  //already marked
       var emailNote = getEmailNote($(this));
-      //console.log("@74, trying to mark", emailInfoDict, emailNote);
+      //console.log("@74, trying to mark", emailKeyNoteDict, emailNote);
       if(emailNote){
         markNote($(this), emailNote);
       }
@@ -86,25 +93,43 @@ var updateEmailSummaryNote = function(){
   });
 }
 
+var pullNotes = function(pendingPullList){
+  //build query
+
+}
+
 var pullAndUpdateEmailSummaryNote = function(){
   gmail.get.visible_emails_async(function(emailList){
+    sendMessage("SGN_pull_notes", {emailList: emailList);
+
+    var pendingPullList = [];
+
     $.each(emailList, function(index, email){
       if(!email.sender){
         email.sender = gmail.get.user_email();
       }
         
       emailKey = email.title + "|" + email.sender + "|" + email.time;
-      emailKey = $("<div/>").html(emailKey).text()
-      //console.log("@83", emailKey);
-      //get email via ID in future
-      emailInfoDict[emailKey] = "walty note test 12";
+
+      //if not yet pulled before
+      if(emailIdKeyDict[email.id] == undefined){
+        pendingPullList.append(email.id);
+
+        emailKey = $("<div/>").html(emailKey).text()
+        emailIdKeyDict[email.id] = emailKey;
+      }
+
+      pullNotes(pendingPullList);
+      //hardcode for testing
+      //emailKeyNoteDict[emailKey] = "walty note test 12";
     });
     
-    console.log("@106, dict size", Object.keys(emailInfoDict).length);
-    updateEmailSummaryNote();
+    //console.log("@106, dict size", Object.keys(emailKeyNoteDict).length);
+    //updateEmailSummaryNote();
   });
 
 }
+*/
 
 var main = function(){
   gmail = new Gmail();
@@ -141,12 +166,19 @@ var main = function(){
     var currentURL = $(location).attr("href");
     if(currentURL != previousURL){
       console.log("@125, pull and update");
-      pullAndUpdateEmailSummaryNote();
+
+      gmail.get.visible_emails_async(function(emailList){
+        sendMessage("SGN_pull_notes", 
+                    {email: gmail.get.user_email(), emailList:emailList});
+      });
+
+      //pullAndUpdateEmailSummaryNote();
       previousURL = currentURL;
     }
     else{
       console.log("@130, update");
-      updateEmailSummaryNote();
+      //updateEmailSummaryNote();
+      sendMessage("SGN_update_summary");
     }
 
 
