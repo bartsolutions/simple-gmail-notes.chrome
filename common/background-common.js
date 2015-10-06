@@ -320,11 +320,9 @@ setupNotesFolder = function(sender){
 
 }
 
-//list the files created by this app only (as restricted by permission)
-searchNote = function(sender, messageId){
+gdriveQuery = function(sender, query, success_cb, error_cb){
+
   executeIfValidToken(sender, function(data){
-    var query = "title = '" + settings.NOTE_FOLDER_NAME + "' or " +
-                  "title = '" + messageId + "'";
     query = encodeURIComponent(query);
     debugLog("Search message by query:", query);
     sendAjax({
@@ -335,59 +333,71 @@ searchNote = function(sender, messageId){
           "Authorization": "Bearer " + getStorage(sender, "access_token")
       },
       url: "https://www.googleapis.com/drive/v2/files?q=" + query,
-      success: function(data){
-        debugLog("Query result:", data);
-        var gdriveFolderId = "";
-        var gdriveNoteId = "";
+      success:function(data){success_cb(data)},
+      error:function(data){error_cb(data)}
+    });
+  })
 
-        //first pass, get folder id for gmail notes
+
+}
+
+//list the files created by this app only (as restricted by permission)
+searchNote = function(sender, messageId){
+  var query = "title = '" + settings.NOTE_FOLDER_NAME + "' or " +
+                "title = '" + messageId + "'";
+  gdriveQuery(sender, query, 
+    function(data){ //success callback
+      debugLog("Query result:", data);
+      var gdriveFolderId = "";
+      var gdriveNoteId = "";
+
+      //first pass, get folder id for gmail notes
+      for(var i=0; i<data.items.length; i++){
+        var currentItem = data.items[i];
+        if(currentItem.title == settings.NOTE_FOLDER_NAME
+            && currentItem.parents[0].isRoot){
+          //found the root folder
+          gdriveFolderId = currentItem.id;
+          break;
+        }
+      }
+
+      if(!gdriveFolderId){
+        setupNotesFolder(sender);
+      }
+      else{
+        //second pass find the document
+        debugLog("Searching message", messageId);
         for(var i=0; i<data.items.length; i++){
           var currentItem = data.items[i];
-          if(currentItem.title == settings.NOTE_FOLDER_NAME
-              && currentItem.parents[0].isRoot){
-            //found the root folder
-            gdriveFolderId = currentItem.id;
+          if(currentItem.title == messageId && 
+              currentItem.parents[0].id == gdriveFolderId){
+            gdriveNoteId = currentItem.id;
             break;
           }
         }
 
-        if(!gdriveFolderId){
-          setupNotesFolder(sender);
+        debugLog("Google Drive Folder ID found", gdriveNoteId);
+//
+        sendMessage(sender, {action:"update_gdrive_note_info", 
+                             gdriveNoteId:gdriveNoteId, 
+                             gdriveFolderId:gdriveFolderId});
+
+        if(gdriveNoteId){
+          loadMessage(sender, gdriveNoteId);
         }
-        else{
-          //second pass find the document
-          debugLog("Searching message", messageId);
-          for(var i=0; i<data.items.length; i++){
-            var currentItem = data.items[i];
-            if(currentItem.title == messageId && 
-                currentItem.parents[0].id == gdriveFolderId){
-              gdriveNoteId = currentItem.id;
-              break;
-            }
-          }
-
-          debugLog("Google Drive Folder ID found", gdriveNoteId);
-
-          sendMessage(sender, {action:"update_gdrive_note_info", 
-                               gdriveNoteId:gdriveNoteId, 
-                               gdriveFolderId:gdriveFolderId});
-
-          if(gdriveNoteId){
-            loadMessage(sender, gdriveNoteId);
-          }
-          else{//ready for write new message
-            sendMessage(sender, {
-                action:"enable_edit", 
-                gdriveEmail:getStorage(sender, "gdrive_email")
-            });
-          }
+        else{//ready for write new message
+          sendMessage(sender, {
+              action:"enable_edit", 
+              gdriveEmail:getStorage(sender, "gdrive_email")
+          });
         }
-      },
-      error:function(data){
-        showRefreshTokenError(sender, JSON.stringify(data));
       }
-    });
-  });
+    },
+    function(data){ //error callback
+      showRefreshTokenError(sender, JSON.stringify(data));
+    }
+  );
 }
 
 //Do as much initilization as possible, while not trigger login page
@@ -410,6 +420,54 @@ initialize = function(sender, messageId){
 }
 
 
+pullNotes = function(sender, pendingPullList){
+  if(pendingPullList.length == 0){
+    debugLog("Empty id list found, skipped request");
+    sendMessage(sender, {action:"update_summary"})
+    return;
+  }
+
+  debugLog("@414", pendingPullList);
+  var query = "1=1";
+  $.each(pendingPullList, function(index, messageId){
+    query += " or title='" + messageId + "'"
+  });
+
+  query = query.replace("1=1 or", "");  //remove the heading string
+
+  debugLog("@431, query", query);
+
+  gdriveQuery(sender, query,
+    function(data){ //success callback
+      debugLog("@433, query succeed", data);
+      var result = [];
+      var itemDict = {};
+
+      $.each(data.items, function(index, emailItem){
+        if(emailItem.description){
+          itemDict[emailItem.title] = emailItem.description;
+        }
+      });
+
+      for(var i=0; i<pendingPullList.length; i++){
+        var title = pendingPullList[i];
+        var description = ""; //empty string for not found
+        if(itemDict[title]){
+          description = itemDict[title];
+        }
+
+        result.push({"title":title, "description":description});
+      }
+
+
+      sendMessage(sender, {action:"update_summary", noteList:result})
+    },
+    function(data){ //error callback
+      debugLog("@439, query failed", data);
+    }
+  );
+}
+
 //For messaging between background and content script
 setupListeners = function(sender, request){
   debugLog("Request body:", request);
@@ -425,12 +483,14 @@ setupListeners = function(sender, request){
       postNote(sender, request.messageId, 
                  request.gdriveFolderId, request.gdriveNoteId, 
                  request.content);
+      sendMessage(sender, {action:"revoke_summary_note", messageId: request.messageId});
       break;
     case "initialize":
       initialize(sender, request.messageId);
       break;
-    case "search":
-      search(sender, pullList);
+    case "pull_notes":
+      pullNotes(sender, request.pendingPullList);
+      break;
     default:
       debugLog("unknown request to background", request);
       break;

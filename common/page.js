@@ -164,7 +164,8 @@ var main = function(){
 
     //skip the update if windows location (esp. hash part) is not changed
     var currentURL = $(location).attr("href");
-    if(currentURL != previousURL){
+    //always pull
+    if(true || currentURL != previousURL){
       console.log("@125, pull and update");
 
       gmail.get.visible_emails_async(function(emailList){

@@ -183,31 +183,33 @@ setupNotes = function(email, messageId){
 
 
 var emailKeyNoteDict = {};
-var updateNotesOnSummary = function(email){
+updateNotesOnSummary = function(userEmail, pulledNoteList){
+  //debugLog("@187, pulled note list", pulledNoteList);
+
   var getTitleNode = function(mailNode){
     return $(mailNode).find(".xT .y6").find("span").first();
   }
 
-  var getEmailNote = function(mailNode){
+  var getEmailKey = function(mailNode){
     var titleNode = getTitleNode(mailNode);
     var title = titleNode.text();
     var sender = mailNode.find(".yW .yP").attr("email");
 
     if($(location).attr("href").indexOf("#sent") > 0){
-      sender = email;
+      sender = userEmail;
     }
 
     var time = mailNode.find(".xW").find("span").last().attr("title");
     var emailKey = title + "|" + sender + "|" + time;
 
-    var note = emailKeyNoteDict[emailKey];
-    //console.log("@62", emailKey);
+    //console.log("@62", emailKey, note);
     //console.log("@62", emailKeyNoteDict);
-    return note;
+    return emailKey;
   }
 
   var hasMarkedNote = function(mailNode){
     var title = getTitleNode(mailNode).text();
+    //debugLog("@211", title);
     if(title.indexOf("{")==0 && title.indexOf("}")>0){
       return true;
     }
@@ -216,48 +218,74 @@ var updateNotesOnSummary = function(email){
   }
 
   var markNote = function(mailNode, note){
-    console.log("@51, marking note", mailNode, note);
+    //console.log("@51, marking note", mailNode, note);
     var titleNode = getTitleNode(mailNode);
     titleNode.text("{" + note + "} " + titleNode.text());
   }
 
+  if(pulledNoteList && pulledNoteList.length){
+    $.each(pulledNoteList, function(index, item){
+      debugLog("updated summary from pulled note:", item.title, item.description);
+      //if(item.title && item.description){
+        //two level pointers to set up the notes
+        var emailKey = emailIdKeyDict[item.title];
+        emailKeyNoteDict[emailKey] = item.description.substring(0,20);  //take the first 20 characters for the summary excerpt
+        //debugLog("@229", emailKey, emailKeyNoteDict[emailKey]);
+      //}
+    });
+
+  }
+
   //loop for each email tr
   $("tr.zA").each(function(){
+    var emailKey = getEmailKey($(this));
+    //debugLog("@240", emailKey);
     if(!hasMarkedNote($(this))){  //already marked
-      var emailNote = getEmailNote($(this));
-      //console.log("@74, trying to mark", emailKeyNoteDict, emailNote);
+      var emailNote = emailKeyNoteDict[emailKey];
+      //var emailNote = getEmailNote($(this));
       if(emailNote){
+        //console.log("@74, trying to mark", emailKeyNoteDict, emailNote);
         markNote($(this), emailNote);
       }
+      else{
+     //   debugLog("skipped mark because note not exists:", emailKey);
+      }
+    }
+    else{
+      //debugLog("skipped mark because already marked:", emailKey);
     }
   });
 }
 
 var emailIdKeyDict = {};
-var pullNotes = function(email, emailList){
+pullNotes = function(userEmail, emailList){
   var pendingPullList = [];
 
   $.each(emailList, function(index, email){
     if(!email.sender){
-      email.sender = email;
+      email.sender = userEmail;
     }
 
     emailKey = email.title + "|" + email.sender + "|" + email.time;
+    //remove html tag
+    emailKey = $("<div/>").html(emailKey).text();
 
     //if not yet pulled before
-    if(emailIdKeyDict[email.id] == undefined){
+    if(emailKeyNoteDict[emailKey] == undefined){
+
       pendingPullList.push(email.id);
-
-      emailKey = $("<div/>").html(emailKey).text()
       emailIdKeyDict[email.id] = emailKey;
-    }
-      
 
-    //hardcode for testing
-    emailKeyNoteDict[emailKey] = "walty note test 123";
+      //emailKeyNoteDict[emailKey] = "walty note test 123";
+    }
+    else{
+      //debugLog("skipped pulling ", emailKey, " because already exists:", 
+                //emailKeyNoteDict[emailKey]);
+    }
   });
 
-  sendMessage({action:'pull_notes', email:email, 
+  //batch pull logic here
+  sendMessage({action:'pull_notes', email:userEmail, 
                pendingPullList:pendingPullList});
 
 }
@@ -310,8 +338,21 @@ setupListeners = function(){
           break;
         case "update_summary":
           debugLog("update summary from background call");
-          updateNotesOnSummary();
+          setTimeout(function(){
+            var noteList = request.noteList;
+            updateNotesOnSummary(request.email, noteList);
+          }, 1000);
           break;
+        case "revoke_summary_note":
+          debugLog("trying to revoke summary note", request);
+          var emailId = request.messageId;
+          var emailKey = emailIdKeyDict[emailId];
+
+          //remove the two items, so the new notes would be collected next time
+          delete emailKeyNoteDict[emailKey];
+          delete emailIdKeyDict[emailId];
+          break;
+
         default:
           debugLog("unknown background request", request);
     }
@@ -330,13 +371,18 @@ setupListeners = function(){
     var email = e.detail.email;
     var emailList = e.detail.emailList;
     pullNotes(email, emailList);
+    //updateNotesOnSummary(email);  //should be called by backgrond page later
   });
 
+  /*
   document.addEventListener('SGN_update_summary', function(e) {
     debugLog("@338, requested to update summary");
     var email = e.detail.email;
-    updateNotesOnSummary(email);
+    setTimeout(function(){
+      updateNotesOnSummary(email);
+    }, 1000);
   });
+  */
 }
 
 debugLog("Finished background script (common)");
