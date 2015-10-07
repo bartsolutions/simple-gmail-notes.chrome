@@ -27,8 +27,8 @@ getRawStorageObject = function(){
   throw "getRawStorageObject not implementd";
 }
 
-sendMessage = function(sender, message) {
-  throw "sendMessage not implemented";
+sendContentMessage = function(sender, message) {
+  throw "sendContentMessage not implemented";
 }
 
 sendAjax = function(config) {
@@ -138,7 +138,7 @@ postNote = function(sender, messageId, gdriveFolderId, gdriveNoteId, content){
         debugLog("message posted successfully");
       },
       error: function(data){
-        sendMessage(sender, {action:"show_error", 
+        sendContentMessage(sender, {action:"show_error", 
                               message:"Faild post message, error: " + 
                               JSON.stringify(data)});
       }
@@ -154,7 +154,7 @@ showRefreshTokenError = function(sender, error){
                     "If error persists, you may manually " +
                     "<a href='https://accounts.google.com/b/0/IssuedAuthSubTokens'>revoke</a> " +
                     "previous tokens.\n"
-  sendMessage(sender, {action:"show_error", message: errorMessage});
+  sendContentMessage(sender, {action:"show_error", message: errorMessage});
 }
 
 updateRefreshTokenFromCode = function(sender, messageId){
@@ -192,7 +192,7 @@ updateRefreshTokenFromCode = function(sender, messageId){
 
 updateUserInfo = function(sender){
   if(getStorage(sender, "gdrive_email")){
-    sendMessage(sender, {action:"update_user", 
+    sendContentMessage(sender, {action:"update_user", 
                          email:getStorage(sender, "gdrive_email")});
     return;
   }
@@ -203,11 +203,11 @@ updateUserInfo = function(sender){
         getStorage(sender, "access_token"),
       success:function(data){
         setStorage(sender, "gdrive_email", data.user.emailAddress);
-        sendMessage(sender, {action:"update_user", 
+        sendContentMessage(sender, {action:"update_user", 
                              email:data.user.emailAddress})
       },
       error:function(){
-        sendMessage(sender, {action:"show_error", 
+        sendContentMessage(sender, {action:"show_error", 
                              message: "Failed to get Google Drive User"});
       }
     });
@@ -261,9 +261,9 @@ loginGoogleDrive = function(sender, messageId){
   launchAuthorizer(sender, function(code) {
       debugLog("Code collected", code);
       if(!code){
-        sendMessage(sender, {action:"show_log_in_prompt"});
-        sendMessage(sender, {action:"disable_edit"});
-        sendMessage(sender, {action:"show_error", 
+        sendContentMessage(sender, {action:"show_log_in_prompt"});
+        sendContentMessage(sender, {action:"disable_edit"});
+        sendContentMessage(sender, {action:"show_error", 
             message:"Failed to login Google Drive."});
       }
       else{
@@ -294,8 +294,8 @@ logoutGoogleDrive = function(sender){
         setStorage(sender, "access_token", "");
         setStorage(sender, "refresh_token", "");
         setStorage(sender, "gdrive_email", "");
-        sendMessage(sender, {action:"show_log_in_prompt"});
-        sendMessage(sender, {action:"disable_edit"});
+        sendContentMessage(sender, {action:"show_log_in_prompt"});
+        sendContentMessage(sender, {action:"disable_edit"});
       }
     });
   }
@@ -311,12 +311,12 @@ loadMessage = function(sender, gdriveNoteId){
           gdriveNoteId + "?alt=media",
     success: function(data) {
       debugLog("Loaded message", data);
-      sendMessage(sender, {action:"update_content", content:data});
-      sendMessage(sender, {action:"enable_edit", 
+      sendContentMessage(sender, {action:"update_content", content:data});
+      sendContentMessage(sender, {action:"enable_edit", 
                            gdriveEmail:getStorage(sender, "gdrive_email")});  
     },
     error: function(data){
-      sendMessage(sender, {action:"show_error", 
+      sendContentMessage(sender, {action:"show_error", 
                            message:"Faild load message, error: " + 
                                     JSON.stringify(data)});
     }
@@ -340,11 +340,11 @@ setupNotesFolder = function(sender){
         url: "https://www.googleapis.com/drive/v2/files",
        success: function(data){
          var gdriveFolderId = data.id;
-         sendMessage(sender, {action:"update_gdrive_note_info", 
+         sendContentMessage(sender, {action:"update_gdrive_note_info", 
                               gdriveNoteId:"", 
                               gdriveFolderId:gdriveFolderId});
          //ready for write new message
-         sendMessage(sender, {action:"enable_edit", 
+         sendContentMessage(sender, {action:"enable_edit", 
                               email:getStorage(sender, "gdrive_email")}); 
          debugLog("Data loaded:", data);
        }
@@ -411,7 +411,7 @@ searchNote = function(sender, messageId){
 
         debugLog("Google Drive Folder ID found", gdriveNoteId);
 //
-        sendMessage(sender, {action:"update_gdrive_note_info", 
+        sendContentMessage(sender, {action:"update_gdrive_note_info", 
                              gdriveNoteId:gdriveNoteId, 
                              gdriveFolderId:gdriveFolderId});
 
@@ -419,7 +419,7 @@ searchNote = function(sender, messageId){
           loadMessage(sender, gdriveNoteId);
         }
         else{//ready for write new message
-          sendMessage(sender, {
+          sendContentMessage(sender, {
               action:"enable_edit", 
               gdriveEmail:getStorage(sender, "gdrive_email")
           });
@@ -446,8 +446,8 @@ initialize = function(sender, messageId){
     if(getStorage(sender, "access_token")){
       logoutGoogleDrive(sender);
     }
-    sendMessage(sender, {action:"show_log_in_prompt"});
-    sendMessage(sender, {action:"disable_edit"});
+    sendContentMessage(sender, {action:"show_log_in_prompt"});
+    sendContentMessage(sender, {action:"disable_edit"});
   }
 }
 
@@ -471,7 +471,7 @@ sendSummaryNotes = function(sender, pullList, resultList){
     result.push({"title":title, "description":description});
   }
 
-  sendMessage(sender, {email:getStorage(sender, "gdrive_email"), 
+  sendContentMessage(sender, {email:getStorage(sender, "gdrive_email"), 
                        action:"update_summary", noteList:result});
 }
 
@@ -520,7 +520,7 @@ setupListeners = function(sender, request){
       postNote(sender, request.messageId, 
                  request.gdriveFolderId, request.gdriveNoteId, 
                  request.content);
-      sendMessage(sender, {action:"revoke_summary_note", messageId: request.messageId});
+      sendContentMessage(sender, {action:"revoke_summary_note", messageId: request.messageId});
       break;
     case "initialize":
       initialize(sender, request.messageId);

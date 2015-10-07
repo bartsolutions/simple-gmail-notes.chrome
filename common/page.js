@@ -14,7 +14,7 @@ var refresh = function(f) {
   }
 }
 
-var sendMessage = function(eventName, eventDetail){
+var sendEventMessage = function(eventName, eventDetail){
   if(eventDetail == undefined){
     eventDetail = {}
   }
@@ -32,7 +32,7 @@ var setupNotes = function(){
     if(!currentPageMessageId)  //do nothing
         return;
    
-    sendMessage('SGN_setup_notes', {messageId:currentPageMessageId});
+    sendEventMessage('SGN_setup_notes', {messageId:currentPageMessageId});
   }, 0);
 }
 
@@ -54,8 +54,6 @@ var pullNotes = function(){
     return;
   }
 
-  if(isPulling)
-    return;
 
   if(!$("tr.zA").length || gmail.check.is_inside_email()){
     return;
@@ -63,12 +61,21 @@ var pullNotes = function(){
 
   //skip multiple trigger of same page
 
+  /*
   var currentDOMSignature = getDOMSignature();
   if(previousDOMSignature == currentDOMSignature){
-    console.log("@59, skipped pulling because DOM not changed");
+    console.log("@59, skipped pulling because DOM not changed", previousDOMSignature.substring(0,50));
     return;
   }
-  //previousDOMSignature = currentDOMSignature;
+  previousDOMSignature = currentDOMSignature;
+  */
+
+
+  if($("tr.zA:visible").find(".sgn").length){
+    console.log("@72, skipped pulling because the page is already processed");
+    return;
+  }
+
   //if($("tr.zA").find(".sgn").length){
     //console.log("@73, already marked,skipped update");
     //return;
@@ -76,10 +83,12 @@ var pullNotes = function(){
     
 
   //avoid crazy pulling in case of multiple network requests
+  if(isPulling)
+    return;
   isPulling = true;
   setTimeout(function(){
     window.isPulling = false;
-  }, 3000);
+  }, 1000);
 
   console.log("simple-gmail-notes: pull notes");
   console.log("@119 start to set up summary page");
@@ -88,7 +97,7 @@ var pullNotes = function(){
   gmail.get.visible_emails_async(function(emailList){
     console.log("[page.js]sending email for puall request, total count:", 
                 emailList.length);
-    sendMessage("SGN_pull_notes", 
+    sendEventMessage("SGN_pull_notes", 
                 {email: gmail.get.user_email(), emailList:emailList});
   });
 
@@ -112,12 +121,10 @@ var main = function(){
     console.log("simple-gmail-notes: view thread event");
   });
 
-  gmail.observe.on('http_event', function(obj){
+  gmail.observe.after('http_event', function(obj){
     //console.log("simple-gmail-notes: http event");
     //console.log("@186", obj.url_raw);
-    setTimeout(function(){
-      pullNotes();
-    }, 500);
+    pullNotes();
   }); //end of observer
 
   gmail.observe.on('toggle_threads', function(obj){
@@ -146,8 +153,7 @@ attributes: true
 
   document.addEventListener('SGN_update_DOM_cache', function(e) {
     console.log("@138, requested to update DOM");
-    //previousDOMSignature = getDOMSignature();
-    //updateNotesOnSummary(email);  //should be called by backgrond page later
+    previousDOMSignature = getDOMSignature();
   });
 
 }

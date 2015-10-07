@@ -8,7 +8,7 @@ if(chrome.runtime.getManifest().version != "0.0.1"){
 }
 
 /*** call back implementation for content-common.js ***/
-sendMessage = function(message) {
+sendBackgroundMessage = function(message) {
   chrome.runtime.sendMessage(message, function(response){
     debugLog("Message response", response);
   });

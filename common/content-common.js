@@ -16,8 +16,8 @@ var settings = {
  * Callback declarations
  * The follow functions must be implemented
  */
-sendMessage = function(messge) {
-  throw "sendMessage not implemented";
+sendBackgroundMessage = function(messge) {
+  throw "sendBackgroundMessage not implemented";
 }
 
 setupBackgroundEventsListener = function(callback) {
@@ -27,6 +27,14 @@ setupBackgroundEventsListener = function(callback) {
 /*
  * Callback utilities
  */
+var sendEventMessage = function(eventName, eventDetail){
+  if(eventDetail == undefined){
+    eventDetail = {}
+  }
+
+  document.dispatchEvent(new CustomEvent(eventName,  {}));
+}
+
 debugLog = function()
 {
   if (settings.DEBUG) {
@@ -123,7 +131,7 @@ setupNotes = function(email, messageId){
   }).blur(function(){
     var content = $(this).val();
     if(gPreviousContent != content){
-      sendMessage({action:"post_note", email:email, messageId:messageId, 
+      sendBackgroundMessage({action:"post_note", email:email, messageId:messageId, 
                    gdriveNoteId:gCurrentGDriveNoteId, 
                    gdriveFolderId:gCurrentGDriveFolderId, content:content});
     }
@@ -170,20 +178,20 @@ setupNotes = function(email, messageId){
     $.each(classList, function(index, item){
       if(item != 'sgn_action'){
           var action = item.substring(4);   //remove the 'sgn_' prefix
-          sendMessage({action: action, email: email, messageId:messageId});
+          sendBackgroundMessage({action: action, email: email, messageId:messageId});
       }
     });
   });
 
   //load initial message
   debugLog("Start to initailize");
-  sendMessage({action:"initialize", email: email, messageId:messageId});
+  sendBackgroundMessage({action:"initialize", email: email, messageId:messageId});
 }
 
 
 
 var emailKeyNoteDict = {};
-updateNotesOnSummary = function(userEmail, pulledNoteList){
+_updateNotesOnSummary = function(userEmail, pulledNoteList){
   //debugLog("@187, pulled note list", pulledNoteList);
 
   var getTitleNode = function(mailNode){
@@ -264,7 +272,13 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
     }
   });
 
-  document.dispatchEvent(new CustomEvent("SGN_update_dom_cache", {}));
+  sendEventMessage("SGN_update_dom_cache");
+}
+
+updateNotesOnSummary = function(userEmail, pulledNoteList){
+  setTimeout(function(){
+    _updateNotesOnSummary(userEmail, pulledNoteList);
+  }, 300);  //have to do this after the work of gmail
 }
 
 var emailIdKeyDict = {};
@@ -301,12 +315,12 @@ pullNotes = function(userEmail, emailList){
 
   //batch pull logic here
   if(pendingPullList.length){
-    sendMessage({action:'pull_notes', email:userEmail, 
+    sendBackgroundMessage({action:'pull_notes', email:userEmail, 
                  pendingPullList:pendingPullList});
   }
   else{
     debugLog("no pending item, skipped the pull");
-    updateNotesOnSummary(userEmail, []);
+    updateNotesOnSummary(userEmail, [])
   }
 
 }

@@ -14,7 +14,7 @@ getRawStorageObject = function(){
   return localStorage;
 }
 
-sendMessage = function(sender, message) {
+sendContentMessage = function(sender, message) {
   chrome.tabs.sendMessage(sender.worker.tab.id, message, function(response) {
     debugLog("Message response:", response);
   });
