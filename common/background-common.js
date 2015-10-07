@@ -451,8 +451,39 @@ initialize = function(sender, messageId){
   }
 }
 
+sendSummaryNotes = function(sender, pullList, resultList){
+  var result = [];
+  var itemDict = {};
+  $.each(resultList, function(index, emailItem){
+    if(emailItem.description){
+      itemDict[emailItem.title] = emailItem.description;
+    }
+  });
+
+
+  for(var i=0; i<pullList.length; i++){
+    var title = pullList[i];
+    var description = ""; //empty string for not found
+    if(itemDict[title]){
+      description = itemDict[title];
+    }
+
+    result.push({"title":title, "description":description});
+  }
+
+  sendMessage(sender, {email:getStorage(sender, "gdrive_email"), 
+                       action:"update_summary", noteList:result});
+}
 
 pullNotes = function(sender, pendingPullList){
+  var hideListingNotes = getSettingHideListingNotes();
+
+  if(hideListingNotes){
+    debugLog("@482, skipped pulling because settings -> hide listing notes");
+    sendSummaryNotes(sender, pendingPullList, []);  //send an empty result
+    return;
+  }
+
   debugLog("@414", pendingPullList);
   var query = "1=1";
   $.each(pendingPullList, function(index, messageId){
@@ -466,26 +497,7 @@ pullNotes = function(sender, pendingPullList){
   gdriveQuery(sender, query,
     function(data){ //success callback
       debugLog("@433, query succeed", data);
-      var result = [];
-      var itemDict = {};
-
-      $.each(data.items, function(index, emailItem){
-        if(emailItem.description){
-          itemDict[emailItem.title] = emailItem.description;
-        }
-      });
-
-      for(var i=0; i<pendingPullList.length; i++){
-        var title = pendingPullList[i];
-        var description = ""; //empty string for not found
-        if(itemDict[title]){
-          description = itemDict[title];
-        }
-
-        result.push({"title":title, "description":description});
-      }
-
-      sendMessage(sender, {email:getStorage(sender, "gdrive_email"), action:"update_summary", noteList:result})
+      sendSummaryNotes(sender, pendingPullList, data.items);
     },
     function(data){ //error callback
       debugLog("@439, query failed", data);
