@@ -226,10 +226,16 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
     //console.log("@51, marking note", mailNode, note);
     var titleNode = getTitleNode(mailNode);
     //titleNode.text("{" + note + "} " + titleNode.text());
+    var labelNode;
 
-    var labelNode = $('<div class="ar as sgn"><div class="at" title="Simple Gmail Notes: ' + note + '" style="background-color: #ddd; border-color: #ddd;">' + 
+    if(note){
+      labelNode = $('<div class="ar as sgn"><div class="at" title="Simple Gmail Notes: ' + note + '" style="background-color: #ddd; border-color: #ddd;">' + 
                             '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">[' + note.substring(0, 20) + ']</div></div>' + 
                        '</div></div>');
+    }
+    else {
+      labelNode = $('<div style="display:none" class="sgn"></div>');
+    }
 
     titleNode.before(labelNode);
   }
@@ -251,17 +257,14 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
     //debugLog("@240", emailKey);
     if(!hasMarkedNote($(this))){  //already marked
       var emailNote = emailKeyNoteDict[emailKey];
-      if(emailNote){
-        markNote($(this), emailNote);
-      }
-      else{
-     //   debugLog("skipped mark because note not exists:", emailKey);
-      }
+      markNote($(this), emailNote);
     }
     else{
       //debugLog("skipped mark because already marked:", emailKey);
     }
   });
+
+  document.dispatchEvent(new CustomEvent("SGN_update_dom_cache", {}));
 }
 
 var emailIdKeyDict = {};
@@ -280,7 +283,7 @@ pullNotes = function(userEmail, emailList){
 
     emailKey = email.title + "|" + email.sender + "|" + email.time;
     //remove html tag
-    emailKey = $("<div/>").html(emailKey).text();
+    emailKey = $("<div/>").html(emailKey).html();
 
     //if not yet pulled before
     if(emailKeyNoteDict[emailKey] == undefined){
