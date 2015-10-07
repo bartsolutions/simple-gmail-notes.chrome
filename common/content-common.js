@@ -270,10 +270,10 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
 
 var emailIdKeyDict = {};
 pullNotes = function(userEmail, emailList){
-  if(!gCurrentGDriveFolderId){
-    debugLog("GDrive Folder ID not found, skip note pulling");
-    return;
-  }
+  //if(!gCurrentGDriveFolderId){
+   // debugLog("GDrive Folder ID not found, skip note pulling");
+    //return;
+  //}
 
   var pendingPullList = [];
 

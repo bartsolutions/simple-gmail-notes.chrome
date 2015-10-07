@@ -131,17 +131,28 @@ var pullAndUpdateEmailSummaryNote = function(){
 }
 */
 
+var isPulling = false;
 var pullNotes = function(){
   if(!SHOW_NOTE_ON_SUMMARY){
     return;
   }
 
+  if(isPulling)
+    return;
+
   if(!$("tr.zA").length || gmail.check.is_inside_email()){
     return;
   }
+
   console.log("simple-gmail-notes: pull notes");
 
   console.log("@119 start to set up summary page");
+
+  //avoid crazy pulling in case of multiple network requests
+  isPulling = true;
+  setTimeout(function(){
+    window.isPulling = false;
+  }, 3000);
 
   //skip the update if windows location (esp. hash part) is not changed
   var currentURL = $(location).attr("href");
@@ -182,9 +193,14 @@ var main = function(){
   });
 
   gmail.observe.on('http_event', function(obj){
+    console.log("simple-gmail-notes: http vent");
     console.log("@186", obj.url_raw);
     pullNotes();
   }); //end of observer
+
+  gmail.observe.on('toggle_threads', function(obj){
+    console.log("simple-gmail-notes: toggle threads event");
+  });
 
   /*
   MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
