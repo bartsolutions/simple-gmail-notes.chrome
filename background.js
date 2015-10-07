@@ -10,23 +10,8 @@ if(chrome.runtime.getManifest().version != "0.0.1"){
 }
 
 /*** callback implementation for background-common.js ***/
-setStorage = function(sender, key, value) {
-  var email = sender.email;
-  var storageKey = email + "||" + key;
-  localStorage[storageKey] = value;
-}
-
-getStorage = function(sender, key) {
-  var email = sender.email;
-  if(!email || email.indexOf("@") < 0){
-    debugLog("Get storage email not found.");
-  }
-
-  var storageKey = email + "||" + key;
-  value = localStorage[storageKey];
-
-  debugLog("Get storage result", email, key, value);
-  return value;
+getRawStorageObject = function(){
+  return localStorage;
 }
 
 sendMessage = function(sender, message) {

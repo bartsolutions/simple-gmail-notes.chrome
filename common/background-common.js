@@ -23,12 +23,8 @@ var settings = {
 
 //The refresh token, access token and email for google drive are stored in
 //local storage. Different gmails may have different sets of storage.
-setStorage = function(sender, key, value) {
-  throw "SetStorage not implementd";
-}
-
-getStorage = function(sender, key) {
-  throw "getStorage not implemented";
+getRawStorageObject = function(){
+  throw "getRawStorageObject not implementd";
 }
 
 sendMessage = function(sender, message) {
@@ -63,6 +59,34 @@ debugLog = function() //need some further work
   if (settings.DEBUG && console && console.log) {
       console.log.apply(console, arguments);
   }
+}
+
+setStorage = function(sender, key, value) {
+  var email = sender.email;
+  var storageKey = email + "||" + key;
+  var storage = getRawStorageObject();
+  storage[storageKey] = value;
+}
+
+getStorage = function(sender, key) {
+  var email = sender.email;
+  if(!email || email.indexOf("@") < 0){
+    debugLog("Get storage email not found.");
+  }
+
+  var storageKey = email + "||" + key;
+  var storage = getRawStorageObject()
+  value = storage[storageKey];
+
+  debugLog("Get storage result", email, key, value);
+  return value;
+}
+
+getSettingHideListingNotes = function() {
+  var storage = getRawStorageObject();
+  var result = (storage["hideListingNotes"] === "true");
+
+  return result;
 }
 
 
@@ -169,7 +193,7 @@ updateRefreshTokenFromCode = function(sender, messageId){
 updateUserInfo = function(sender){
   if(getStorage(sender, "gdrive_email")){
     sendMessage(sender, {action:"update_user", 
-                         sender:getStorage(sender, "gdrive_email")});
+                         email:getStorage(sender, "gdrive_email")});
     return;
   }
 
@@ -180,7 +204,7 @@ updateUserInfo = function(sender){
       success:function(data){
         setStorage(sender, "gdrive_email", data.user.emailAddress);
         sendMessage(sender, {action:"update_user", 
-                             sender:data.user.emailAddress})
+                             email:data.user.emailAddress})
       },
       error:function(){
         sendMessage(sender, {action:"show_error", 
@@ -321,7 +345,7 @@ setupNotesFolder = function(sender){
                               gdriveFolderId:gdriveFolderId});
          //ready for write new message
          sendMessage(sender, {action:"enable_edit", 
-                              gdriveEmail:getStorage(sender, "gdrive_email")}); 
+                              email:getStorage(sender, "gdrive_email")}); 
          debugLog("Data loaded:", data);
        }
     })
@@ -429,14 +453,6 @@ initialize = function(sender, messageId){
 
 
 pullNotes = function(sender, pendingPullList){
-  if(pendingPullList.length == 0){
-    debugLog("Empty id list found, skipped request");
-    setTimeout(function(){
-      sendMessage(sender, {action:"update_summary"})
-    }, 500);
-    return;
-  }
-
   debugLog("@414", pendingPullList);
   var query = "1=1";
   $.each(pendingPullList, function(index, messageId){
@@ -469,7 +485,7 @@ pullNotes = function(sender, pendingPullList){
         result.push({"title":title, "description":description});
       }
 
-      sendMessage(sender, {action:"update_summary", noteList:result})
+      sendMessage(sender, {email:getStorage(sender, "gdrive_email"), action:"update_summary", noteList:result})
     },
     function(data){ //error callback
       debugLog("@439, query failed", data);

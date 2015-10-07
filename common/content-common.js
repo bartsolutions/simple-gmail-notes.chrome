@@ -235,14 +235,12 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
   }
 
   if(pulledNoteList && pulledNoteList.length){
+
+    debugLog("updated summary from pulled note, total count:", 
+             pulledNoteList.length);
     $.each(pulledNoteList, function(index, item){
-      debugLog("updated summary from pulled note:", item.title, item.description);
-      //if(item.title && item.description){
-        //two level pointers to set up the notes
-        var emailKey = emailIdKeyDict[item.title];
-        emailKeyNoteDict[emailKey] = item.description;  //take the first 20 characters for the summary excerpt
-        //debugLog("@229", emailKey, emailKeyNoteDict[emailKey]);
-      //}
+      var emailKey = emailIdKeyDict[item.title];
+      emailKeyNoteDict[emailKey] = item.description;  
     });
 
   }
@@ -253,9 +251,7 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
     //debugLog("@240", emailKey);
     if(!hasMarkedNote($(this))){  //already marked
       var emailNote = emailKeyNoteDict[emailKey];
-      //var emailNote = getEmailNote($(this));
       if(emailNote){
-        //console.log("@74, trying to mark", emailKeyNoteDict, emailNote);
         markNote($(this), emailNote);
       }
       else{
@@ -301,8 +297,14 @@ pullNotes = function(userEmail, emailList){
   });
 
   //batch pull logic here
-  sendMessage({action:'pull_notes', email:userEmail, 
-               pendingPullList:pendingPullList});
+  if(pendingPullList.length){
+    sendMessage({action:'pull_notes', email:userEmail, 
+                 pendingPullList:pendingPullList});
+  }
+  else{
+    debugLog("no pending item, skipped the pull");
+    updateNotesOnSummary(userEmail, []);
+  }
 
 }
 
@@ -353,7 +355,7 @@ setupListeners = function(){
           settings.DEBUG = false;
           break;
         case "update_summary":
-          debugLog("update summary from background call");
+          debugLog("update summary from background call", request.email);
           var noteList = request.noteList;
           updateNotesOnSummary(request.email, noteList);
           break;
@@ -384,6 +386,7 @@ setupListeners = function(){
     debugLog("@331, requested to pull notes");
     var email = e.detail.email;
     var emailList = e.detail.emailList;
+
     pullNotes(email, emailList);
     //updateNotesOnSummary(email);  //should be called by backgrond page later
   });
