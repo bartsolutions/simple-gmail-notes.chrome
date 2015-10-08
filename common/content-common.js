@@ -14,7 +14,6 @@ var settings = {
 
 /*
  * Callback declarations
- * The follow functions must be implemented
  */
 sendBackgroundMessage = function(messge) {
   throw "sendBackgroundMessage not implemented";
@@ -25,7 +24,7 @@ setupBackgroundEventsListener = function(callback) {
 }
 
 /*
- * Callback utilities
+ * Utilities
  */
 var sendEventMessage = function(eventName, eventDetail){
   if(eventDetail == undefined){
@@ -190,10 +189,8 @@ setupNotes = function(email, messageId){
 
 
 
-var emailKeyNoteDict = {};
+var gEmailKeyNoteDict = {};
 _updateNotesOnSummary = function(userEmail, pulledNoteList){
-  //debugLog("@187, pulled note list", pulledNoteList);
-
   var getTitleNode = function(mailNode){
     return $(mailNode).find(".xT .y6").find("span").first();
   }
@@ -210,30 +207,15 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     var time = mailNode.find(".xW").find("span").last().attr("title");
     var emailKey = title + "|" + sender + "|" + time;
 
-    //console.log("@62", emailKey, note);
-    //console.log("@62", emailKeyNoteDict);
     return emailKey;
   }
 
   var hasMarkedNote = function(mailNode){
     return mailNode.find(".sgn").length > 0;
-
-    
-    /*
-    var title = getTitleNode(mailNode).text();
-    //debugLog("@211", title);
-    if(title.indexOf("{")==0 && title.indexOf("}")>0){
-      return true;
-    }
-
-    return false;
-    */
   }
 
   var markNote = function(mailNode, note){
-    //console.log("@51, marking note", mailNode, note);
     var titleNode = getTitleNode(mailNode);
-    //titleNode.text("{" + note + "} " + titleNode.text());
     var labelNode;
 
     if(note){
@@ -253,8 +235,8 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     debugLog("updated summary from pulled note, total count:", 
              pulledNoteList.length);
     $.each(pulledNoteList, function(index, item){
-      var emailKey = emailIdKeyDict[item.title];
-      emailKeyNoteDict[emailKey] = item.description;  
+      var emailKey = gEmailIdKeyDict[item.title];
+      gEmailKeyNoteDict[emailKey] = item.description;  
     });
 
   }
@@ -262,32 +244,22 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
   //loop for each email tr
   $("tr.zA").each(function(){
     var emailKey = getEmailKey($(this));
-    //debugLog("@240", emailKey);
-    if(!hasMarkedNote($(this))){  //already marked
-      var emailNote = emailKeyNoteDict[emailKey];
+    //debugLog("Working on email:", emailKey);
+    if(!hasMarkedNote($(this))){
+      var emailNote = gEmailKeyNoteDict[emailKey];
       markNote($(this), emailNote);
     }
-    else{
-      //debugLog("skipped mark because already marked:", emailKey);
-    }
   });
-
-  sendEventMessage("SGN_update_dom_cache");
 }
 
 updateNotesOnSummary = function(userEmail, pulledNoteList){
   setTimeout(function(){
     _updateNotesOnSummary(userEmail, pulledNoteList);
-  }, 300);  //have to do this after the work of gmail
+  }, 300);  //wait until gmail script processing finished
 }
 
-var emailIdKeyDict = {};
+var gEmailIdKeyDict = {};
 pullNotes = function(userEmail, emailList){
-  //if(!gCurrentGDriveFolderId){
-   // debugLog("GDrive Folder ID not found, skip note pulling");
-    //return;
-  //}
-
   var pendingPullList = [];
 
   $.each(emailList, function(index, email){
@@ -299,17 +271,9 @@ pullNotes = function(userEmail, emailList){
     //remove html tag
     emailKey = $("<div/>").html(emailKey).html();
 
-    //if not yet pulled before
-    if(emailKeyNoteDict[emailKey] == undefined){
-
+    if(gEmailKeyNoteDict[emailKey] == undefined){
       pendingPullList.push(email.id);
-      emailIdKeyDict[email.id] = emailKey;
-
-      //emailKeyNoteDict[emailKey] = "walty note test 123";
-    }
-    else{
-      //debugLog("skipped pulling ", emailKey, " because already exists:", 
-                //emailKeyNoteDict[emailKey]);
+      gEmailIdKeyDict[email.id] = emailKey;
     }
   });
 
@@ -322,74 +286,73 @@ pullNotes = function(userEmail, emailList){
     debugLog("no pending item, skipped the pull");
     updateNotesOnSummary(userEmail, [])
   }
-
 }
 
 setupListeners = function(){
-  setupBackgroundEventsListener( function(request) {
+  setupBackgroundEventsListener(function(request){
     debugLog("Handle request", request);
     switch(request.action){
       case "disable_edit":
-          disableEdit();
-            break;
-        case "enable_edit":
-            enableEdit();
-            showLogoutPrompt(request.gdriveEmail)
-            break;
-        case "show_log_out_prompt":
-          showLogoutPrompt();
+        disableEdit();
           break;
-        case "show_log_in_prompt":
-          debugLog("Show login");
-          showLoginPrompt();
-          disableEdit();
+      case "enable_edit":
+          enableEdit();
+          showLogoutPrompt(request.gdriveEmail)
           break;
-        case "show_error":
-          var errorMessage = request.message;
-          debugLog("Error in response:", errorMessage);
-          var date = new Date();
-          var timestamp = date.getHours() + ":" + date.getMinutes() + ":" + 
-                            date.getSeconds();
-          $(".sgn_error_timestamp").text("(" +  timestamp + ")");
-          $(".sgn_error").show();
-          break;
-        case "update_user":
-          $(".sgn_user").text(request.email);
-          break;
-        case "update_content":
-          gPreviousContent = request.content;
-          $(".sgn_input").val(request.content);
-          showLogoutPrompt(request.email);
-					break;
-        case "update_gdrive_note_info":
-          debugLog("Update google drive note info", 
-                        request.gdriveFolderId, request.gdriveFolderId);
-          gCurrentGDriveFolderId = request.gdriveFolderId;
-          gCurrentGDriveNoteId = request.gdriveNoteId;
-          break;
-        case "disable_logger":
-          debugLog("Trying to disable logger");
-          settings.DEBUG = false;
-          break;
-        case "update_summary":
-          debugLog("update summary from background call", request.email);
-          var noteList = request.noteList;
-          updateNotesOnSummary(request.email, noteList);
-          break;
-        case "revoke_summary_note":
-          debugLog("trying to revoke summary note", request);
-          var emailId = request.messageId;
-          var emailKey = emailIdKeyDict[emailId];
+      case "show_log_out_prompt":
+        showLogoutPrompt();
+        break;
+      case "show_log_in_prompt":
+        debugLog("Show login");
+        showLoginPrompt();
+        disableEdit();
+        break;
+      case "show_error":
+        var errorMessage = request.message;
+        debugLog("Error in response:", errorMessage);
+        var date = new Date();
+        var timestamp = date.getHours() + ":" + date.getMinutes() + ":" + 
+                          date.getSeconds();
+        $(".sgn_error_timestamp").text("(" +  timestamp + ")");
+        $(".sgn_error").show();
+        break;
+      case "update_user":
+        $(".sgn_user").text(request.email);
+        break;
+      case "update_content":
+        gPreviousContent = request.content;
+        $(".sgn_input").val(request.content);
+        showLogoutPrompt(request.email);
+        break;
+      case "update_gdrive_note_info":
+        debugLog("Update google drive note info", 
+                      request.gdriveFolderId, request.gdriveFolderId);
+        gCurrentGDriveFolderId = request.gdriveFolderId;
+        gCurrentGDriveNoteId = request.gdriveNoteId;
+        break;
+      case "disable_logger":
+        debugLog("Trying to disable logger");
+        settings.DEBUG = false;
+        break;
+      case "update_summary":
+        debugLog("update summary from background call", request.email);
+        var noteList = request.noteList;
+        updateNotesOnSummary(request.email, noteList);
+        break;
+      //remove the note in cache, so the new notes would be collected next time
+      case "revoke_summary_note":
+        debugLog("Trying to revoke summary note", request);
+        var emailId = request.messageId;
+        var emailKey = gEmailIdKeyDict[emailId];
 
-          //remove the two items, so the new notes would be collected next time
-          delete emailKeyNoteDict[emailKey];
-          delete emailIdKeyDict[emailId];
-          break;
+        delete gEmailKeyNoteDict[emailKey];
+        delete gEmailIdKeyDict[emailId];
+        break;
 
-        default:
+      default:
           debugLog("unknown background request", request);
     }
-  })
+  });
 
   // Event listener for page
   document.addEventListener('SGN_setup_notes', function(e) {
@@ -400,23 +363,12 @@ setupListeners = function(){
   });
 
   document.addEventListener('SGN_pull_notes', function(e) {
-    debugLog("@331, requested to pull notes");
+    debugLog("Requested to pull notes");
     var email = e.detail.email;
     var emailList = e.detail.emailList;
 
     pullNotes(email, emailList);
-    //updateNotesOnSummary(email);  //should be called by backgrond page later
   });
-
-  /*
-  document.addEventListener('SGN_update_summary', function(e) {
-    debugLog("@338, requested to update summary");
-    var email = e.detail.email;
-    setTimeout(function(){
-      updateNotesOnSummary(email);
-    }, 1000);
-  });
-  */
 }
 
 debugLog("Finished background script (common)");

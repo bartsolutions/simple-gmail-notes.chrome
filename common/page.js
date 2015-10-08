@@ -45,43 +45,18 @@ var getDOMSignature = function(){
 }
 
 
-var previousDOMSignature = "";
-var SHOW_NOTE_ON_SUMMARY = true;
-
 var isPulling = false;
 var pullNotes = function(){
-  if(!SHOW_NOTE_ON_SUMMARY){
-    return;
-  }
-
-
   if(!$("tr.zA").length || gmail.check.is_inside_email()){
     return;
   }
 
   //skip multiple trigger of same page
-
-  /*
-  var currentDOMSignature = getDOMSignature();
-  if(previousDOMSignature == currentDOMSignature){
-    console.log("@59, skipped pulling because DOM not changed", previousDOMSignature.substring(0,50));
-    return;
-  }
-  previousDOMSignature = currentDOMSignature;
-  */
-
-
   if($("tr.zA:visible").find(".sgn").length){
-    console.log("@72, skipped pulling because the page is already processed");
+    console.log("Skipped pulling because the page is already processed");
     return;
   }
-
-  //if($("tr.zA").find(".sgn").length){
-    //console.log("@73, already marked,skipped update");
-    //return;
-  //}
     
-
   //avoid crazy pulling in case of multiple network requests
   if(isPulling)
     return;
@@ -90,18 +65,15 @@ var pullNotes = function(){
     window.isPulling = false;
   }, 1000);
 
-  console.log("simple-gmail-notes: pull notes");
-  console.log("@119 start to set up summary page");
+  console.log("Simple-gmail-notes: pulling notes");
 
   //skip the update if windows location (esp. hash part) is not changed
   gmail.get.visible_emails_async(function(emailList){
     console.log("[page.js]sending email for puall request, total count:", 
                 emailList.length);
     sendEventMessage("SGN_pull_notes", 
-                {email: gmail.get.user_email(), emailList:emailList});
+                     {email: gmail.get.user_email(), emailList:emailList});
   });
-
-  //pullAndUpdateEmailSummaryNote();
 }
 
 var main = function(){
@@ -117,45 +89,9 @@ var main = function(){
     setupNotes();
   });
 
-  gmail.observe.on('view_thread', function(obj){
-    console.log("simple-gmail-notes: view thread event");
-  });
-
   gmail.observe.after('http_event', function(obj){
-    //console.log("simple-gmail-notes: http event");
-    //console.log("@186", obj.url_raw);
     pullNotes();
-  }); //end of observer
-
-  gmail.observe.on('toggle_threads', function(obj){
-    console.log("simple-gmail-notes: toggle threads event");
-  });
-
-  /*
-     MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-
-     var observer = new MutationObserver(function(mutations, observer) {
-// fired when a mutation occurs
-console.log(mutations, observer);
-//pullNotes();
-});
-
-// define what element should be observed by the observer
-// and what types of mutations trigger the callback
-
-observer.observe(document, {
-subtree: true,
-attributes: true
-//...
-});
-*/
-
-
-  document.addEventListener('SGN_update_DOM_cache', function(e) {
-    console.log("@138, requested to update DOM");
-    previousDOMSignature = getDOMSignature();
-  });
-
+  }); 
 }
 
 refresh(main);
