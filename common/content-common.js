@@ -9,7 +9,6 @@
 
 var settings = {
   MAX_RETRY_COUNT : 20,
-  DEBUG : true
 }
 
 /*
@@ -21,6 +20,10 @@ sendBackgroundMessage = function(messge) {
 
 setupBackgroundEventsListener = function(callback) {
   throw "setupBackgroundEventsListener not implemented";
+}
+
+isDebug = function(callback) {
+  return false;
 }
 
 /*
@@ -36,7 +39,7 @@ var sendEventMessage = function(eventName, eventDetail){
 
 debugLog = function()
 {
-  if (settings.DEBUG) {
+  if (isDebug()) {
       console.log.apply(console, arguments);
   }
 }
@@ -371,4 +374,4 @@ setupListeners = function(){
   });
 }
 
-debugLog("Finished background script (common)");
+debugLog("Finished content script (common)");

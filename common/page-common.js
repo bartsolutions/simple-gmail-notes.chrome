@@ -4,6 +4,21 @@
  * Copyright (C) 2015 Walty Yeung <walty8@gmail.com>
  */
 
+/* 
+ * callback declarations 
+ */
+isDebug = function(callback) {
+  return false;
+}
+/*** end of callback implementation ***/
+
+debugLog = function()
+{
+  if (isDebug()) {
+      console.log.apply(console, arguments);
+  }
+}
+
 var gmail;
 
 var refresh = function(f) {
@@ -53,7 +68,7 @@ var pullNotes = function(){
 
   //skip multiple trigger of same page
   if($("tr.zA:visible").find(".sgn").length){
-    console.log("Skipped pulling because the page is already processed");
+    debugLog("Skipped pulling because the page is already processed");
     return;
   }
     
@@ -65,11 +80,11 @@ var pullNotes = function(){
     window.isPulling = false;
   }, 1000);
 
-  console.log("Simple-gmail-notes: pulling notes");
+  debugLog("Simple-gmail-notes: pulling notes");
 
   //skip the update if windows location (esp. hash part) is not changed
   gmail.get.visible_emails_async(function(emailList){
-    console.log("[page.js]sending email for puall request, total count:", 
+    debugLog("[page.js]sending email for puall request, total count:", 
                 emailList.length);
     sendEventMessage("SGN_pull_notes", 
                      {email: gmail.get.user_email(), emailList:emailList});
@@ -80,12 +95,12 @@ var main = function(){
   gmail = new Gmail();
 
   gmail.observe.on('open_email', function(obj){
-    console.log("simple-gmail-notes: open email event", obj);
+    debugLog("simple-gmail-notes: open email event", obj);
     setupNotes();
   });
 
   gmail.observe.on('load', function(obj){
-    console.log("simple-gmail-notes: load event");
+    debugLog("simple-gmail-notes: load event");
     setupNotes();
   });
 

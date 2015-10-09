@@ -3,9 +3,6 @@
  * https://github.com/walty8
  * Copyright (C) 2015 Walty Yeung <walty8@gmail.com>
  */
-if(chrome.runtime.getManifest().version != "0.0.1"){  
-  settings.DEBUG = false;
-}
 
 /*** call back implementation for content-common.js ***/
 sendBackgroundMessage = function(message) {
@@ -21,6 +18,14 @@ setupBackgroundEventsListener = function(callback) {
       }
   )
 }
+
+var isDebugCache = null
+isDebug = function(callback){
+  if(isDebugCache === null)
+    isDebugCache = chrome.runtime.getManifest().version == "0.0.1";
+
+  return isDebugCache;
+}
 /*** end of callback implementation ***/
 
 
@@ -35,7 +40,11 @@ function setupPage(){
     (document.head || document.documentElement).appendChild(j);
 
     var j = document.createElement('script');
-    j.src = chrome.extension.getURL('common/page.js');
+    j.src = chrome.extension.getURL('common/page-common.js');
+    (document.head || document.documentElement).appendChild(j);
+
+    var j = document.createElement('script');
+    j.src = chrome.extension.getURL('page.js');
     (document.head || document.documentElement).appendChild(j);
 }
 

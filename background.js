@@ -5,11 +5,16 @@
  */
 
 //disable logging for production
-if(chrome.runtime.getManifest().version != "0.0.1"){  
-  settings.DEBUG = false;
-}
 
 /*** callback implementation for background-common.js ***/
+var isDebugCache = null
+isDebug = function(callback){
+  if(isDebugCache === null)
+    isDebugCache = chrome.runtime.getManifest().version == "0.0.1";
+
+  return isDebugCache;
+}
+
 getRawStorageObject = function(){
   return localStorage;
 }

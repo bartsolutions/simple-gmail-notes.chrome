@@ -11,8 +11,7 @@ var settings = {
   CLIENT_ID: "38131814991-p4u809qrr5ee1bsehregd4os69jf2n7i.apps.googleusercontent.com",
   CLIENT_SECRET: "mdA0U_jSkAjI_1x8pdgtrx02",
   NOTE_FOLDER_NAME: "_SIMPLE_GMAIL_NOTES_",
-  SCOPE: 'https://www.googleapis.com/auth/drive.file',
-  DEBUG: true
+  SCOPE: 'https://www.googleapis.com/auth/drive.file'
 } 
 
 /*
@@ -23,6 +22,10 @@ var settings = {
 
 //The refresh token, access token and email for google drive are stored in
 //local storage. Different gmails may have different sets of storage.
+isDebug = function(callback) {
+  return false;
+}
+
 getRawStorageObject = function(){
   throw "getRawStorageObject not implementd";
 }
@@ -56,7 +59,7 @@ checkLogger = function(sender){
  */
 debugLog = function() //need some further work
 {
-  if (settings.DEBUG && console && console.log) {
+  if (isDebug() && console && console.log) {
       console.log.apply(console, arguments);
   }
 }
