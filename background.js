@@ -6,7 +6,7 @@
 
 //disable logging for production
 
-/*** callback implementation for background-common.js ***/
+/*** interface implementation for background-common.js ***/
 var isDebugCache = null
 isDebug = function(callback){
   if(isDebugCache === null)
@@ -19,6 +19,11 @@ getRawStorageObject = function(){
   return localStorage;
 }
 
+getPreferences = function(){
+  storage = getRawStorageObject();
+  return storage; //preferences are put into local storage as well
+}
+
 sendContentMessage = function(sender, message) {
   chrome.tabs.sendMessage(sender.worker.tab.id, message, function(response) {
     debugLog("Message response:", response);
@@ -27,6 +32,10 @@ sendContentMessage = function(sender, message) {
 
 sendAjax = function(config) {
   $.ajax(config);
+}
+
+iterateArray = function(arr, callback){
+  $.each(arr, callback);
 }
 
 getRedirectUri = function() {

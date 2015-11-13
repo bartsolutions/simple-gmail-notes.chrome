@@ -31,7 +31,7 @@ var refresh = function(f) {
 
 var sendEventMessage = function(eventName, eventDetail){
   if(eventDetail == undefined){
-    eventDetail = {}
+    eventDetail = {};
   }
 
   eventDetail.email = gmail.get.user_email();
@@ -62,23 +62,18 @@ var getDOMSignature = function(){
 
 var isPulling = false;
 var pullNotes = function(){
-  if(!$("tr.zA").length || gmail.check.is_inside_email()){
-    return;
-  }
-
-  //skip multiple trigger of same page
-  if($("tr.zA:visible").find(".sgn").length){
-    debugLog("Skipped pulling because the page is already processed");
-    return;
-  }
-    
   //avoid crazy pulling in case of multiple network requests
   if(isPulling)
     return;
   isPulling = true;
-  setTimeout(function(){
-    window.isPulling = false;
-  }, 1000);
+
+
+  if(!$("tr.zA").length || gmail.check.is_inside_email() ||
+     $("tr.zA:visible").find(".sgn").length == $("tr.zA:visible").length){
+    debugLog("Skipped pulling");
+    isPulling = false;
+    return;
+  }
 
   debugLog("Simple-gmail-notes: pulling notes");
 
@@ -88,6 +83,7 @@ var pullNotes = function(){
                 emailList.length);
     sendEventMessage("SGN_pull_notes", 
                      {email: gmail.get.user_email(), emailList:emailList});
+    isPulling = false;
   });
 }
 
@@ -104,9 +100,12 @@ var main = function(){
     setupNotes();
   });
 
-  gmail.observe.after('http_event', function(obj){
-    pullNotes();
-  }); 
+  setTimeout(pullNotes, 0);
+  setInterval(pullNotes, 2000);
+
+//  gmail.observe.after('http_event', function(obj){
+ //   pullNotes();
+ // }); 
 }
 
 refresh(main);

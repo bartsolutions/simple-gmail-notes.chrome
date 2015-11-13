@@ -5,6 +5,10 @@
  * License: GPLv3
  *
  * This script is going to be shared for both Firefox and Chrome extensions.
+ * Note that jquery function calls should be avoided in this file, because 
+ * jquery could not be imported to the background page, see sendAjax and 
+ * iterateArray for the samples.
+ *
  */
 
 var settings = {
@@ -15,7 +19,7 @@ var settings = {
 } 
 
 /*
- * Callback declarations
+ * Interface declarations
  *
  * The following methods MUST be implemented by the Firefox / Chrome extension
  */
@@ -23,7 +27,12 @@ var settings = {
 //The refresh token, access token and email for google drive are stored in
 //local storage. Different gmails may have different sets of storage.
 isDebug = function(callback) {
+  //return true;  //turn on this only if u want to check initialization part
   return false;
+}
+
+getPreferences = function(){
+  throw "getPreferences not implemented";
 }
 
 getRawStorageObject = function(){
@@ -36,6 +45,10 @@ sendContentMessage = function(sender, message) {
 
 sendAjax = function(config) {
   throw "sendAjax not implemented";
+}
+
+iterateArray = function(arr, callback){
+  throw "iterateArray not implemented";
 }
 
 getRedirectUri = function() {
@@ -57,6 +70,7 @@ checkLogger = function(sender){
 /*
  * Shared Utility Functions
  */
+
 debugLog = function() //need some further work
 {
   if (isDebug() && console && console.log) {
@@ -85,13 +99,12 @@ getStorage = function(sender, key) {
   return value;
 }
 
-getSettingHideListingNotes = function() {
-  var storage = getRawStorageObject();
-  var result = (storage["hideListingNotes"] === "true");
+getPreferenceHideListingNotes = function() {
+  var preferences = getPreferences();
+  var result = (String(preferences["hideListingNotes"]) === "true");
 
   return result;
 }
-
 
 //Post message to google drive via REST API
 //Reference: https://developers.google.com/drive/web/quickstart/quickstart-js
@@ -139,6 +152,7 @@ postNote = function(sender, messageId, gdriveFolderId, gdriveNoteId, content){
       data: multipartRequestBody,
       success: function(data){
         debugLog("message posted successfully");
+        sendContentMessage(sender, {action:"revoke_summary_note", messageId: messageId});
       },
       error: function(data){
         sendContentMessage(sender, {action:"show_error", 
@@ -457,7 +471,7 @@ initialize = function(sender, messageId){
 sendSummaryNotes = function(sender, pullList, resultList){
   var result = [];
   var itemDict = {};
-  $.each(resultList, function(index, emailItem){
+  iterateArray(resultList, function(index, emailItem){
     if(emailItem.description){
       itemDict[emailItem.title] = emailItem.description;
     }
@@ -479,7 +493,7 @@ sendSummaryNotes = function(sender, pullList, resultList){
 }
 
 pullNotes = function(sender, pendingPullList){
-  var hideListingNotes = getSettingHideListingNotes();
+  var hideListingNotes = getPreferenceHideListingNotes();
 
   if(hideListingNotes){
     debugLog("@482, skipped pulling because settings -> hide listing notes");
@@ -489,7 +503,7 @@ pullNotes = function(sender, pendingPullList){
 
   debugLog("@414", pendingPullList);
   var query = "1=1";
-  $.each(pendingPullList, function(index, messageId){
+  iterateArray(pendingPullList, function(index, messageId){
     query += " or title='" + messageId + "'"
   });
 
@@ -523,7 +537,6 @@ setupListeners = function(sender, request){
       postNote(sender, request.messageId, 
                  request.gdriveFolderId, request.gdriveNoteId, 
                  request.content);
-      sendContentMessage(sender, {action:"revoke_summary_note", messageId: request.messageId});
       break;
     case "initialize":
       initialize(sender, request.messageId);
