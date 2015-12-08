@@ -5,8 +5,9 @@
  * License: GPLv3
  *
  * This script is going to be shared for both Firefox and Chrome extensions.
+ *
  * Note that jquery function calls should be avoided in this file, because 
- * jquery could not be imported to the background page, see sendAjax and 
+ * jquery could not be imported to the FF background page, see sendAjax and 
  * iterateArray for the samples.
  *
  */
@@ -472,7 +473,8 @@ sendSummaryNotes = function(sender, pullList, resultList){
   var result = [];
   var itemDict = {};
   iterateArray(resultList, function(index, emailItem){
-    if(emailItem.description){
+    //we collect the first one
+    if(emailItem.description && !itemDict[emailItem.title]){
       itemDict[emailItem.title] = emailItem.description;
     }
   });
