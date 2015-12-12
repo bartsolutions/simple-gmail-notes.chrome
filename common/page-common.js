@@ -11,10 +11,8 @@ window.SimpleGmailNotes = window.SimpleGmailNotes || {};
 SimpleGmailNotes.refresh = function(f){
     if( (/in/.test(document.readyState)) || (undefined === window.Gmail) 
         || (undefined === window.jQuery) ) {
-      console.log("@13");
       setTimeout(SimpleGmailNotes.refresh, 10, f);
     } else {
-      console.log("@16");
       f();
     }
 }
@@ -76,9 +74,6 @@ SimpleGmailNotes.start = function(){
         var subject = messageData["subject"];
         var sender = messageData["from_email"];
 
-        console.log("@66:" + datetime);
-        console.log("@67:" + subject);
-        console.log("@67:" + sender);
         sendEventMessage('SGN_setup_email_info', 
                          {messageId:currentPageMessageId, 
                           datetime:datetime,
