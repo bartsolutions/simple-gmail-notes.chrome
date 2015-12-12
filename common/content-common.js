@@ -169,7 +169,7 @@ hashFnv32a = function(str, asString, seed) {
 }
 
 composeEmailKey = function(title, sender, time){
-  var emailKey = title + "|" + sender + "|" + time;
+  var emailKey = sender + "|" + time + "|" + title;
 
   //in case already escaped
   emailKey = htmlEscape(emailKey);
@@ -181,6 +181,10 @@ composeEmailKey = function(title, sender, time){
 var gCurrentGDriveNoteId = "";
 var gCurrentGDriveFolderId = "";
 var gPreviousContent = "";
+
+var gCurrentEmailSubject = "";
+var gCurrentEmailDatetime = "";
+var gCurrentEmailSender = "";
 
 setupNotes = function(email, messageId){
   debugLog("Start to set up notes");
@@ -200,6 +204,7 @@ setupNotes = function(email, messageId){
     var content = $(this).val();
     if(gPreviousContent != content){
       sendBackgroundMessage({action:"post_note", email:email, messageId:messageId, 
+                   emailTitleSuffix: gCurrentEmailSubject,
                    gdriveNoteId:gCurrentGDriveNoteId, 
                    gdriveFolderId:gCurrentGDriveFolderId, content:content});
     }
@@ -258,6 +263,7 @@ setupNotes = function(email, messageId){
 
 
 
+
 var gEmailKeyNoteDict = {};
 _updateNotesOnSummary = function(userEmail, pulledNoteList){
   var getTitleNode = function(mailNode){
@@ -276,7 +282,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     var time = mailNode.find(".xW").find("span").last().attr("title");
     var emailKey = composeEmailKey(title, sender, time);
 
-    debugLog("@249, email key:" + emailKey);
+    //debugLog("@249, email key:" + emailKey);
 
 
 
@@ -344,7 +350,7 @@ pullNotes = function(userEmail, emailList){
     }
 
     var emailKey = composeEmailKey(htmlUnescape(email.title), email.sender, email.time);
-    debugLog("@318: email key:" + emailKey);
+    //debugLog("@318: email key:" + emailKey);
 
 
     if(gEmailKeyNoteDict[emailKey] == undefined){
@@ -455,6 +461,28 @@ setupListeners = function(){
     }
 
     setupNotes(email, messageId);
+  });
+
+  document.addEventListener('SGN_setup_email_info', function(e) {
+    var email = e.detail.email;
+    var messageId = e.detail.messageId;
+
+    if(!isAlphaNumeric(messageId)){
+      debugLog("invalid message ID (setup email info): " + messageId);
+      return;
+    }
+
+    if(!isValidEmail(email)){
+      debugLog("invalid email (setup email info): " + email);
+      return;
+    }
+
+    //for future post note use
+    gCurrentEmailSubject = e.detail.subject;
+    gCurrentEmailDatetime = e.detail.datetime;
+    gCurrentEmailSender = e.detail.sender;
+
+
   });
 
   document.addEventListener('SGN_pull_notes', function(e) {

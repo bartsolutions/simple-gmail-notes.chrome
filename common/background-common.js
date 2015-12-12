@@ -109,7 +109,7 @@ getPreferenceHideListingNotes = function() {
 
 //Post message to google drive via REST API
 //Reference: https://developers.google.com/drive/web/quickstart/quickstart-js
-postNote = function(sender, messageId, gdriveFolderId, gdriveNoteId, content){
+postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdriveNoteId, content){
   debugLog("Posting content", content);
   debugLog("Google Drive folder ID", gdriveFolderId);
 
@@ -124,7 +124,7 @@ postNote = function(sender, messageId, gdriveFolderId, gdriveNoteId, content){
 
     var noteDescripton = content.substring(0,50);
 
-    var metadata = { title:messageId, parents:[{"id":gdriveFolderId}], 
+    var metadata = { title:messageId + " - " + emailTitleSuffix , parents:[{"id":gdriveFolderId}], 
                      description: noteDescripton };
     var boundary = "-------314159265358979323846";
     var contentType = "text/plain";
@@ -393,13 +393,14 @@ gdriveQuery = function(sender, query, success_cb, error_cb){
 
 //list the files created by this app only (as restricted by permission)
 searchNote = function(sender, messageId){
-  var query = "title = '" + settings.NOTE_FOLDER_NAME + "' or " +
-                "title = '" + messageId + "'";
+  var query = "title='" + settings.NOTE_FOLDER_NAME + "' or " +
+                "title contains '" + messageId + "'";
   gdriveQuery(sender, query, 
     function(data){ //success callback
-      debugLog("Query result:", data);
       var gdriveFolderId = "";
       var gdriveNoteId = "";
+
+      debugLog("@403", query, data);
 
       //first pass, get folder id for gmail notes
       for(var i=0; i<data.items.length; i++){
@@ -420,7 +421,8 @@ searchNote = function(sender, messageId){
         debugLog("Searching message", messageId);
         for(var i=0; i<data.items.length; i++){
           var currentItem = data.items[i];
-          if(currentItem.title == messageId && 
+          if(messageId.length &&
+              currentItem.title.indexOf(messageId) == 0 && 
               currentItem.parents[0].id == gdriveFolderId){
             gdriveNoteId = currentItem.id;
             break;
@@ -473,16 +475,21 @@ sendSummaryNotes = function(sender, pullList, resultList){
   var result = [];
   var itemDict = {};
   iterateArray(resultList, function(index, emailItem){
+    var title = emailItem.title.split(" ")[0];
+    debugLog("@477", title);
+
     //we collect the first one
-    if(emailItem.description && !itemDict[emailItem.title]){
-      itemDict[emailItem.title] = emailItem.description;
+    if(emailItem.description && !itemDict[title]){
+      itemDict[title] = emailItem.description;
     }
   });
 
+  debugLog("@482", pullList, resultList);
 
   for(var i=0; i<pullList.length; i++){
     var title = pullList[i];
     var description = ""; //empty string for not found
+
     if(itemDict[title]){
       description = itemDict[title];
     }
@@ -506,7 +513,7 @@ pullNotes = function(sender, pendingPullList){
   debugLog("@414", pendingPullList);
   var query = "1=1";
   iterateArray(pendingPullList, function(index, messageId){
-    query += " or title='" + messageId + "'"
+    query += " or title contains '" + messageId + "'"
   });
 
   query = query.replace("1=1 or", "");  //remove the heading string
@@ -536,7 +543,7 @@ setupListeners = function(sender, request){
       loginGoogleDrive(sender, request.messageId);
       break;
     case "post_note":
-      postNote(sender, request.messageId, 
+      postNote(sender, request.messageId, request.emailTitleSuffix,
                  request.gdriveFolderId, request.gdriveNoteId, 
                  request.content);
       break;

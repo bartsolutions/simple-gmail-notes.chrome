@@ -6,7 +6,21 @@
  * This script is going to be shared for both Firefox and Chrome extensions.
  */
 
-//var sgnJQuery = $.noConflict(true);
+window.SimpleGmailNotes = window.SimpleGmailNotes || {};
+
+SimpleGmailNotes.refresh = function(f){
+    if( (/in/.test(document.readyState)) || (undefined === window.Gmail) 
+        || (undefined === window.jQuery) ) {
+      console.log("@13");
+      setTimeout(SimpleGmailNotes.refresh, 10, f);
+    } else {
+      console.log("@16");
+      f();
+    }
+}
+
+
+SimpleGmailNotes.start = function(){
 
 (function(SimpleGmailNotes, localJQuery){
   var $ = localJQuery;
@@ -33,14 +47,6 @@
 
   var gmail;
 
-  var refresh = function(f) {
-    if( (/in/.test(document.readyState)) || (undefined === window.Gmail) ) {
-      setTimeout(refresh, 10, f);
-    } else {
-      f();
-    }
-  }
-
   var sendEventMessage = function(eventName, eventDetail){
     if(eventDetail == undefined){
       eventDetail = {};
@@ -60,6 +66,26 @@
           return;
      
       sendEventMessage('SGN_setup_notes', {messageId:currentPageMessageId});
+
+      
+      //update the email info to the content page
+      gmail.get.email_data_async(currentPageMessageId, function(data){
+        var messageData = data["threads"][currentPageMessageId];
+
+        var datetime = messageData["datetime"];
+        var subject = messageData["subject"];
+        var sender = messageData["from_email"];
+
+        console.log("@66:" + datetime);
+        console.log("@67:" + subject);
+        console.log("@67:" + sender);
+        sendEventMessage('SGN_setup_email_info', 
+                         {messageId:currentPageMessageId, 
+                          datetime:datetime,
+                          subject:subject,
+                          sender:sender});
+      });
+
     }, 0);
   }
 
@@ -115,11 +141,19 @@
     setTimeout(pullNotes, 0);
     setInterval(pullNotes, 2000);
 
+    //mainly for debug purpose
+    SimpleGmailNotes.gmail = gmail;
+
   //  gmail.observe.after('http_event', function(obj){
    //   pullNotes();
    // }); 
   }
 
-  refresh(main);
+  main();
 
-}(window.SimpleGmailNotes = window.SimpleGmailNotes || {}, $.noConflict(true)));
+
+}(window.SimpleGmailNotes = window.SimpleGmailNotes || {}, jQuery.noConflict(true)));
+
+} //end of SimpleGmailNotes.start
+
+SimpleGmailNotes.refresh(SimpleGmailNotes.start);
