@@ -143,6 +143,8 @@ showLogoutPrompt = function(email, retryCount){
   if(email)
     $(".sgn_prompt_logout").find(".sgn_user").text(email);
 
+  $(".sgn_search").attr("href", getSearchNoteURL());
+
   if(!$(".sgn_prompt_logout").is(":visible")){  //keep trying until it's visible
     debugLog("Retry to show prompt");
     retryCount = retryCount - 1;
@@ -176,6 +178,14 @@ composeEmailKey = function(title, sender, time){
   return emailKey;
 }
 
+getSearchNoteURL = function(){
+  //users may have logged into mutliple email addresses
+  var re = /mail\/u\/(\d+)/;
+  var userId = window.location.href.match(re)[1];
+  var searchUrl = "https://drive.google.com/drive/u/" + userId + "/folders/" + gCurrentGDriveFolderId;
+
+  return searchUrl;
+}
 
 //global variables to mark the status of current tab
 var gCurrentGDriveNoteId = "";
@@ -211,10 +221,11 @@ setupNotes = function(email, messageId){
 	  return true;
 	});
 
-  var logoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
+  var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
       .html("Simple Gmail Notes connected to Google Drive of " +
               "'<span class='sgn_user'></span>' " +
-              "(<a class='sgn_logout sgn_action'>Disconnect</a>)")
+              "(<a class='sgn_action sgn_search' href='#' target='_blank'>Search Notes</a>, " +
+              "<a class='sgn_logout sgn_action'>Disconnect</a>)")
       .css({"display":"none",
             "color": "gray",
             "margin": "5px"});
@@ -240,10 +251,11 @@ setupNotes = function(email, messageId){
   injectionNode.prepend(errorPrompt);
   injectionNode.prepend(textAreaNode);
   injectionNode.prepend(loginPrompt);
-  injectionNode.prepend(logoutPrompt);
+  injectionNode.prepend(searchLogoutPrompt);
   injectionNode.prepend(emptyPrompt);
 
   $(".sgn_action").css({
+    "color":"gray",
     "cursor":"pointer",
     "text-decoration":"underline"
   }).click(function(){
