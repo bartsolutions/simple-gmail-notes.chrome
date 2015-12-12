@@ -170,8 +170,14 @@ hashFnv32a = function(str, asString, seed) {
   return hval >>> 0;
 }
 
+stripHtml = function(value){
+  return value.replace(/<(?:.|\n)*?>/gm, '');
+
+}
+
 composeEmailKey = function(title, sender, time){
-  var emailKey = sender + "|" + time + "|" + title;
+  var emailKey = sender + "|" + time + "|" + stripHtml(title);
+
 
   //in case already escaped
   emailKey = htmlEscape(emailKey);
@@ -285,7 +291,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
   var getEmailKey = function(mailNode){
     var titleNode = getTitleNode(mailNode);
     var title = titleNode.text();
-    var sender = mailNode.find(".yW .yP").attr("email");
+    var sender = mailNode.find(".yW .yP, .yW .zF").attr("email");
 
     if($(location).attr("href").indexOf("#sent") > 0){
       sender = userEmail;
@@ -294,7 +300,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     var time = mailNode.find(".xW").find("span").last().attr("title");
     var emailKey = composeEmailKey(title, sender, time);
 
-    //debugLog("@249, email key:" + emailKey);
+    debugLog("@249, email key:" + emailKey);
 
 
 
@@ -362,7 +368,7 @@ pullNotes = function(userEmail, emailList){
     }
 
     var emailKey = composeEmailKey(htmlUnescape(email.title), email.sender, email.time);
-    //debugLog("@318: email key:" + emailKey);
+    debugLog("@318: email key:" + emailKey);
 
 
     if(gEmailKeyNoteDict[emailKey] == undefined){
@@ -444,6 +450,7 @@ setupListeners = function(){
 
         $("#" + sgnId).remove();
 
+        debugLog("@447", emailKey, emailId);
         delete gEmailKeyNoteDict[emailKey];
         delete gEmailIdKeyDict[emailId];
 
