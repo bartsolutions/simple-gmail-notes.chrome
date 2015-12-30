@@ -1,3 +1,3 @@
-- copy new lib from firefox side
-- implmenentation for getPreferences()
-- implementation for iterateArray
+- allow change of textarea height, color, and background color
+- updated mechansim for force logout
+- default search id to 0

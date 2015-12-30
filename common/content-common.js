@@ -187,7 +187,13 @@ composeEmailKey = function(title, sender, time){
 getSearchNoteURL = function(){
   //users may have logged into mutliple email addresses
   var re = /mail\/u\/(\d+)/;
-  var userId = window.location.href.match(re)[1];
+  var userId = "0";
+  
+  var match = window.location.href.match(re);
+
+  if(match && match.length > 1)
+    userId = match[1];
+
   var searchUrl = "https://drive.google.com/drive/u/" + userId + "/folders/" + gCurrentGDriveFolderId;
 
   return searchUrl;
