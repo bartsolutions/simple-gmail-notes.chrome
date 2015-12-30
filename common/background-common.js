@@ -166,6 +166,7 @@ postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdriveN
 
 
 showRefreshTokenError = function(sender, error){
+  debugLog("@169, refresh token error: ", error);
   logoutGoogleDrive(sender);
   errorMessage = "Error connecting to Google Drive. " +
                     "Please try to connect again. \n" +
@@ -307,11 +308,15 @@ logoutGoogleDrive = function(sender){
     removeCachedToken(tokenValue);
     sendAjax({
       url:"https://accounts.google.com/o/oauth2/revoke?token=" + tokenValue,
-      complete:function(){
-        debugLog("Revoke done");
-        setStorage(sender, "access_token", "");
-        setStorage(sender, "refresh_token", "");
-        setStorage(sender, "gdrive_email", "");
+      complete:function(data){
+        debugLog("Revoke done", data);
+        if(data.status == 200 || data.status == 400){
+          debugLog("Removing local data");
+          setStorage(sender, "access_token", "");
+          setStorage(sender, "refresh_token", "");
+          setStorage(sender, "gdrive_email", "");
+        }
+
         sendContentMessage(sender, {action:"show_log_in_prompt"});
         sendContentMessage(sender, {action:"disable_edit"});
       }
