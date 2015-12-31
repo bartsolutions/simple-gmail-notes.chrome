@@ -155,6 +155,9 @@ showLogoutPrompt = function(email, retryCount){
 
 //http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery#22429679
 hashFnv32a = function(str, asString, seed) {
+  if(!str)
+    return "";
+
   /*jshint bitwise:false */
   var i, l,
       hval = (seed === undefined) ? 0x811c9dc5 : seed;
