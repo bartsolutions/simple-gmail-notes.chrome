@@ -459,6 +459,10 @@ searchNote = function(sender, messageId){
 
 //Do as much initilization as possible, while not trigger login page
 initialize = function(sender, messageId){
+  var preferences = getPreferences();
+
+  sendContentMessage(sender, {action:"update_preferences", preferences:preferences});
+
   if(getStorage(sender, "refresh_token")){
     debugLog("Initializing, current refresh token:", 
                 getStorage(sender, "refresh_token"), 

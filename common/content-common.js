@@ -212,7 +212,12 @@ setupNotes = function(email, messageId){
   debugLog("Start to set up notes");
   debugLog("Email", email);
 
-  var injectionNode = $(".nH.if"); //hopefully this one is stable
+  $(".nH.if").prepend($("<div></div>", {
+    "class" : "sgn_container"
+  })); //hopefully this one is stable
+
+  var injectionNode = $(".sgn_container");
+
   var textAreaNode = $("<textarea></textarea>", {
     "class": "sgn_input",
     "text": "",
@@ -465,6 +470,32 @@ setupListeners = function(){
 
         break;
 
+      case "update_preferences":
+        var preferences = request.preferences;
+
+        var noteHeight = preferences["noteHeight"];
+        if(noteHeight)
+          $(".sgn_input").css("height", parseInt(noteHeight) * 18 +"px");
+
+        var fontColor = preferences["fontColor"];
+        if(fontColor)
+          $(".sgn_input").css("color", htmlEscape(fontColor));
+
+        var backgroundColor = preferences["backgroundColor"];
+        if(backgroundColor)
+          $(".sgn_input").css("background-color", backgroundColor);
+
+        var notePosition = preferences["notePosition"];
+        if(notePosition == "bottom"){
+          debugLog("@485, move to bottom");
+          $(".sgn_container").hide();
+          $(".sgn_container").first().show();
+          //$(".nH.aHU").find(".sgn_container").remove();
+          $(".nH.aHU").append($(".sgn_container").first());
+        }
+
+        debugLog("@470", preferences);
+        break;
       default:
           debugLog("unknown background request", request);
     }

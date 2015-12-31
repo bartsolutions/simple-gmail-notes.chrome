@@ -2,25 +2,87 @@
 <html>
 <head><title>Simple Gmail Notes Options</title>
 <script src="lib/jquery-1.11.3.min.js"></script>
+<script src="lib/jquery.simple-color.js"></script>
 <script src="options.js"></script>
 <style>
-  div{
-    margin:15px;
+  td {
+    padding: 10px;
+
   }
 </style>
 </head>
 <body>
 
 <div>
-<label>
-  <input type="checkbox" id="hide_listing_notes">
-  Hide notes from the email listing page.
-</label>
-</div>
+
+  <table>
+    <tr>
+      <td>
+        Hide note abstract from email listing
+      </td>
+      <td>
+    <input type="checkbox" id="hide_listing_notes">
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Note height (number of rows)
+      </td>
+      <td>
+        <select id="note_height">
+          <option>1</option>
+          <option>2</option>
+          <option>3</option>
+          <option>4</option>
+          <option>5</option>
+          <option>6</option>
+          <option>7</option>
+          <option>8</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Note font color
+      </td>
+      <td>
+        <input type="text" id="font_color">
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Note background color
+      </td>
+      <td>
+        <input type="text" id="background_color">
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        Note position
+      </td>
+      <td>
+        <select id="note_position">
+          <option>top</option>
+          <option>bottom</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>
 <div id="status"></div>
-<div>
-<button id="save">Save</button>
-</div>
+<div> <button id="save">Save</button> </div>
+<br/>
+<br/>
+<br/>
+<div> <button id="reset">Restore to Defaults</button> </div>
+      </td>
+      <td>
+      </td>
+  </table>
+
+
 
 
 

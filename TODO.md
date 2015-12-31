@@ -1,3 +1,4 @@
 - allow change of textarea height, color, and background color
 - updated mechansim for force logout
 - default search id to 0
+- update revoke link (google account ID not hardcoded)
