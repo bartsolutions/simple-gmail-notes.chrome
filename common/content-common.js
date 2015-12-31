@@ -184,16 +184,19 @@ composeEmailKey = function(title, sender, time){
   return emailKey;
 }
 
-getSearchNoteURL = function(){
-  //users may have logged into mutliple email addresses
+getGoogleAccountId = function(){
   var re = /mail\/u\/(\d+)/;
   var userId = "0";
-  
   var match = window.location.href.match(re);
-
   if(match && match.length > 1)
     userId = match[1];
 
+  return userId;
+}
+
+getSearchNoteURL = function(){
+  //users may have logged into mutliple email addresses
+  var userId = getGoogleAccountId();
   var searchUrl = "https://drive.google.com/drive/u/" + userId + "/folders/" + gCurrentGDriveFolderId;
 
   return searchUrl;
@@ -254,22 +257,37 @@ setupNotes = function(email, messageId){
             "margin": "5px"});
   var emptyPrompt = $("<div class='sgn_padding'>&nbsp;<div>")
                       .css({"margin":"5px"});
-  var errorPrompt = $("<div class='sgn_error'><div>")
+  var revokeErrorPrompt = $("<div class='sgn_error sgn_revoke'><div>")
                       .html("Error connecting to Google Drive <span class='sgn_error_timestamp'></span>, " +
                           "please try to <a class='sgn_reconnect sgn_action'>connect</a> again. \n" +
                           "If error persists after 5 attempts, you may try to manually " +
-                          "<a href='https://accounts.google.com/b/0/IssuedAuthSubTokens'>revoke</a> previous tokens.")
-                      .css({"margin":"5px", "color":"red", "display":"none"});
+                          "<a href='https://accounts.google.com/b/" + getGoogleAccountId() + 
+                          "/IssuedAuthSubTokens'>revoke</a> previous tokens.")
+
+  var userErrorPrompt = $("<div class='sgn_error sgn_user'></div>")
+                            .html("Failed to get Google Driver User");
+
+  var loginErrorPrompt = $("<div class='sgn_error sgn_login'></div>")
+                            .html("Failed to login Google Drive");
+
+  var customErrorPrompt = $("<div class='sgn_error sgn_custom'></div>")
+
 
   $(".sgn_input").remove();
   $(".sgn_prompt_login").remove();
   $(".sgn_prompt_logout").remove();
 
-  injectionNode.prepend(errorPrompt);
+  injectionNode.prepend(revokeErrorPrompt);
+  injectionNode.prepend(userErrorPrompt);
+  injectionNode.prepend(loginErrorPrompt);
+  injectionNode.prepend(customErrorPrompt);
+
   injectionNode.prepend(textAreaNode);
   injectionNode.prepend(loginPrompt);
   injectionNode.prepend(searchLogoutPrompt);
   injectionNode.prepend(emptyPrompt);
+  $(".sgn_error").css({"margin":"5px", "color":"red", "display":"none"});
+
 
   $(".sgn_action").css({
     "color":"gray",
@@ -421,12 +439,19 @@ setupListeners = function(){
         break;
       case "show_error":
         var errorMessage = request.message;
+        var type = request.type;
+
         debugLog("Error in response:", errorMessage);
         var date = new Date();
         var timestamp = date.getHours() + ":" + date.getMinutes() + ":" + 
                           date.getSeconds();
         $(".sgn_error_timestamp").text("(" +  timestamp + ")");
-        $(".sgn_error").show();
+        $(".sgn_error").hide();
+        $(".sgn_error.sgn_" + type).show();
+        if(type == "custom"){
+          $(".sgn_error.sgn_custom").text(errorMessage);
+        }
+
         break;
       case "update_user":
         $(".sgn_user").text(request.email);

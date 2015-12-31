@@ -157,6 +157,7 @@ postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdriveN
       },
       error: function(data){
         sendContentMessage(sender, {action:"show_error", 
+                              type:"custom", 
                               message:"Faild post message, error: " + 
                               JSON.stringify(data)});
       }
@@ -173,7 +174,7 @@ showRefreshTokenError = function(sender, error){
                     "If error persists, you may manually " +
                     "<a href='https://accounts.google.com/b/0/IssuedAuthSubTokens'>revoke</a> " +
                     "previous tokens.\n"
-  sendContentMessage(sender, {action:"show_error", message: errorMessage});
+  sendContentMessage(sender, {action:"show_error", type:"revoke"});
 }
 
 updateRefreshTokenFromCode = function(sender, messageId){
@@ -226,8 +227,7 @@ updateUserInfo = function(sender){
                              email:data.user.emailAddress})
       },
       error:function(){
-        sendContentMessage(sender, {action:"show_error", 
-                             message: "Failed to get Google Drive User"});
+        sendContentMessage(sender, {action:"show_error", type:"user"});
       }
     });
   });
@@ -282,8 +282,7 @@ loginGoogleDrive = function(sender, messageId){
       if(!code){
         sendContentMessage(sender, {action:"show_log_in_prompt"});
         sendContentMessage(sender, {action:"disable_edit"});
-        sendContentMessage(sender, {action:"show_error", 
-            message:"Failed to login Google Drive."});
+        sendContentMessage(sender, {action:"show_error", type:"login"});
       }
       else{
         //get code from redirect url
@@ -340,6 +339,7 @@ loadMessage = function(sender, gdriveNoteId){
     },
     error: function(data){
       sendContentMessage(sender, {action:"show_error", 
+                           type: "custom", 
                            message:"Faild load message, error: " + 
                                     JSON.stringify(data)});
     }

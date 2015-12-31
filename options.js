@@ -18,6 +18,7 @@ function resetOptions() {
   delete localStorage["noteHeight"];
   delete localStorage["fontColor"];
   delete localStorage["backgroundColor"];
+  delete localStorage["notePosition"];
 
   loadOptions();
   saveOptions();
