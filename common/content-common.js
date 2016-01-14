@@ -228,11 +228,6 @@ setupNotes = function(email, messageId){
     "class": "sgn_input",
     "text": "",
     "disabled":"disabled"
-  }).css({
-    "width": "100%", 
-    "height": "72px",
-    "color": "gray",
-    "margin": "5px",
   }).blur(function(){
     var content = $(this).val();
     if(gPreviousContent != content){
@@ -244,22 +239,24 @@ setupNotes = function(email, messageId){
 	  return true;
 	});
 
+  var extensionID = chrome.runtime.id;
+
   var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
       .html("Simple Gmail Notes connected to Google Drive of " +
               "'<span class='sgn_user'></span>' " +
-              "(<a class='sgn_action sgn_search' href='#' target='_blank'>Search Notes</a>, " +
-              "<a class='sgn_logout sgn_action'>Disconnect</a>)")
-      .css({"display":"none",
-            "color": "gray",
-            "margin": "5px"});
+              "<a class='sgn_logout sgn_action' href='#'>" + 
+              "<img src='chrome-extension://" + extensionID + "/image/logout.24.png'></a>" + 
+              "<a class='sgn_preferences sgn_action' href='chrome-extension://" + extensionID + "/options.html' target='_blank'>" + 
+              "<img src='chrome-extension://" + extensionID + "/image/preferences.24.png'></a>" +
+              "<a class='sgn_action sgn_search' href='#' target='_blank'>" +
+              "<img src='chrome-extension://" + extensionID + "/image/search.24.png'/></a> " +
+              "")
+      .hide();
   var loginPrompt = $("<div class='sgn_prompt_login'/></div>" )
       .html("Please <a class='sgn_login sgn_action'>connect</a> to " +
               "your Google Drive account to start using Simple Gmail Notes" )
-      .css({"display":"none",
-            "color": "gray",
-            "margin": "5px"});
-  var emptyPrompt = $("<div class='sgn_padding'>&nbsp;<div>")
-                      .css({"margin":"5px"});
+      .hide();
+  var emptyPrompt = $("<div class='sgn_padding'>&nbsp;<div>");
   var revokeErrorPrompt = $("<div class='sgn_error sgn_revoke'><div>")
                       .html("Error connecting to Google Drive <span class='sgn_error_timestamp'></span>, " +
                           "please try to <a class='sgn_reconnect sgn_action'>connect</a> again. \n" +
@@ -289,14 +286,10 @@ setupNotes = function(email, messageId){
   injectionNode.prepend(loginPrompt);
   injectionNode.prepend(searchLogoutPrompt);
   injectionNode.prepend(emptyPrompt);
-  $(".sgn_error").css({"margin":"5px", "color":"red", "display":"none"});
+  $(".sgn_error").hide();
 
 
-  $(".sgn_action").css({
-    "color":"gray",
-    "cursor":"pointer",
-    "text-decoration":"underline"
-  }).click(function(){
+  $(".sgn_action").click(function(){
     var classList =$(this).attr('class').split(/\s+/);
     $.each(classList, function(index, item){
       if(item != 'sgn_action'){

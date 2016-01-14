@@ -24,7 +24,10 @@
     "lib/jquery-1.11.3.min.js",
     "lib/gmail.js",
     "common/page-common.js",
-    "page.js"
+    "page.js",
+    "image/search.24.png",
+    "image/logout.24.png",
+    "image/preferences.24.png"
   ],
   "background": { 
       "scripts" : ["lib/jquery-1.11.3.min.js", "common/background-common.js", "background.js"]
@@ -32,6 +35,7 @@
   "content_scripts":  [{
       "matches": [ "https://mail.google.com/*"],
       "js": [ "lib/jquery-1.11.3.min.js", "common/content-common.js", "content.js"],
+      "css": [ "css/style.css"],
       "run_at": "document_end"
   }],
   "options_page": "options.html",
