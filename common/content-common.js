@@ -245,11 +245,11 @@ setupNotes = function(email, messageId){
       .html("Simple Gmail Notes connected to Google Drive of " +
               "'<span class='sgn_user'></span>' " +
               "<a class='sgn_logout sgn_action' href='#'>" + 
-              "<img src='chrome-extension://" + extensionID + "/image/logout.24.png'></a>" + 
+              "<img title='Log Out' src='chrome-extension://" + extensionID + "/image/logout.24.png'></a>" + 
               "<a class='sgn_preferences sgn_action' href='chrome-extension://" + extensionID + "/options.html' target='_blank'>" + 
-              "<img src='chrome-extension://" + extensionID + "/image/preferences.24.png'></a>" +
+              "<img title='Preferences' src='chrome-extension://" + extensionID + "/image/preferences.24.png'></a>" +
               "<a class='sgn_action sgn_search' href='#' target='_blank'>" +
-              "<img src='chrome-extension://" + extensionID + "/image/search.24.png'/></a> " +
+              "<img title='Search' src='chrome-extension://" + extensionID + "/image/search.24.png'/></a> " +
               "")
       .hide();
   var loginPrompt = $("<div class='sgn_prompt_login'/></div>" )
@@ -305,6 +305,11 @@ setupNotes = function(email, messageId){
 }
 
 
+updateNotesOnSummary = function(userEmail, pulledNoteList){
+  setTimeout(function(){
+    _updateNotesOnSummary(userEmail, pulledNoteList);
+  }, 300);  //wait until gmail script processing finished
+}
 
 
 var gEmailKeyNoteDict = {};
@@ -342,10 +347,10 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
 
     var sgnId = "sgn_" + hashFnv32a(emailKey, true);
 
-    if(note){
+    if(note.description){
       labelNode = $('<div class="ar as sgn" id="' + sgnId + '">' +
-                            '<div class="at" title="Simple Gmail Notes: ' + htmlEscape(note) + '" style="background-color: #ddd; border-color: #ddd;">' + 
-                            '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">[' + htmlEscape(note.substring(0, 20)) + ']</div></div>' + 
+                            '<div class="at" title="Simple Gmail Notes: ' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
+                            '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
                        '</div></div>');
     }
     else {
@@ -361,7 +366,8 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
              pulledNoteList.length);
     $.each(pulledNoteList, function(index, item){
       var emailKey = gEmailIdKeyDict[item.title];
-      gEmailKeyNoteDict[emailKey] = item.description;  
+      gEmailKeyNoteDict[emailKey] = {"description": item.description, 
+                                     "short_description": item.short_description};
     });
 
   }
@@ -375,12 +381,6 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
       markNote($(this), emailNote, emailKey);
     }
   });
-}
-
-updateNotesOnSummary = function(userEmail, pulledNoteList){
-  setTimeout(function(){
-    _updateNotesOnSummary(userEmail, pulledNoteList);
-  }, 300);  //wait until gmail script processing finished
 }
 
 var gEmailIdKeyDict = {};

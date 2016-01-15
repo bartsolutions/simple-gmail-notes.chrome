@@ -100,9 +100,20 @@ getStorage = function(sender, key) {
   return value;
 }
 
-getPreferenceHideListingNotes = function() {
+getPreferenceAbstractStyle = function() {
   var preferences = getPreferences();
-  var result = (String(preferences["hideListingNotes"]) === "true");
+  var abstractStyle = preferences["abstractStyle"];
+  //for backward compatibility
+  var hideListingNotes = (String(preferences["hideListingNotes"]) === "true");
+
+  var result = "";
+
+  if(abstractStyle){
+    result = abstractStyle;
+  }
+  else if(hideListingNotes){
+    result = "none";
+  }
 
   return result;
 }
@@ -463,6 +474,7 @@ initialize = function(sender, messageId){
 
   sendContentMessage(sender, {action:"update_preferences", preferences:preferences});
 
+  debugLog("@476", preferences);
   if(getStorage(sender, "refresh_token")){
     debugLog("Initializing, current refresh token:", 
                 getStorage(sender, "refresh_token"), 
@@ -483,6 +495,8 @@ initialize = function(sender, messageId){
 sendSummaryNotes = function(sender, pullList, resultList){
   var result = [];
   var itemDict = {};
+  var abstractStyle = getPreferenceAbstractStyle();
+
   iterateArray(resultList, function(index, emailItem){
     var title = emailItem.title.split(" ")[0];
     debugLog("@477", title);
@@ -498,12 +512,24 @@ sendSummaryNotes = function(sender, pullList, resultList){
   for(var i=0; i<pullList.length; i++){
     var title = pullList[i];
     var description = ""; //empty string for not found
+    var shortDescription = "";
 
     if(itemDict[title]){
       description = itemDict[title];
+
+      if(abstractStyle == "fixed_SGN")
+        shortDescription = "SGN";
+      else{
+        var length = parseInt(abstractStyle);
+        if(!length)
+          length = 20;  //default to 20
+
+        shortDescription = "[" + description.substring(0, length) + "]";
+      }
+
     }
 
-    result.push({"title":title, "description":description});
+    result.push({"title":title, "description":description, "short_description":shortDescription});
   }
 
   sendContentMessage(sender, {email:getStorage(sender, "gdrive_email"), 
@@ -511,13 +537,14 @@ sendSummaryNotes = function(sender, pullList, resultList){
 }
 
 pullNotes = function(sender, pendingPullList){
-  var hideListingNotes = getPreferenceHideListingNotes();
+  var abstractStyle = getPreferenceAbstractStyle();
 
-  if(hideListingNotes){
+  if(abstractStyle == "none"){
     debugLog("@482, skipped pulling because settings -> hide listing notes");
     sendSummaryNotes(sender, pendingPullList, []);  //send an empty result
     return;
   }
+
 
   debugLog("@414", pendingPullList);
   var query = "1=1";

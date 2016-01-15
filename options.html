@@ -18,10 +18,13 @@
   <table>
     <tr>
       <td>
-        Hide note abstract from email listing
+        Note Abstract Style
       </td>
       <td>
-    <input type="checkbox" id="hide_listing_notes">
+          <select id="abstract_style">
+              <option value="none">(No Abstract)</option>
+              <option value="fixed_SGN">(Fixed) [SGN]</option>
+          </select>
       </td>
     </tr>
     <tr>
@@ -30,14 +33,6 @@
       </td>
       <td>
         <select id="note_height">
-          <option>1</option>
-          <option>2</option>
-          <option>3</option>
-          <option>4</option>
-          <option>5</option>
-          <option>6</option>
-          <option>7</option>
-          <option>8</option>
         </select>
       </td>
     </tr>
@@ -70,7 +65,7 @@
       </td>
     </tr>
     <tr>
-      <td>
+      <td colspan=2>
 <div id="status"></div>
 <div> <button id="save">Save</button> </div>
 <br/>
@@ -78,13 +73,6 @@
 <br/>
 <div> <button id="reset">Restore to Defaults</button> </div>
       </td>
-      <td>
-      </td>
   </table>
-
-
-
-
-
 </body>
 </html>
