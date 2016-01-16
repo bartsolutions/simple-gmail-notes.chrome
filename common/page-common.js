@@ -101,8 +101,11 @@ SimpleGmailNotes.start = function(){
     isPulling = true;
 
 
-    if(!$("tr.zA").length || gmail.check.is_inside_email() ||
-       $("tr.zA:visible").find(".sgn").length == $("tr.zA:visible").length){
+    debugLog("@104", $("tr.zA:visible").find(".sgn").length, $("tr.zA[id]:visible").length);
+    if(!$("tr.zA").length || 
+       (gmail.check.is_inside_email() && !gmail.check.is_vertical_split() 
+       && !gmail.check.is_horizontal_split()) ||
+       $("tr.zA:visible").find(".sgn").length >= $("tr.zA[id]:visible").length){
       debugLog("Skipped pulling");
       isPulling = false;
       return;

@@ -314,20 +314,46 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
 
 var gEmailKeyNoteDict = {};
 _updateNotesOnSummary = function(userEmail, pulledNoteList){
-  var getTitleNode = function(mailNode){
-    return $(mailNode).find(".xT .y6").find("span").first();
+  var getTitle = function(mailNode){
+    var hook = $(mailNode).find(".xT .y6");
+
+    if(!hook.length)  //vertical split view
+      hook = $(mailNode).next().find(".xT .y6");
+
+    return hook.find("span").first().text();
+  }
+
+  var getTime = function(mailNode) {
+    var hook = $(mailNode).find(".xW");
+
+    if(!hook.length)  //vertical split view
+      hook = $(mailNode).find(".apm");
+
+    return hook.find("span").last().attr("title");
+  }
+
+  var addLabelToTitle = function(mailNode, labelNode){
+    var hook = $(mailNode).find(".xT .y6");
+
+    if(!hook.length){ //vertical split view
+      hook = $(mailNode).next().next().find(".apB .apu");
+    }
+
+    if(!hook.find(".sgn").length)
+      hook.prepend(labelNode);
   }
 
   var getEmailKey = function(mailNode){
-    var titleNode = getTitleNode(mailNode);
-    var title = titleNode.text();
+    //var titleNode = getTitleNode(mailNode);
+    //var title = titleNode.text();
+    var title = getTitle(mailNode);
     var sender = mailNode.find(".yW .yP, .yW .zF").attr("email");
 
     if($(location).attr("href").indexOf("#sent") > 0){
       sender = userEmail;
     }
 
-    var time = mailNode.find(".xW").find("span").last().attr("title");
+    var time = getTime(mailNode);
     var emailKey = composeEmailKey(title, sender, time);
 
     debugLog("@249, email key:" + emailKey);
@@ -342,12 +368,12 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
   }
 
   var markNote = function(mailNode, note, emailKey){
-    var titleNode = getTitleNode(mailNode);
+    //var titleNode = getTitleNode(mailNode);
     var labelNode;
 
     var sgnId = "sgn_" + hashFnv32a(emailKey, true);
 
-    if(note.description){
+    if(note && note.description){
       labelNode = $('<div class="ar as sgn" id="' + sgnId + '">' +
                             '<div class="at" title="Simple Gmail Notes: ' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
                             '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
@@ -357,7 +383,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
       labelNode = $('<div style="display:none" class="sgn" id="' + sgnId + '"></div>');
     }
 
-    titleNode.before(labelNode);
+    addLabelToTitle(mailNode, labelNode);
   }
 
   if(pulledNoteList && pulledNoteList.length){
@@ -373,7 +399,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
   }
 
   //loop for each email tr
-  $("tr.zA").each(function(){
+  $("tr.zA[id]").each(function(){
     var emailKey = getEmailKey($(this));
     //debugLog("Working on email:", emailKey);
     if(!hasMarkedNote($(this))){
@@ -386,6 +412,8 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
 var gEmailIdKeyDict = {};
 pullNotes = function(userEmail, emailList){
   var pendingPullList = [];
+
+  debugLog("@418, pulling notes");
 
   $.each(emailList, function(index, email){
     if(!email.sender){
