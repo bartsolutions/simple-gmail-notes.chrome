@@ -242,8 +242,8 @@ setupNotes = function(email, messageId){
   var extensionID = chrome.runtime.id;
 
   var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
-      .html("Simple Gmail Notes connected to Google Drive of " +
-              "'<span class='sgn_user'></span>' " +
+      .html("<span class='sgn_current_connection'>Simple Gmail Notes connected to Google Drive of " +
+              "'<span class='sgn_user'></span>' </span>" +
               "<a class='sgn_logout sgn_action' href='#'>" + 
               "<img title='Log Out' src='chrome-extension://" + extensionID + "/image/logout.24.png'></a>" + 
               "<a class='sgn_preferences sgn_action' href='chrome-extension://" + extensionID + "/options.html' target='_blank'>" + 
@@ -542,6 +542,13 @@ setupListeners = function(){
           //$(".nH.aHU").find(".sgn_container").remove();
           $(".nH.aHU").append($(".sgn_container").first());
         }
+
+        var showConnectionPrompt = (preferences["showConnectionPrompt"] !== "false");
+        if(!showConnectionPrompt){
+          $(".sgn_current_connection").hide();
+        }
+
+
 
         debugLog("@470", preferences);
         break;

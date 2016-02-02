@@ -7,6 +7,7 @@ function saveOptions() {
   localStorage["fontColor"] = $("#font_color").val();
   localStorage["backgroundColor"] = $("#background_color").val();
   localStorage["notePosition"] = $("#note_position").val();
+  localStorage["showConnectionPrompt"] = $("#show_connection_prompt").is(":checked");
 
 
   $("#status").html("Options saved.<br/><br/>Please refresh browser to make the changes effective.<br/><br/>");
@@ -24,6 +25,7 @@ function resetOptions() {
   delete localStorage["fontColor"];
   delete localStorage["backgroundColor"];
   delete localStorage["notePosition"];
+  delete localStorage["showConnectionPrompt"];
 
   loadOptions();
   saveOptions();
@@ -70,7 +72,8 @@ function loadOptions() {
     notePosition = "top";
   $("#note_position").val(notePosition);
 
-
+  var showConnectionPrompt = (localStorage["showConnectionPrompt"] !== "false");
+  $("#show_connection_prompt").prop("checked", showConnectionPrompt);
 
 }
 
