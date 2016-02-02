@@ -347,7 +347,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     //var titleNode = getTitleNode(mailNode);
     //var title = titleNode.text();
     var title = getTitle(mailNode);
-    var sender = mailNode.find(".yW .yP, .yW .zF").attr("email");
+    var sender = mailNode.find(".yW .yP, .yW .zF").last().attr("email");
 
     if($(location).attr("href").indexOf("#sent") > 0){
       sender = userEmail;
