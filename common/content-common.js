@@ -22,10 +22,19 @@ setupBackgroundEventsListener = function(callback) {
   throw "setupBackgroundEventsListener not implemented";
 }
 
+getIconBaseUrl = function(){
+  throw "getIconBaseUrl not implemented";
+}
+
+getOptionsUrl = function(){
+  throw "getOptionsUrl not implemented";
+}
+
 isDebug = function(callback) {
   //return true;  //turn on this only if u want to check initilization part
   return false;
 }
+
 
 /*
  * Utilities
@@ -239,17 +248,16 @@ setupNotes = function(email, messageId){
 	  return true;
 	});
 
-  var extensionID = chrome.runtime.id;
 
   var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
       .html("<span class='sgn_current_connection'>Simple Gmail Notes connected to Google Drive of " +
               "'<span class='sgn_user'></span>' </span>" +
               "<a class='sgn_logout sgn_action' href='#'>" + 
-              "<img title='Log Out' src='chrome-extension://" + extensionID + "/image/logout.24.png'></a>" + 
-              "<a class='sgn_preferences sgn_action' href='chrome-extension://" + extensionID + "/options.html' target='_blank'>" + 
-              "<img title='Preferences' src='chrome-extension://" + extensionID + "/image/preferences.24.png'></a>" +
+              "<img title='Log Out' src='" + getIconBaseUrl() + "/logout.24.png'></a>" + 
+              "<a class='sgn_preferences sgn_action' href='" + getOptionsUrl() + "' target='_blank'>" + 
+              "<img title='Preferences' src='" + getIconBaseUrl() + "/preferences.24.png'></a>" +
               "<a class='sgn_action sgn_search' href='#' target='_blank'>" +
-              "<img title='Search' src='chrome-extension://" + extensionID + "/image/search.24.png'/></a> " +
+              "<img title='Search' src='" + getIconBaseUrl() + "/search.24.png'/></a> " +
               "")
       .hide();
   var loginPrompt = $("<div class='sgn_prompt_login'/></div>" )

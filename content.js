@@ -28,6 +28,14 @@ isDebug = function(callback){
 }
 /*** end of callback implementation ***/
 
+var extensionID = chrome.runtime.id;
+getIconBaseUrl = function(){
+  return "chrome-extension://" + extensionID + "/image";
+}
+
+getOptionsUrl = function(){
+ return "chrome-extension://" + extensionID + "/options.html";
+}
 
 //initalization
 function setupPage(){
