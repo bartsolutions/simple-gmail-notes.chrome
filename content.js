@@ -33,8 +33,9 @@ getIconBaseUrl = function(){
   return "chrome-extension://" + extensionID + "/image";
 }
 
-getOptionsUrl = function(){
- return "chrome-extension://" + extensionID + "/options.html";
+
+openOptionsPage = function(){
+  sendBackgroundMessage({"action": "open_options"});
 }
 
 //initalization

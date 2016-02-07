@@ -19,6 +19,8 @@ var settings = {
   SCOPE: 'https://www.googleapis.com/auth/drive.file'
 } 
 
+var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", "backgroundColor", "notePosition", "showConnectionPrompt"];
+
 /*
  * Interface declarations
  *
@@ -32,8 +34,8 @@ isDebug = function(callback) {
   return false;
 }
 
-getPreferences = function(){
-  throw "getPreferences not implemented";
+getRawPreferences = function(){
+  throw "getRawPreferences not implemented";
 }
 
 getRawStorageObject = function(){
@@ -79,6 +81,42 @@ debugLog = function() //need some further work
   }
 }
 
+getPreferences = function()
+{
+  var preferences = getRawPreferences();
+
+  var hideListingNotes = (preferences["hideListingNotes"] === "true");
+  //for backward compatible
+  if(hideListingNotes){
+    preferences["abstractStyle"] = "none";
+    delete preferences["hideListingNotes"];
+  }
+
+  if(!preferences["abstractStyle"])
+    preferences["abstractStyle"] = "20";  //default to 20 characters
+
+
+  if(!preferences["noteHeight"])
+    preferences["noteHeight"] = "4";  //default to 4 rows high
+
+  
+  if(!preferences["fontColor"])
+    preferences["fontColor"] = "#808080";
+
+
+  if(!preferences["backgroundColor"])
+    preferences["backgroundColor"] = "#FFFFFF";
+
+  if(!preferences["notePosition"])
+    preferences["notePosition"] = "top";
+
+  if(!preferences["showConnectionPrompt"])
+    preferences["showConnectionPrompt"] = "false";
+
+
+  return preferences;
+}
+
 setStorage = function(sender, key, value) {
   var email = sender.email;
   var storageKey = email + "||" + key;
@@ -103,19 +141,8 @@ getStorage = function(sender, key) {
 getPreferenceAbstractStyle = function() {
   var preferences = getPreferences();
   var abstractStyle = preferences["abstractStyle"];
-  //for backward compatibility
-  var hideListingNotes = (String(preferences["hideListingNotes"]) === "true");
 
-  var result = "";
-
-  if(abstractStyle){
-    result = abstractStyle;
-  }
-  else if(hideListingNotes){
-    result = "none";
-  }
-
-  return result;
+  return abstractStyle;
 }
 
 //Post message to google drive via REST API
@@ -585,6 +612,7 @@ setupListeners = function(sender, request){
       break;
     case "initialize":
       initialize(sender, request.messageId);
+      
       break;
     case "pull_notes":
       pullNotes(sender, request.pendingPullList);

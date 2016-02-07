@@ -77,7 +77,7 @@ function loadOptions() {
 
 }
 
-function setupOptions(){
+function initOptions(){
   for(var i=2; i<=30; i++){
     $("#abstract_style").append("<option value=" + i + ">First " + i + " Characters</option>");
   }
@@ -89,7 +89,7 @@ function setupOptions(){
 }
 
 $(document).ready(function(){
-  setupOptions();
+  initOptions();
 
   $("#save").click(saveOptions);
   $("#reset").click(resetOptions);

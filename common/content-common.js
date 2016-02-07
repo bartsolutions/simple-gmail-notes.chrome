@@ -26,8 +26,9 @@ getIconBaseUrl = function(){
   throw "getIconBaseUrl not implemented";
 }
 
-getOptionsUrl = function(){
-  throw "getOptionsUrl not implemented";
+openOptionsPage = function(){
+  throw "openOptionsPage not implemented";
+   
 }
 
 isDebug = function(callback) {
@@ -89,7 +90,8 @@ sendEventMessage = function(eventName, eventDetail){
 
 debugLog = function()
 {
-  if (isDebug()) {
+  var debugStatus = isDebug();
+  if (debugStatus) {
       console.log.apply(console, arguments);
   }
 }
@@ -252,11 +254,11 @@ setupNotes = function(email, messageId){
   var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
       .html("<span class='sgn_current_connection'>Simple Gmail Notes connected to Google Drive of " +
               "'<span class='sgn_user'></span>' </span>" +
-              "<a class='sgn_logout sgn_action' href='#'>" + 
+              "<a class='sgn_logout sgn_action' >" + 
               "<img title='Log Out' src='" + getIconBaseUrl() + "/logout.24.png'></a>" + 
-              "<a class='sgn_preferences sgn_action' href='" + getOptionsUrl() + "' target='_blank'>" + 
+              "<a class='sgn_open_options sgn_action'>" +
               "<img title='Preferences' src='" + getIconBaseUrl() + "/preferences.24.png'></a>" +
-              "<a class='sgn_action sgn_search' href='#' target='_blank'>" +
+              "<a class='sgn_action sgn_search' target='_blank'>" +
               "<img title='Search' src='" + getIconBaseUrl() + "/search.24.png'/></a> " +
               "")
       .hide();
@@ -300,7 +302,10 @@ setupNotes = function(email, messageId){
   $(".sgn_action").click(function(){
     var classList =$(this).attr('class').split(/\s+/);
     $.each(classList, function(index, item){
-      if(item != 'sgn_action'){
+      if(item == 'sgn_open_options'){
+        openOptionsPage();
+      }
+      else if(item != 'sgn_action'){  //for all other actions
           var action = item.substring(4);   //remove the 'sgn_' prefix
           sendBackgroundMessage({action: action, email: email, messageId:messageId});
       }

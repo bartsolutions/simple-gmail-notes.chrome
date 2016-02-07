@@ -19,7 +19,7 @@ getRawStorageObject = function(){
   return localStorage;
 }
 
-getPreferences = function(){
+getRawPreferences = function(){
   storage = getRawStorageObject();
   return storage; //preferences are put into local storage as well
 }
@@ -75,7 +75,14 @@ $(window).load(function(){
     function(request, sender, sendResponse) {
       debugLog("Get message to background", request);
       sender = {worker: sender, email: request.email};
-      setupListeners(sender, request)
+
+      if(request.action == "open_options"){
+        var extensionID = chrome.runtime.id;
+        chrome.tabs.create({"url": "chrome-extension://" + extensionID + "/options.html"});
+      }
+      else{
+        setupListeners(sender, request);
+      }
   });
 });
 
