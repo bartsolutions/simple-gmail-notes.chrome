@@ -19,6 +19,7 @@ function pullPreferences(){
   var preferences = {};
 
   if(isChrome()){
+    updateDefaultPreferences(localStorage);
     $.each(gPreferenceTypes, function(index, key){
       preferences[key] = localStorage[key];
     });

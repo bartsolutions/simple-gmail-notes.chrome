@@ -81,10 +81,14 @@ debugLog = function() //need some further work
   }
 }
 
-getPreferences = function()
+isEmptyPrefernce = function(preference)
 {
-  var preferences = getRawPreferences();
+  return !preference || preference == "null" || preference == "undefined";
 
+}
+
+updateDefaultPreferences = function(preferences)
+{
   var hideListingNotes = (preferences["hideListingNotes"] === "true");
   //for backward compatible
   if(hideListingNotes){
@@ -92,29 +96,37 @@ getPreferences = function()
     delete preferences["hideListingNotes"];
   }
 
-  if(!preferences["abstractStyle"])
+  if(isEmptyPrefernce(preferences["abstractStyle"]))
     preferences["abstractStyle"] = "20";  //default to 20 characters
 
 
-  if(!preferences["noteHeight"])
+  if(isEmptyPrefernce(preferences["noteHeight"]))
     preferences["noteHeight"] = "4";  //default to 4 rows high
 
   
-  if(!preferences["fontColor"])
+  if(isEmptyPrefernce(preferences["fontColor"]))
     preferences["fontColor"] = "#808080";
 
 
-  if(!preferences["backgroundColor"])
+  if(isEmptyPrefernce(preferences["backgroundColor"]))
     preferences["backgroundColor"] = "#FFFFFF";
 
-  if(!preferences["notePosition"])
+  if(isEmptyPrefernce(preferences["notePosition"]))
     preferences["notePosition"] = "top";
 
-  if(!preferences["showConnectionPrompt"])
+  if(isEmptyPrefernce(preferences["showConnectionPrompt"]))
     preferences["showConnectionPrompt"] = "false";
 
 
   return preferences;
+
+}
+
+getPreferences = function()
+{
+  var preferences = getRawPreferences();
+
+  return updateDefaultPreferences(preferences);
 }
 
 setStorage = function(sender, key, value) {
