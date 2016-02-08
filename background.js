@@ -15,6 +15,11 @@ isDebug = function(callback){
   return isDebugCache;
 }
 
+var extensionID = chrome.runtime.id;
+openTab = function(page){
+  chrome.tabs.create({"url": "chrome-extension://" + extensionID + "/" + page});
+}
+
 getRawStorageObject = function(){
   return localStorage;
 }
@@ -76,13 +81,7 @@ $(window).load(function(){
       debugLog("Get message to background", request);
       sender = {worker: sender, email: request.email};
 
-      if(request.action == "open_options"){
-        var extensionID = chrome.runtime.id;
-        chrome.tabs.create({"url": "chrome-extension://" + extensionID + "/options.html"});
-      }
-      else{
-        setupListeners(sender, request);
-      }
+      setupListeners(sender, request);
   });
 });
 

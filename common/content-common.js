@@ -26,11 +26,6 @@ getIconBaseUrl = function(){
   throw "getIconBaseUrl not implemented";
 }
 
-openOptionsPage = function(){
-  throw "openOptionsPage not implemented";
-   
-}
-
 isDebug = function(callback) {
   //return true;  //turn on this only if u want to check initilization part
   return false;
@@ -302,10 +297,7 @@ setupNotes = function(email, messageId){
   $(".sgn_action").click(function(){
     var classList =$(this).attr('class').split(/\s+/);
     $.each(classList, function(index, item){
-      if(item == 'sgn_open_options'){
-        openOptionsPage();
-      }
-      else if(item != 'sgn_action'){  //for all other actions
+      if(item != 'sgn_action'){  //for all other actions
           var action = item.substring(4);   //remove the 'sgn_' prefix
           sendBackgroundMessage({action: action, email: email, messageId:messageId});
       }

@@ -34,6 +34,10 @@ isDebug = function(callback) {
   return false;
 }
 
+openTab = function(page){
+  throw "openTab not implemented";
+}
+
 getRawPreferences = function(){
   throw "getRawPreferences not implemented";
 }
@@ -83,8 +87,8 @@ debugLog = function() //need some further work
 
 isEmptyPrefernce = function(preference)
 {
-  return !preference || preference == "null" || preference == "undefined";
-
+  var val = String(preference);
+  return val == "" || val == "null" || val == "undefined";
 }
 
 updateDefaultPreferences = function(preferences)
@@ -115,7 +119,7 @@ updateDefaultPreferences = function(preferences)
     preferences["notePosition"] = "top";
 
   if(isEmptyPrefernce(preferences["showConnectionPrompt"]))
-    preferences["showConnectionPrompt"] = "false";
+    preferences["showConnectionPrompt"] = "true";
 
 
   return preferences;
@@ -628,6 +632,9 @@ setupListeners = function(sender, request){
       break;
     case "pull_notes":
       pullNotes(sender, request.pendingPullList);
+      break;
+    case "open_options":
+      openTab("options.html");
       break;
     default:
       debugLog("unknown request to background", request);

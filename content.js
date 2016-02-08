@@ -34,10 +34,6 @@ getIconBaseUrl = function(){
 }
 
 
-openOptionsPage = function(){
-  sendBackgroundMessage({"action": "open_options"});
-}
-
 //initalization
 function setupPage(){
     var j = document.createElement('script');

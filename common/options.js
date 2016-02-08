@@ -39,10 +39,10 @@ if(!isChrome()){
     switch(request.action){
       case "update_preferences":
         updateControls(request.preferences);
-        return;
+        break;
       default:
         //ignore it
-        return
+        break;
     };
   });
 }
@@ -66,7 +66,7 @@ function savePreferences() {
   preferences["fontColor"] = $("#font_color").val();
   preferences["backgroundColor"] = $("#background_color").val();
   preferences["notePosition"] = $("#note_position").val();
-  preferences["showConnectionPrompt"] = $("#show_connection_prompt").is(":checked");
+  preferences["showConnectionPrompt"] = String($("#show_connection_prompt").is(":checked"));
 
   pushPreferences(preferences);
 
