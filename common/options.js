@@ -1,4 +1,5 @@
-var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", "backgroundColor", "notePosition", "showConnectionPrompt"];
+var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", "backgroundColor", 
+                        "abstractFontColor", "abstractBackgroundColor", "notePosition", "showConnectionPrompt"];
 
 function isChrome(){
    return /chrom(e|ium)/.test(navigator.userAgent.toLowerCase());
@@ -65,6 +66,8 @@ function savePreferences() {
   preferences["noteHeight"] = $("#note_height").val();
   preferences["fontColor"] = $("#font_color").val();
   preferences["backgroundColor"] = $("#background_color").val();
+  preferences["abstractFontColor"] = $("#abstract_font_color").val();
+  preferences["abstractBackgroundColor"] = $("#abstract_background_color").val();
   preferences["notePosition"] = $("#note_position").val();
   preferences["showConnectionPrompt"] = String($("#show_connection_prompt").is(":checked"));
 
@@ -92,13 +95,21 @@ function updateControls(preferences){
 
 
   var fontColor = preferences["fontColor"];
-  $("#font_color").setColor(fontColor);
+  $("#font_color").setColor(fontColor.toUpperCase());
   $("#font_color").val(fontColor);
 
 
   var backgroundColor = preferences["backgroundColor"];
-  $("#background_color").setColor(backgroundColor);
+  $("#background_color").setColor(backgroundColor.toUpperCase());
   $("#background_color").val(backgroundColor);
+
+  var abstractFontColor = preferences["abstractFontColor"];
+  $("#abstract_font_color").setColor(abstractFontColor.toUpperCase());
+  $("#abstract_font_color").val(abstractFontColor);
+
+  var abstractBackgroundColor = preferences["abstractBackgroundColor"];
+  $("#abstract_background_color").setColor(abstractBackgroundColor.toUpperCase());
+  $("#abstract_background_color").val(abstractBackgroundColor);
 
   var notePosition = preferences["notePosition"];
   $("#note_position").val(notePosition);
@@ -126,6 +137,8 @@ $(document).ready(function(){
   $("#reset").click(resetPreferences);
   $("#font_color").simpleColor({ displayColorCode: true });
   $("#background_color").simpleColor({ displayColorCode: true });
+  $("#abstract_font_color").simpleColor({ displayColorCode: true });
+  $("#abstract_background_color").simpleColor({ displayColorCode: true });
 
   pullPreferences();
 });

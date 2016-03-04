@@ -22,6 +22,8 @@
 
 - [gmail.js](https://github.com/KartikTalwar/gmail.js/tree/master)
 
+- [ikooni icons](https://www.iconfinder.com/iconsets/ikooni-outline-free-basic)
+
 **More Technical Details**
  - <http://blog.walty8.com/simple-gmail-notes-chrome-extension/>
 

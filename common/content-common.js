@@ -220,6 +220,9 @@ var gCurrentEmailSubject = "";
 var gCurrentEmailDatetime = "";
 var gCurrentEmailSender = "";
 
+var gAbstractBackgroundColor = "";
+var gAbstractFontColor = "";
+
 setupNotes = function(email, messageId){
   debugLog("Start to set up notes");
   debugLog("Email", email);
@@ -379,10 +382,17 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     var sgnId = "sgn_" + hashFnv32a(emailKey, true);
 
     if(note && note.description){
+
       labelNode = $('<div class="ar as sgn" id="' + sgnId + '">' +
                             '<div class="at" title="Simple Gmail Notes: ' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
                             '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
                        '</div></div>');
+
+      labelNode.find(".at").css("background-color", gAbstractBackgroundColor)
+                           .css("border-color", gAbstractBackgroundColor);
+      labelNode.find(".au").css("border-color", gAbstractBackgroundColor);
+      labelNode.find(".av").css("color", gAbstractFontColor);
+                          
     }
     else {
       labelNode = $('<div style="display:none" class="sgn" id="' + sgnId + '"></div>');
@@ -535,9 +545,14 @@ setupListeners = function(){
         if(fontColor)
           $(".sgn_input").css("color", htmlEscape(fontColor));
 
+
+
         var backgroundColor = preferences["backgroundColor"];
         if(backgroundColor)
           $(".sgn_input").css("background-color", backgroundColor);
+
+        gAbstractBackgroundColor = preferences["abstractBackgroundColor"];
+        gAbstractFontColor = preferences["abstractFontColor"];
 
         var notePosition = preferences["notePosition"];
         if(notePosition == "bottom"){

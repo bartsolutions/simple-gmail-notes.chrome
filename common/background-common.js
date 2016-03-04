@@ -111,9 +111,15 @@ updateDefaultPreferences = function(preferences)
   if(isEmptyPrefernce(preferences["fontColor"]))
     preferences["fontColor"] = "#808080";
 
-
   if(isEmptyPrefernce(preferences["backgroundColor"]))
     preferences["backgroundColor"] = "#FFFFFF";
+
+  if(isEmptyPrefernce(preferences["abstractFontColor"]))
+    preferences["abstractFontColor"] = "#666666";
+
+  if(isEmptyPrefernce(preferences["abstractBackgroundColor"]))
+    preferences["abstractBackgroundColor"] = "#DDDDDD";
+
 
   if(isEmptyPrefernce(preferences["notePosition"]))
     preferences["notePosition"] = "top";
@@ -588,6 +594,8 @@ pullNotes = function(sender, pendingPullList){
     return;
   }
 
+  var preferences = getPreferences();
+  sendContentMessage(sender, {action:"update_preferences", preferences:preferences});
 
   debugLog("@414", pendingPullList);
   var query = "1=1";
