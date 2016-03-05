@@ -360,7 +360,7 @@ loginGoogleDrive = function(sender, messageId){
 
 }
 
-logoutGoogleDrive = function(sender){
+revokeToken = function(sender){
   var tokenValue = getStorage(sender, "access_token");
   if(tokenValue){
     debugLog("Revoking access token: ", tokenValue);
@@ -371,16 +371,25 @@ logoutGoogleDrive = function(sender){
         debugLog("Revoke done", data);
         if(data.status == 200 || data.status == 400){
           debugLog("Removing local data");
-          setStorage(sender, "access_token", "");
-          setStorage(sender, "refresh_token", "");
-          setStorage(sender, "gdrive_email", "");
+          //setStorage(sender, "access_token", "");
+          //setStorage(sender, "refresh_token", "");
+          //setStorage(sender, "gdrive_email", "");
+          //sendContentMessage(sender, {action:"show_log_in_prompt"});
+          //sendContentMessage(sender, {action:"disable_edit"});
+          logoutGoogleDrive(sender);
         }
 
-        sendContentMessage(sender, {action:"show_log_in_prompt"});
-        sendContentMessage(sender, {action:"disable_edit"});
       }
     });
   }
+}
+
+logoutGoogleDrive = function(sender){
+  setStorage(sender, "access_token", "");
+  setStorage(sender, "refresh_token", "");
+  setStorage(sender, "gdrive_email", "");
+  sendContentMessage(sender, {action:"show_log_in_prompt"});
+  sendContentMessage(sender, {action:"disable_edit"});
 }
 
 loadMessage = function(sender, gdriveNoteId){

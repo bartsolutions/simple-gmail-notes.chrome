@@ -130,11 +130,16 @@ function initPreferences(){
 
 }
 
+function revokeToken(){
+  window.open("https://accounts.google.com/IssuedAuthSubTokens", "_blank");
+}
+
 $(document).ready(function(){
   initPreferences();
 
   $("#save").click(savePreferences);
   $("#reset").click(resetPreferences);
+  $("#revoke").click(revokeToken);
   $("#font_color").simpleColor({ displayColorCode: true });
   $("#background_color").simpleColor({ displayColorCode: true });
   $("#abstract_font_color").simpleColor({ displayColorCode: true });
