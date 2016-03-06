@@ -232,7 +232,7 @@ showRefreshTokenError = function(sender, error){
   errorMessage = "Error connecting to Google Drive. " +
                     "Please try to connect again. \n" +
                     "If error persists, you may manually " +
-                    "<a href='https://accounts.google.com/b/0/IssuedAuthSubTokens'>revoke</a> " +
+                    "<a href='https://accounts.google.com/IssuedAuthSubTokens'>revoke</a> " +
                     "previous tokens.\n"
   sendContentMessage(sender, {action:"show_error", type:"revoke"});
 }
@@ -385,6 +385,7 @@ revokeToken = function(sender){
 }
 
 logoutGoogleDrive = function(sender){
+  setStorage(sender, "code", "");
   setStorage(sender, "access_token", "");
   setStorage(sender, "refresh_token", "");
   setStorage(sender, "gdrive_email", "");
@@ -597,8 +598,8 @@ sendSummaryNotes = function(sender, pullList, resultList){
 pullNotes = function(sender, pendingPullList){
   var abstractStyle = getPreferenceAbstractStyle();
 
-  if(abstractStyle == "none"){
-    debugLog("@482, skipped pulling because settings -> hide listing notes");
+  if(abstractStyle == "none" || !getStorage(sender, "access_token")){
+    debugLog("@482, skipped pulling because settings -> hide listing notes or no access token");
     sendSummaryNotes(sender, pendingPullList, []);  //send an empty result
     return;
   }

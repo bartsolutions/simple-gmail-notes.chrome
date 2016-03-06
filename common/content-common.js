@@ -97,6 +97,11 @@ disableEdit = function(retryCount)
     retryCount = settings.MAX_RETRY_COUNT;
 
   $(".sgn_input").prop("disabled", true);
+  $(".sgn_input").val("");
+
+  //clear up the cache
+  gEmailIdKeyDict = {};
+  gEmailKeyNoteDict = {};
 
   //keep trying until it's visible
   if(!$(".sgn_input").is(":disabled") || $(".sgn_padding").is(":visible")){  
