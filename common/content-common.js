@@ -227,6 +227,7 @@ var gCurrentEmailSender = "";
 
 var gAbstractBackgroundColor = "";
 var gAbstractFontColor = "";
+var gAbstractFontSize = "";
 
 setupNotes = function(email, messageId){
   debugLog("Start to set up notes");
@@ -397,6 +398,9 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
                            .css("border-color", gAbstractBackgroundColor);
       labelNode.find(".au").css("border-color", gAbstractBackgroundColor);
       labelNode.find(".av").css("color", gAbstractFontColor);
+
+      if(gAbstractFontSize != "default")
+          labelNode.find(".av").css("font-size", gAbstractFontSize + "pt");
                           
     }
     else {
@@ -550,14 +554,21 @@ setupListeners = function(){
         if(fontColor)
           $(".sgn_input").css("color", htmlEscape(fontColor));
 
-
-
         var backgroundColor = preferences["backgroundColor"];
         if(backgroundColor)
           $(".sgn_input").css("background-color", backgroundColor);
 
+        var fontSize = preferences["fontSize"];
+        if(fontSize != "default"){
+          $(".sgn_input").css("font-size", fontSize + "pt");
+          $(".sgn_current_connection").css("font-size", fontSize + "pt");
+        }
+
         gAbstractBackgroundColor = preferences["abstractBackgroundColor"];
         gAbstractFontColor = preferences["abstractFontColor"];
+        gAbstractFontSize = preferences["abstractFontSize"];
+
+
 
         var notePosition = preferences["notePosition"];
         if(notePosition == "bottom"){

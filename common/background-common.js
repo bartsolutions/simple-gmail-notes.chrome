@@ -114,18 +114,24 @@ updateDefaultPreferences = function(preferences)
   if(isEmptyPrefernce(preferences["backgroundColor"]))
     preferences["backgroundColor"] = "#FFFFFF";
 
+  if(isEmptyPrefernce(preferences["fontSize"]))
+    preferences["fontSize"] = "default";
+
   if(isEmptyPrefernce(preferences["abstractFontColor"]))
     preferences["abstractFontColor"] = "#666666";
 
   if(isEmptyPrefernce(preferences["abstractBackgroundColor"]))
     preferences["abstractBackgroundColor"] = "#DDDDDD";
 
+  if(isEmptyPrefernce(preferences["abstractFontSize"]))
+    preferences["abstractFontSize"] = "default";
 
   if(isEmptyPrefernce(preferences["notePosition"]))
     preferences["notePosition"] = "top";
 
   if(isEmptyPrefernce(preferences["showConnectionPrompt"]))
     preferences["showConnectionPrompt"] = "true";
+
 
 
   return preferences;
