@@ -389,7 +389,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
 
     if(note && note.description){
 
-      labelNode = $('<div class="ar as sgn" id="' + sgnId + '">' +
+      labelNode = $('<div class="ar as sgn" sgn_id="' + sgnId + '">' +
                             '<div class="at" title="Simple Gmail Notes: ' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
                             '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
                        '</div></div>');
@@ -404,7 +404,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
                           
     }
     else {
-      labelNode = $('<div style="display:none" class="sgn" id="' + sgnId + '"></div>');
+      labelNode = $('<div style="display:none" class="sgn" sgn_id="' + sgnId + '"></div>');
     }
 
     addLabelToTitle(mailNode, labelNode);
@@ -532,11 +532,12 @@ setupListeners = function(){
         var emailKey = gEmailIdKeyDict[emailId];
         var sgnId = "sgn_" + hashFnv32a(emailKey, true);
 
-        $("#" + sgnId).remove();
+        $(".sgn[sgn_id='" + sgnId + "']").remove();
 
         debugLog("@447", emailKey, emailId);
+
+        //gEmailKeyNoteDict = {};
         delete gEmailKeyNoteDict[emailKey];
-        delete gEmailIdKeyDict[emailId];
 
         debugLog("Requesting force reload");
         sendEventMessage("SGN_force_reload");
