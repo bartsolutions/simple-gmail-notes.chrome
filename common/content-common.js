@@ -568,15 +568,16 @@ setupListeners = function(){
         gAbstractFontColor = preferences["abstractFontColor"];
         gAbstractFontSize = preferences["abstractFontSize"];
 
-
+        var firstVisible = $(".sgn_container:visible").first();
+        //avoid duplicates
+        $(".sgn_container").hide();
+        firstVisible.show();
 
         var notePosition = preferences["notePosition"];
         if(notePosition == "bottom"){
           debugLog("@485, move to bottom");
-          $(".sgn_container").hide();
-          $(".sgn_container").first().show();
           //$(".nH.aHU").find(".sgn_container").remove();
-          $(".nH.aHU").append($(".sgn_container").first());
+          $(".nH.aHU").append(firstVisible);
         }
 
         var showConnectionPrompt = (preferences["showConnectionPrompt"] !== "false");
