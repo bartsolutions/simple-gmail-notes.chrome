@@ -464,7 +464,19 @@ gdriveQuery = function(sender, query, success_cb, error_cb){
           "Authorization": "Bearer " + getStorage(sender, "access_token")
       },
       url: "https://www.googleapis.com/drive/v2/files?q=" + query,
-      success:function(data){success_cb(data)},
+      success:function(data){
+        //remove the items in the trash
+        if(data.items && data.items.length){
+          for(var i = data.items.length - 1; i >= 0; i--) {
+            var item = data.items[i];
+            if(item.labels && item.labels.trashed) { // a trashed item
+               data.items.splice(i, 1);
+            }
+          }
+        }
+
+        success_cb(data)
+      },
       error:function(data){error_cb(data)}
     });
   })
