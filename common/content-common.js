@@ -239,9 +239,16 @@ setupNotes = function(email, messageId){
 
   var injectionNode = $(".sgn_container");
 
+  var note = "";
+
+  var emailKey = gEmailIdKeyDict[messageId];
+  if(emailKey && gEmailKeyNoteDict[emailKey])
+    note = gEmailKeyNoteDict[emailKey].description;
+    
+
   var textAreaNode = $("<textarea></textarea>", {
     "class": "sgn_input",
-    "text": "",
+    "text": note,
     "disabled":"disabled"
   }).blur(function(){
     var content = $(this).val();
