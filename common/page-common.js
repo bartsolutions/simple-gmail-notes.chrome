@@ -58,7 +58,15 @@ SimpleGmailNotes.start = function(){
 
   var setupNotes = function(){
     setTimeout(function(){
-      var currentPageMessageId = gmail.get.email_id();
+      var currentPageMessageId = "";
+
+      if(gmail.check.is_preview_pane()){
+          var threads = gmail.get.displayed_email_data().total_threads;
+          if(threads)
+              currentPageMessageId = threads[0];
+      }
+      else
+          currentPageMessageId = gmail.get.email_id();
 
       if(!currentPageMessageId)  //do nothing
           return;
@@ -103,8 +111,7 @@ SimpleGmailNotes.start = function(){
 
     debugLog("@104", $("tr.zA:visible").find(".sgn").length, $("tr.zA[id]:visible").length);
     if(!$("tr.zA").length || 
-       (gmail.check.is_inside_email() && !gmail.check.is_vertical_split() 
-       && !gmail.check.is_horizontal_split()) ||
+       (gmail.check.is_inside_email() && !gmail.check.is_preview_pane()) ||
        $("tr.zA:visible").find(".sgn").length >= $("tr.zA[id]:visible").length){
       debugLog("Skipped pulling");
       isPulling = false;
