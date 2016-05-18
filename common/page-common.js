@@ -61,9 +61,9 @@ SimpleGmailNotes.start = function(){
       var currentPageMessageId = "";
 
       if(gmail.check.is_preview_pane()){
-          var threads = gmail.get.displayed_email_data().total_threads;
-          if(threads)
-              currentPageMessageId = threads[0];
+          var divWithMessageID = $(".a3s.aXjCH").first();
+          currentPageMessageId = divWithMessageID.attr('class').split(/\s+/)[2];
+          currentPageMessageId = currentPageMessageId.substring(1);
       }
       else
           currentPageMessageId = gmail.get.email_id();
