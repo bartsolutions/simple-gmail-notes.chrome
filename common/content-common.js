@@ -101,6 +101,7 @@ disableEdit = function(retryCount)
 
   //clear up the cache
   gEmailIdKeyDict = {};
+  gEmailKeyIdDict = {};
   gEmailKeyNoteDict = {};
 
   //keep trying until it's visible
@@ -283,7 +284,7 @@ setupNotes = function(email, messageId){
                           "please try to <a class='sgn_reconnect sgn_action'>connect</a> again. \n" +
                           "If error persists after 5 attempts, you may try to manually " +
                           "<a href='https://accounts.google.com/b/" + getGoogleAccountId() + 
-                          "/IssuedAuthSubTokens'>revoke</a> previous tokens.")
+                          "/IssuedAuthSubTokens'>revoke</a> previous tokens.");
 
   var userErrorPrompt = $("<div class='sgn_error sgn_user'></div>")
                             .html("Failed to get Google Driver User");
@@ -291,7 +292,7 @@ setupNotes = function(email, messageId){
   var loginErrorPrompt = $("<div class='sgn_error sgn_login'></div>")
                             .html("Failed to login Google Drive");
 
-  var customErrorPrompt = $("<div class='sgn_error sgn_custom'></div>")
+  var customErrorPrompt = $("<div class='sgn_error sgn_custom'></div>");
 
 
   $(".sgn_input").remove();
@@ -353,6 +354,10 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     return hook.find("span").last().attr("title");
   }
 
+  var getSender = function(mailNode) {
+    return mailNode.find(".yW .yP, .yW .zF").last().attr("email");
+  }
+
   var addLabelToTitle = function(mailNode, labelNode){
     var hook = $(mailNode).find(".xT .y6");
 
@@ -368,7 +373,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     //var titleNode = getTitleNode(mailNode);
     //var title = titleNode.text();
     var title = getTitle(mailNode);
-    var sender = mailNode.find(".yW .yP, .yW .zF").last().attr("email");
+    var sender = getSender(mailNode);
 
     //if($(location).attr("href").indexOf("#sent") > 0){
      // sender = userEmail;
@@ -394,9 +399,11 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
 
     var sgnId = "sgn_" + hashFnv32a(emailKey, true);
 
+    var emailId = gEmailKeyIdDict[emailKey];
+
     if(note && note.description){
 
-      labelNode = $('<div class="ar as sgn" sgn_id="' + sgnId + '">' +
+      labelNode = $('<div class="ar as sgn" sgn_id="' + sgnId + '" sgn_email_id="' + emailId + '">' +
                             '<div class="at" title="Simple Gmail Notes: ' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
                             '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
                        '</div></div>');
@@ -411,7 +418,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
                           
     }
     else {
-      labelNode = $('<div style="display:none" class="sgn" sgn_id="' + sgnId + '"></div>');
+      labelNode = $('<div style="display:none" class="sgn" sgn_id="' + sgnId + '" sgn_email_id="' + emailId + '"></div>');
     }
 
     addLabelToTitle(mailNode, labelNode);
@@ -441,6 +448,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
 }
 
 var gEmailIdKeyDict = {};
+var gEmailKeyIdDict = {};
 pullNotes = function(userEmail, emailList){
   var pendingPullList = [];
 
@@ -458,6 +466,7 @@ pullNotes = function(userEmail, emailList){
     if(gEmailKeyNoteDict[emailKey] == undefined){
       pendingPullList.push(email.id);
       gEmailIdKeyDict[email.id] = emailKey;
+      gEmailKeyIdDict[emailKey] = email.id;
     }
   });
 

@@ -44,7 +44,7 @@ SimpleGmailNotes.start = function(){
   }
 
   var gmail;
-
+  
   var sendEventMessage = function(eventName, eventDetail){
     if(eventDetail == undefined){
       eventDetail = {};
@@ -61,9 +61,10 @@ SimpleGmailNotes.start = function(){
       var currentPageMessageId = "";
 
       if(gmail.check.is_preview_pane()){
-          var divWithMessageID = $(".a3s.aXjCH").first();
-          currentPageMessageId = divWithMessageID.attr('class').split(/\s+/)[2];
-          currentPageMessageId = currentPageMessageId.substring(1);
+          var idNode = $(".aps:visible div[sgn_email_id]").first();
+
+          if(idNode.length)
+              currentPageMessageId = idNode.attr("sgn_email_id"); 
       }
       else
           currentPageMessageId = gmail.get.email_id();
@@ -126,6 +127,7 @@ SimpleGmailNotes.start = function(){
                   emailList.length);
       sendEventMessage("SGN_pull_notes", 
                        {email: gmail.get.user_email(), emailList:emailList});
+
       isPulling = false;
     });
   }
