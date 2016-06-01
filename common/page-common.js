@@ -61,7 +61,7 @@ SimpleGmailNotes.start = function(){
       var currentPageMessageId = "";
 
       if(gmail.check.is_preview_pane()){
-          var idNode = $(".aps:visible div[sgn_email_id]").first();
+          var idNode = $("tr.zA.aps:visible[sgn_email_id]").first();
 
           if(idNode.length)
               currentPageMessageId = idNode.attr("sgn_email_id"); 

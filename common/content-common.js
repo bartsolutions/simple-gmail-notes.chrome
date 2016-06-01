@@ -399,11 +399,10 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
 
     var sgnId = "sgn_" + hashFnv32a(emailKey, true);
 
-    var emailId = gEmailKeyIdDict[emailKey];
 
     if(note && note.description){
 
-      labelNode = $('<div class="ar as sgn" sgn_id="' + sgnId + '" sgn_email_id="' + emailId + '">' +
+      labelNode = $('<div class="ar as sgn" sgn_id="' + sgnId + '">' +
                             '<div class="at" title="Simple Gmail Notes: ' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
                             '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
                        '</div></div>');
@@ -418,10 +417,15 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
                           
     }
     else {
-      labelNode = $('<div style="display:none" class="sgn" sgn_id="' + sgnId + '" sgn_email_id="' + emailId + '"></div>');
+      labelNode = $('<div style="display:none" class="sgn" sgn_id="' + sgnId + '"></div>');
     }
 
+
     addLabelToTitle(mailNode, labelNode);
+
+    //it must be done after labelNode is added to DOM
+    var emailId = gEmailKeyIdDict[emailKey];
+    labelNode.parents("tr.zA").attr("sgn_email_id", emailId);
   }
 
   if(pulledNoteList && pulledNoteList.length){
@@ -519,6 +523,8 @@ setupListeners = function(){
         break;
       case "update_user":
         $(".sgn_user").text(request.email);
+
+        $("div.sgn").remove();  //clean up all those outdated div
         break;
       case "update_content":
         gPreviousContent = request.content;
