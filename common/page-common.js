@@ -105,7 +105,7 @@ SimpleGmailNotes.start = function(){
   var isPulling = false;
   var pullNotes = function(){
     //avoid crazy pulling in case of multiple network requests
-    if(isPulling)
+    if(false && isPulling)  //disable pulling check temporarily, walty - 2016-6-27
       return;
     isPulling = true;
 
