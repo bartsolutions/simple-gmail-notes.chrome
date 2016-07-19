@@ -102,12 +102,14 @@ SimpleGmailNotes.start = function(){
   }
 
 
-  var isPulling = false;
+  var lastPullTimeStamp = null;
   var pullNotes = function(){
+    var timestamp = Date.now() / 1000;
+
     //avoid crazy pulling in case of multiple network requests
-    if(false && isPulling)  //disable pulling check temporarily, walty - 2016-6-27
+    if(lastPullTimeStamp && timestamp - lastPullTimeStamp < 30)  //do not force pull in 30 seconds
       return;
-    isPulling = true;
+    lastPullTimeStamp = timestamp;
 
 
     debugLog("@104", $("tr.zA:visible").find(".sgn").length, $("tr.zA[id]:visible").length);
@@ -115,7 +117,7 @@ SimpleGmailNotes.start = function(){
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane()) ||
        $("tr.zA:visible").find(".sgn").length >= $("tr.zA[id]:visible").length){
       debugLog("Skipped pulling");
-      isPulling = false;
+      lastPullTimeStamp = null;
       return;
     }
 
@@ -123,12 +125,12 @@ SimpleGmailNotes.start = function(){
 
     //skip the update if windows location (esp. hash part) is not changed
     gmail.get.visible_emails_async(function(emailList){
-      debugLog("[page.js]sending email for puall request, total count:", 
+      debugLog("[page.js]sending email for pull request, total count:", 
                   emailList.length);
       sendEventMessage("SGN_pull_notes", 
                        {email: gmail.get.user_email(), emailList:emailList});
 
-      isPulling = false;
+      lastPullTimeStamp = null;
     });
   }
 
