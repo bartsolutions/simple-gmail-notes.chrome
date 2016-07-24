@@ -56,6 +56,60 @@ SimpleGmailNotes.start = function(){
     ));
   }
 
+  var lastPullTimeStamp = null;
+  var nextPullTimeStamp = null;
+  var consecutiveRequests = 0;
+  var consecutiveStartTime = 0;
+  var g_oec = 0;
+  var g_lc = 0;
+  var g_pnc = 0;
+  var acquireNetworkLock = function() {
+     var timestamp = Date.now() / 1000;
+
+    if(nextPullTimeStamp){//if nextPullTimeStamp is set
+        if(nextPullTimeStamp > timestamp) //skip the request
+            return false;
+        else {
+            nextPullTimeStamp = null;
+            return true;
+        }
+    }
+
+
+    //avoid crazy pulling in case of multiple network requests
+    if(timestamp - lastPullTimeStamp < 3)  //pull again in 3 seconds, for whatever reasons
+      consecutiveRequests += 1;
+    else{
+      consecutiveRequests = 0;
+      consecutiveStartTime = timestamp;
+      g_oec = 0;
+      g_lc = 0;
+      g_pnc = 0;
+    }
+
+    lastPullTimeStamp = timestamp;
+
+    if(consecutiveRequests >= 20){
+        nextPullTimeStamp = timestamp + 60; //10 conseuctive requests, wait for 30 seconds
+
+        var message = "20 consecutive network requests detected from Simple Gmail Notes, the extension would be self-disabled for 60 seconds. Please consider to disable/uninstall this extension to avoid locking of your Gmail account. Currently the developer (me) cannot reproduce this problem and therefore has no idea how to fix it, sorry.\n\nHowever, if possible, please kindly send the following information to the extension bug report page, it would be helpful for the developer to diagnose the problem. Thank you!\n\n";
+        message += "oec:" + g_oec;
+        message += "; lc:" + g_lc; 
+        message += "; pnc:" + g_pnc;
+        message += "; tt:" + Math.round(timestamp - consecutiveStartTime);
+
+        alert(message);
+
+        consecutiveRequests = 0;
+        consecutiveStartTime = timestamp;
+        g_oec = 0;
+        g_lc = 0;
+        g_pnc = 0;
+    }
+
+    return true;
+  }
+
   var setupNotes = function(){
     setTimeout(function(){
       var currentPageMessageId = "";
@@ -72,6 +126,11 @@ SimpleGmailNotes.start = function(){
       if(!currentPageMessageId)  //do nothing
           return;
      
+      if(!acquireNetworkLock()){
+          debugLog("sestupNotes failed to get network lock");
+          return;
+      }
+        
       sendEventMessage('SGN_setup_notes', {messageId:currentPageMessageId});
 
       
@@ -102,27 +161,22 @@ SimpleGmailNotes.start = function(){
   }
 
 
-  var lastPullTimeStamp = null;
   var pullNotes = function(){
-    var timestamp = Date.now() / 1000;
-
-    //avoid crazy pulling in case of multiple network requests
-    if(lastPullTimeStamp && timestamp - lastPullTimeStamp < 30)  //do not force pull in 30 seconds
-      return;
-    lastPullTimeStamp = timestamp;
-
-
     debugLog("@104", $("tr.zA:visible").find(".sgn").length, $("tr.zA[id]:visible").length);
     if(!$("tr.zA").length || 
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane()) ||
        $("tr.zA:visible").find(".sgn").length >= $("tr.zA[id]:visible").length){
       debugLog("Skipped pulling");
-      lastPullTimeStamp = null;
+      return;
+    }
+
+    g_pnc += 1;
+    if(!acquireNetworkLock()){
+      debugLog("pullNotes failed to get network lock");
       return;
     }
 
     debugLog("Simple-gmail-notes: pulling notes");
-
     //skip the update if windows location (esp. hash part) is not changed
     gmail.get.visible_emails_async(function(emailList){
       debugLog("[page.js]sending email for pull request, total count:", 
@@ -130,7 +184,6 @@ SimpleGmailNotes.start = function(){
       sendEventMessage("SGN_pull_notes", 
                        {email: gmail.get.user_email(), emailList:emailList});
 
-      lastPullTimeStamp = null;
     });
   }
 
@@ -139,11 +192,13 @@ SimpleGmailNotes.start = function(){
 
     gmail.observe.on('open_email', function(obj){
       debugLog("simple-gmail-notes: open email event", obj);
+      g_oec += 1;
       setupNotes();
     });
 
     gmail.observe.on('load', function(obj){
       debugLog("simple-gmail-notes: load event");
+      g_lc += 1;
       setupNotes();
     });
 
