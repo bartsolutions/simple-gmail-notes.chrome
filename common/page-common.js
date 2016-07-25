@@ -161,20 +161,28 @@ SimpleGmailNotes.start = function(){
   }
 
 
+  var lastPullDiff = 0;
   var pullNotes = function(){
     debugLog("@104", $("tr.zA:visible").find(".sgn").length, $("tr.zA[id]:visible").length);
+
+    var thisPullDiff = $("tr.zA:visible").find(".sgn").length - $("tr.zA[id]:visible").length;
     if(!$("tr.zA").length || 
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane()) ||
-       $("tr.zA:visible").find(".sgn").length >= $("tr.zA[id]:visible").length){
+       //(thisPullDiff >= 0 ) || 
+       (thisPullDiff == lastPullDiff)){
+       //$("tr.zA:visible").find(".sgn").length >= $("tr.zA[id]:visible").length){
       debugLog("Skipped pulling");
       return;
     }
+
 
     g_pnc += 1;
     if(!acquireNetworkLock()){
       debugLog("pullNotes failed to get network lock");
       return;
     }
+
+    lastPullDiff = thisPullDiff;
 
     debugLog("Simple-gmail-notes: pulling notes");
     //skip the update if windows location (esp. hash part) is not changed
