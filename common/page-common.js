@@ -63,8 +63,10 @@ SimpleGmailNotes.start = function(){
   var g_oec = 0;
   var g_lc = 0;
   var g_pnc = 0;
+
   var acquireNetworkLock = function() {
      var timestamp = Date.now() / 1000;
+     var resetCounter = false;
 
     if(nextPullTimeStamp){//if nextPullTimeStamp is set
         if(nextPullTimeStamp > timestamp) //skip the request
@@ -80,17 +82,12 @@ SimpleGmailNotes.start = function(){
     if(timestamp - lastPullTimeStamp < 3)  //pull again in 3 seconds, for whatever reasons
       consecutiveRequests += 1;
     else{
-      consecutiveRequests = 0;
-      consecutiveStartTime = timestamp;
-      g_oec = 0;
-      g_lc = 0;
-      g_pnc = 0;
+      resetCounter = true;
     }
 
-    lastPullTimeStamp = timestamp;
 
     if(consecutiveRequests >= 20){
-        nextPullTimeStamp = timestamp + 60; //10 conseuctive requests, wait for 30 seconds
+        nextPullTimeStamp = timestamp + 60; //penalty timeout for 60 seconds
 
         var message = "20 consecutive network requests detected from Simple Gmail Notes, the extension would be self-disabled for 60 seconds. Please consider to disable/uninstall this extension to avoid locking of your Gmail account. Currently the developer (me) cannot reproduce this problem and therefore has no idea how to fix it, sorry.\n\nHowever, if possible, please kindly send the following information to the extension bug report page, it would be helpful for the developer to diagnose the problem. Thank you!\n\n";
         message += "oec:" + g_oec;
@@ -98,14 +95,20 @@ SimpleGmailNotes.start = function(){
         message += "; pnc:" + g_pnc;
         message += "; tt:" + Math.round(timestamp - consecutiveStartTime);
 
-        alert(message);
+        alert(message); //very intrusive, but it's a very serious problem
 
+        resetCounter = true;
+    }
+
+    if(resetCounter){
         consecutiveRequests = 0;
         consecutiveStartTime = timestamp;
         g_oec = 0;
         g_lc = 0;
         g_pnc = 0;
     }
+
+    lastPullTimeStamp = timestamp;
 
     return true;
   }
@@ -149,7 +152,7 @@ SimpleGmailNotes.start = function(){
                           sender:sender});
       });
 
-    }, 0);
+    }, 0);  //setTimeout
   }
 
   var getDOMSignature = function(){
@@ -168,11 +171,9 @@ SimpleGmailNotes.start = function(){
     var thisPullDiff = $("tr.zA:visible").find(".sgn").length - $("tr.zA[id]:visible").length;
     if(!$("tr.zA").length || 
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane()) ||
-       //(thisPullDiff >= 0 ) || 
        (thisPullDiff == lastPullDiff)){
-       //$("tr.zA:visible").find(".sgn").length >= $("tr.zA[id]:visible").length){
       debugLog("Skipped pulling");
-      return;
+      return;   
     }
 
 
@@ -215,10 +216,6 @@ SimpleGmailNotes.start = function(){
 
     //mainly for debug purpose
     SimpleGmailNotes.gmail = gmail;
-
-  //  gmail.observe.after('http_event', function(obj){
-   //   pullNotes();
-   // }); 
   }
 
   main();
