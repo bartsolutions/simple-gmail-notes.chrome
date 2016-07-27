@@ -230,6 +230,8 @@ var gAbstractBackgroundColor = "";
 var gAbstractFontColor = "";
 var gAbstractFontSize = "";
 
+var gLastValidationTimeStamp = 0;
+
 setupNotes = function(email, messageId){
   debugLog("Start to set up notes");
   debugLog("Email", email);
@@ -320,6 +322,24 @@ setupNotes = function(email, messageId){
       }
     });
   });
+
+
+  setTimeout(function(){
+     var timestamp = Date.now();
+
+      if(Date.now() - gLastValidationTimeStamp > 3000){ 
+          //there is something wrong with the extension
+          //alert("extension problem");
+          $(".sgn_input").text("WARNING! Simple Gmail Notes is not available.\n\n" +
+                               "It's probably because the extension was disabled or (automatically) updated, " +
+                               "in either case please refresh this page to remove the warning."
+                               )
+                           .css("color", "red")
+                           .css("font-weight", "bold")
+      }
+
+  }, 2000);
+  sendBackgroundMessage({action:"validate_background_alive", email: email});    //if background script died, exception raise from here
 
   //load initial message
   debugLog("Start to initailize");
@@ -612,8 +632,11 @@ setupListeners = function(){
 
         debugLog("@470", preferences);
         break;
+      case "update_validation_timestamp":
+        gLastValidationTimeStamp = Date.now();
+        break;
       default:
-          debugLog("unknown background request", request);
+        debugLog("unknown background request", request);
     }
   });
 

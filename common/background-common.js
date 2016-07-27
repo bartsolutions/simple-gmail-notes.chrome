@@ -672,6 +672,10 @@ setupListeners = function(sender, request){
     case "open_options":
       openTab("options.html");
       break;
+    case "validate_background_alive":
+      //do nothing except echo back, to show it's alive
+      sendContentMessage(sender, {action: "update_validation_timestamp"});
+      break;
     default:
       debugLog("unknown request to background", request);
       break;
