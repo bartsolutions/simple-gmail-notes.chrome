@@ -19,7 +19,9 @@ var settings = {
   SCOPE: 'https://www.googleapis.com/auth/drive.file'
 } 
 
-var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", "backgroundColor", "notePosition", "showConnectionPrompt"];
+var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", 
+                        "backgroundColor", "notePosition", 
+                        "showConnectionPrompt", "showAddCalendar"];
 
 /*
  * Interface declarations
@@ -132,6 +134,8 @@ updateDefaultPreferences = function(preferences)
   if(isEmptyPrefernce(preferences["showConnectionPrompt"]))
     preferences["showConnectionPrompt"] = "true";
 
+  if(isEmptyPrefernce(preferences["showAddCalendar"]))
+    preferences["showAddCalendar"] = "true";
 
 
   return preferences;

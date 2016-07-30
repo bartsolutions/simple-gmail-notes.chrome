@@ -222,15 +222,12 @@ getSearchNoteURL = function(){
 getAddCalendarURL = function(){
   var userId = getGoogleAccountId();
   var note = $(".sgn_input").val();
+  var calendarText = gCurrentEmailSubject + "\n------\n" + note;
 
-  var calendarText = gCurrentEmailSubject;
-  if(note)
-      calendarText = "[" + note + "] " + calendarText;
   calendarText = encodeURIComponent(calendarText);
 
   var addCalendarURL = "https://calendar.google.com/calendar/b/" + userId + 
-                            "/render?action=TEMPLATE&text=" + calendarText + 
-                            "&add=" + gCurrentEmailSender;
+                            "/render?action=TEMPLATE&details=" + calendarText;
 
   return addCalendarURL;
 }
@@ -291,7 +288,7 @@ setupNotes = function(email, messageId){
               "<a class='sgn_open_options sgn_action'>" +
               "<img title='Preferences' src='" + getIconBaseUrl() + "/preferences.24.png'></a>" +
               "<a class='sgn_action sgn_add_calendar' target='_blank'>" +
-              "<img title='Add to Calendar' src='" + getIconBaseUrl() + "/calendar.24.png'/></a> " +
+              "<img title='Add to Google Calendar' src='" + getIconBaseUrl() + "/calendar.24.png'/></a> " +
               "<a class='sgn_action sgn_search' target='_blank'>" +
               "<img title='Search' src='" + getIconBaseUrl() + "/search.24.png'/></a> " +
               "")
@@ -648,7 +645,10 @@ setupListeners = function(){
           $(".sgn_current_connection").hide();
         }
 
-
+        var showAddCalendar = (preferences["showAddCalendar"] !== "false");
+        if(!showAddCalendar){
+          $(".sgn_add_calendar").hide();
+        }
 
         debugLog("@470", preferences);
         break;

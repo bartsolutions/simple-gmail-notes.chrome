@@ -1,5 +1,8 @@
-var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", "backgroundColor", "fontSize",
-                        "abstractFontColor", "abstractBackgroundColor", "abstractFontSize", "notePosition", "showConnectionPrompt"];
+var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", 
+                        "backgroundColor", "fontSize", "abstractFontColor", 
+                        "abstractBackgroundColor", "abstractFontSize", 
+                        "notePosition", "showConnectionPrompt", 
+                        "showAddCalendar"];
 
 function isChrome(){
    return /chrom(e|ium)/.test(navigator.userAgent.toLowerCase());
@@ -72,6 +75,7 @@ function savePreferences() {
   preferences["abstractFontSize"] = $("#abstract_font_size").val();
   preferences["notePosition"] = $("#note_position").val();
   preferences["showConnectionPrompt"] = String($("#show_connection_prompt").is(":checked"));
+  preferences["showAddCalendar"] = String($("#show_add_calendar").is(":checked"));
 
   pushPreferences(preferences);
 
@@ -126,6 +130,8 @@ function updateControls(preferences){
   var showConnectionPrompt = (preferences["showConnectionPrompt"] !== "false");
   $("#show_connection_prompt").prop("checked", showConnectionPrompt);
 
+  var showAddCalendar = (preferences["showAddCalendar"] !== "false");
+  $("#show_add_calendar").prop("checked", showAddCalendar);
 }
 
 
