@@ -38,7 +38,7 @@
   float: right;
 }
 
-.sgn_logout img, .sgn_open_options img, .sgn_search img {
+.sgn_action img {
   float: right;
   height: 100%;
   margin-left: 5px;

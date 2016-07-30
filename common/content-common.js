@@ -157,6 +157,8 @@ showLogoutPrompt = function(email, retryCount){
 
   $(".sgn_search").attr("href", getSearchNoteURL());
 
+  $(".sgn_add_calendar").attr("href", getAddCalendarURL());
+
   if(!$(".sgn_prompt_logout").is(":visible")){  //keep trying until it's visible
     debugLog("Retry to show prompt");
     retryCount = retryCount - 1;
@@ -217,6 +219,22 @@ getSearchNoteURL = function(){
   return searchUrl;
 }
 
+getAddCalendarURL = function(){
+  var userId = getGoogleAccountId();
+  var note = $(".sgn_input").val();
+
+  var calendarText = gCurrentEmailSubject;
+  if(note)
+      calendarText = "[" + note + "] " + calendarText;
+  calendarText = encodeURIComponent(calendarText);
+
+  var addCalendarURL = "https://calendar.google.com/calendar/b/" + userId + 
+                            "/render?action=TEMPLATE&text=" + calendarText + 
+                            "&add=" + gCurrentEmailSender;
+
+  return addCalendarURL;
+}
+
 //global variables to mark the status of current tab
 var gCurrentGDriveNoteId = "";
 var gCurrentGDriveFolderId = "";
@@ -272,6 +290,8 @@ setupNotes = function(email, messageId){
               "<img title='Log Out' src='" + getIconBaseUrl() + "/logout.24.png'></a>" + 
               "<a class='sgn_open_options sgn_action'>" +
               "<img title='Preferences' src='" + getIconBaseUrl() + "/preferences.24.png'></a>" +
+              "<a class='sgn_action sgn_add_calendar' target='_blank'>" +
+              "<img title='Add to Calendar' src='" + getIconBaseUrl() + "/calendar.24.png'/></a> " +
               "<a class='sgn_action sgn_search' target='_blank'>" +
               "<img title='Search' src='" + getIconBaseUrl() + "/search.24.png'/></a> " +
               "")
