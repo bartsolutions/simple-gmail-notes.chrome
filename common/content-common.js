@@ -221,11 +221,11 @@ getSearchNoteURL = function(){
 
 getAddCalendarURL = function(){
   var userId = getGoogleAccountId();
-  var note = $(".sgn_input").val();
+  var details = window.location.href + "\n-----\n" + $(".sgn_input").val();
 
   var addCalendarURL = "https://calendar.google.com/calendar/b/" + userId + 
                             "/render?action=TEMPLATE" +
-                            "&details=" + encodeURIComponent(note) + 
+                            "&details=" + encodeURIComponent(details) + 
                             "&text=" + encodeURIComponent(gCurrentEmailSubject);
 
   return addCalendarURL;
@@ -351,7 +351,7 @@ setupNotes = function(email, messageId){
                                "in either case please refresh this page to remove the warning."
                                )
                            .css("color", "red")
-                           .css("font-weight", "bold")
+                           .css("font-weight", "bold");
       }
 
   }, 2000);
