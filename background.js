@@ -75,7 +75,7 @@ checkLogger = function(sender){
 /*** end of callback implementation ***/
 
 //For messaging between background and content script
-$(window).load(function(){
+$(window).on('load', function(){
   chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
       debugLog("Get message to background", request);

@@ -37,7 +37,7 @@ getIconBaseUrl = function(){
 //initalization
 function setupPage(){
     var j = document.createElement('script');
-    j.src = chrome.extension.getURL('lib/jquery-1.11.3.min.js');
+    j.src = chrome.extension.getURL('lib/jquery-3.1.0.min.js');
     (document.head || document.documentElement).appendChild(j);
 
     var j = document.createElement('script');

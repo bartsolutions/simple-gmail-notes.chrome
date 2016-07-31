@@ -21,7 +21,7 @@
     "matches": ["https://mail.google.com/*"]
   },
   "web_accessible_resources": [
-    "lib/jquery-1.11.3.min.js",
+    "lib/jquery-3.1.0.min.js",
     "lib/gmail.js",
     "common/page-common.js",
     "page.js",
@@ -32,11 +32,11 @@
     "image/preferences.24.png"
   ],
   "background": { 
-      "scripts" : ["lib/jquery-1.11.3.min.js", "common/background-common.js", "background.js"]
+      "scripts" : ["lib/jquery-3.1.0.min.js", "common/background-common.js", "background.js"]
   },
   "content_scripts":  [{
       "matches": [ "https://mail.google.com/*"],
-      "js": [ "lib/jquery-1.11.3.min.js", "common/content-common.js", "content.js"],
+      "js": [ "lib/jquery-3.1.0.min.js", "common/content-common.js", "content.js"],
       "css": [ "css/style.css"],
       "run_at": "document_end"
   }],
