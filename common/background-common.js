@@ -22,6 +22,7 @@ var settings = {
 var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", 
                         "backgroundColor", "notePosition", 
                         "showConnectionPrompt", "showAddCalendar"];
+var gSgnEmtpy = "<SGN_EMPTY>";
 
 /*
  * Interface declarations
@@ -413,6 +414,8 @@ loadMessage = function(sender, gdriveNoteId){
           gdriveNoteId + "?alt=media",
     success: function(data) {
       debugLog("Loaded message", data);
+      if(data == gSgnEmtpy)
+        data = "";
       sendContentMessage(sender, {action:"update_content", content:data});
       sendContentMessage(sender, {action:"enable_edit", 
                            gdriveEmail:getStorage(sender, "gdrive_email")});  
@@ -595,7 +598,7 @@ sendSummaryNotes = function(sender, pullList, resultList){
     var description = ""; //empty string for not found
     var shortDescription = "";
 
-    if(itemDict[title]){
+    if(itemDict[title] && itemDict[title] != gSgnEmtpy){
       description = itemDict[title];
 
       if(abstractStyle == "fixed_SGN")
@@ -662,9 +665,11 @@ setupListeners = function(sender, request){
       loginGoogleDrive(sender, request.messageId);
       break;
     case "post_note":
+      content = request.content;
+      if(content == "")
+          content = gSgnEmtpy;
       postNote(sender, request.messageId, request.emailTitleSuffix,
-                 request.gdriveFolderId, request.gdriveNoteId, 
-                 request.content);
+                 request.gdriveFolderId, request.gdriveNoteId, content);
       break;
     case "initialize":
       initialize(sender, request.messageId);

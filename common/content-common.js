@@ -271,7 +271,7 @@ setupNotes = function(email, messageId){
     "class": "sgn_input",
     "text": note,
     "disabled":"disabled"
-  }).blur(function(){
+  }).on("blur", function(){
     var content = $(this).val();
     if(gPreviousContent != content){
       sendBackgroundMessage({action:"post_note", email:email, messageId:messageId, 
@@ -280,7 +280,7 @@ setupNotes = function(email, messageId){
                    gdriveFolderId:gCurrentGDriveFolderId, content:content});
     }
 	  return true;
-	});
+  });
 
 
   var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
