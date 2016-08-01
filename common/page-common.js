@@ -60,9 +60,9 @@ SimpleGmailNotes.start = function(){
   var nextPullTimeStamp = null;
   var consecutiveRequests = 0;
   var consecutiveStartTime = 0;
-  var g_oec = 0;
-  var g_lc = 0;
-  var g_pnc = 0;
+  var g_oec = 0;    //open email trigger count
+  var g_lc = 0;     //local trigger count
+  var g_pnc = 0;    //pulled network trigger count
 
   var acquireNetworkLock = function() {
      var timestamp = Date.now() / 1000;
@@ -166,20 +166,29 @@ SimpleGmailNotes.start = function(){
 
   var lastPullDiff = 0;
   var pullNotes = function(){
-    debugLog("@104", $("tr.zA:visible").find(".sgn").length, $("tr.zA[id]:visible").length);
-
-    var thisPullDiff = $("tr.zA:visible").find(".sgn").length - $("tr.zA[id]:visible").length;
     if(!$("tr.zA").length || 
-       (gmail.check.is_inside_email() && !gmail.check.is_preview_pane()) ||
-       (thisPullDiff == lastPullDiff)){
-      debugLog("Skipped pulling");
+       (gmail.check.is_inside_email() && !gmail.check.is_preview_pane())){
+      debugLog("Skipped pulling because no tr to check with");
       return;   
     }
 
+    var markedRowCount = $("tr.zA:visible").find(".sgn").length;
+    var unmarkedRowCount = $("tr.zA[id]:visible").length;
+    var thisPullDiff = unmarkedRowCount - markedRowCount;
+    debugLog("@104", unmarkedRowCount, markedRowCount, thisPullDiff);
+    if(thisPullDiff == lastPullDiff){
+      debugLog("Skipped pulling because of duplicate network requests");
+      return;
+    }
 
     g_pnc += 1;
     if(!acquireNetworkLock()){
       debugLog("pullNotes failed to get network lock");
+      return;
+    }
+
+    if(!gmail.tracker.at){
+      debugLog("tracker at is not defined");
       return;
     }
 

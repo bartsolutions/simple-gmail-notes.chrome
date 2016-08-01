@@ -222,11 +222,15 @@ getSearchNoteURL = function(){
 getAddCalendarURL = function(){
   var userId = getGoogleAccountId();
   var details = window.location.href + "\n-----\n" + $(".sgn_input").val();
+  var title = gCurrentEmailSubject;
+
+  if(title.indexOf("Re:") < 0)
+      title = "Re: " + title;
 
   var addCalendarURL = "https://calendar.google.com/calendar/b/" + userId + 
                             "/render?action=TEMPLATE" +
-                            "&details=" + encodeURIComponent(details) + 
-                            "&text=" + encodeURIComponent(gCurrentEmailSubject);
+                            "&text=" + encodeURIComponent(title) + 
+                            "&details=" + encodeURIComponent(details);
 
   return addCalendarURL;
 }
