@@ -181,14 +181,14 @@ SimpleGmailNotes.start = function(){
       return;
     }
 
-    g_pnc += 1;
-    if(!acquireNetworkLock()){
-      debugLog("pullNotes failed to get network lock");
+    if(gmail.get.current_page() == 'inbox' && !gmail.tracker.at){
+      debugLog("tracker at is not defined");
       return;
     }
 
-    if(gmail.get.current_page() == 'inbox' && !gmail.tracker.at){
-      debugLog("tracker at is not defined");
+    g_pnc += 1;
+    if(!acquireNetworkLock()){
+      debugLog("pullNotes failed to get network lock");
       return;
     }
 
