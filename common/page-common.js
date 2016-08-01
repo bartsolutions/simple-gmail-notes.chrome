@@ -187,7 +187,7 @@ SimpleGmailNotes.start = function(){
       return;
     }
 
-    if(!gmail.tracker.at){
+    if(gmail.get.current_page() == 'inbox' && !gmail.tracker.at){
       debugLog("tracker at is not defined");
       return;
     }

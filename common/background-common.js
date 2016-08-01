@@ -114,7 +114,7 @@ updateDefaultPreferences = function(preferences)
     preferences["fontColor"] = "#808080";
 
   if(isEmptyPrefernce(preferences["backgroundColor"]))
-    preferences["backgroundColor"] = "#FFFFFF";
+    preferences["backgroundColor"] = "#FFFF99";
 
   if(isEmptyPrefernce(preferences["fontSize"]))
     preferences["fontSize"] = "default";
@@ -123,7 +123,7 @@ updateDefaultPreferences = function(preferences)
     preferences["abstractFontColor"] = "#666666";
 
   if(isEmptyPrefernce(preferences["abstractBackgroundColor"]))
-    preferences["abstractBackgroundColor"] = "#DDDDDD";
+    preferences["abstractBackgroundColor"] = "#FFFF99";
 
   if(isEmptyPrefernce(preferences["abstractFontSize"]))
     preferences["abstractFontSize"] = "default";
