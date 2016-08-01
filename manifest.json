@@ -32,7 +32,8 @@
     "image/preferences.24.png"
   ],
   "background": { 
-      "scripts" : ["lib/jquery-3.1.0.min.js", "common/background-common.js", "background.js"]
+      "scripts" : ["lib/jquery-3.1.0.min.js", "common/background-common.js", "background.js"],
+      "persistent" : true
   },
   "content_scripts":  [{
       "matches": [ "https://mail.google.com/*"],
