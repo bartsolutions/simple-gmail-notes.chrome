@@ -181,7 +181,11 @@ SimpleGmailNotes.start = function(){
       return;
     }
 
-    if(gmail.get.current_page() == 'inbox' && !gmail.tracker.at){
+    var current_page = gmail.get.current_page();
+    if((current_page.indexOf('label') ==0 
+          || current_page.indexOf('search') == 0
+          || current_page.indexOf('advanced-search') == 0)
+        && !gmail.tracker.at){
       debugLog("tracker at is not defined");
       return;
     }
