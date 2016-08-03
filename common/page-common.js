@@ -165,6 +165,7 @@ SimpleGmailNotes.start = function(){
 
 
   var lastPullDiff = 0;
+  var lastPullHash = null;
   var pullNotes = function(){
     if(!$("tr.zA").length || 
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane())){
@@ -175,19 +176,15 @@ SimpleGmailNotes.start = function(){
     var markedRowCount = $("tr.zA:visible").find(".sgn").length;
     var unmarkedRowCount = $("tr.zA[id]:visible").length;
     var thisPullDiff = unmarkedRowCount - markedRowCount;
+    var thisPullHash = window.location.hash;
     debugLog("@104", unmarkedRowCount, markedRowCount, thisPullDiff);
-    if(thisPullDiff == lastPullDiff){
+    if(thisPullDiff == lastPullDiff && thisPullHash == lastPullHash){
       debugLog("Skipped pulling because of duplicate network requests");
       return;
     }
 
     var current_page = gmail.get.current_page();
-    if(!gmail.tracker.at && 
-       (current_page.indexOf('label/') == 0 
-        || current_page.indexOf('category/') == 0 
-        || current_page.indexOf('search/') == 0 
-        || current_page.indexOf('settings/') == 0 
-        || current_page.indexOf('advanced-search/') == 0)) {
+    if(!gmail.tracker.at && gmail.check.is_query_page()){
       debugLog("tracker at is not defined");
       return;
     }
@@ -199,6 +196,7 @@ SimpleGmailNotes.start = function(){
     }
 
     lastPullDiff = thisPullDiff;
+    lastPullHash = thisPullHash;
 
     debugLog("Simple-gmail-notes: pulling notes");
     //skip the update if windows location (esp. hash part) is not changed
