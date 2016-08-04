@@ -230,7 +230,7 @@ SimpleGmailNotes.start = function(){
 
     setTimeout(pullNotes, 0);
     setInterval(pullNotes, 2000);
-    setInterval(setupNotes, 2000);
+    setInterval(setupNotes, 1770);  //better not to overlapp to much with the above one
 
     //mainly for debug purpose
     SimpleGmailNotes.gmail = gmail;
