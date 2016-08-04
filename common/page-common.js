@@ -115,6 +115,9 @@ SimpleGmailNotes.start = function(){
 
   var setupNotes = function(){
     setTimeout(function(){
+      if($(".sgn_input:visible").length)  //text area already exist
+          return;
+
       var currentPageMessageId = "";
 
       if(gmail.check.is_preview_pane()){
@@ -129,6 +132,7 @@ SimpleGmailNotes.start = function(){
       if(!currentPageMessageId)  //do nothing
           return;
      
+
       if(!acquireNetworkLock()){
           debugLog("sestupNotes failed to get network lock");
           return;
@@ -165,6 +169,7 @@ SimpleGmailNotes.start = function(){
 
 
   var lastPullDiff = 0;
+  var lastPullHash = null;
   var pullNotes = function(){
     if(!$("tr.zA").length || 
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane())){
@@ -175,17 +180,15 @@ SimpleGmailNotes.start = function(){
     var markedRowCount = $("tr.zA:visible").find(".sgn").length;
     var unmarkedRowCount = $("tr.zA[id]:visible").length;
     var thisPullDiff = unmarkedRowCount - markedRowCount;
+    var thisPullHash = window.location.hash;
     debugLog("@104", unmarkedRowCount, markedRowCount, thisPullDiff);
-    if(thisPullDiff == lastPullDiff){
+    if(thisPullDiff == lastPullDiff && thisPullHash == lastPullHash){
       debugLog("Skipped pulling because of duplicate network requests");
       return;
     }
 
     var current_page = gmail.get.current_page();
-    if((current_page.indexOf('label') ==0 
-          || current_page.indexOf('search') == 0
-          || current_page.indexOf('advanced-search') == 0)
-        && !gmail.tracker.at){
+    if(!gmail.tracker.at && gmail.check.is_query_page()){
       debugLog("tracker at is not defined");
       return;
     }
@@ -197,6 +200,7 @@ SimpleGmailNotes.start = function(){
     }
 
     lastPullDiff = thisPullDiff;
+    lastPullHash = thisPullHash;
 
     debugLog("Simple-gmail-notes: pulling notes");
     //skip the update if windows location (esp. hash part) is not changed
@@ -226,6 +230,7 @@ SimpleGmailNotes.start = function(){
 
     setTimeout(pullNotes, 0);
     setInterval(pullNotes, 2000);
+    setInterval(setupNotes, 2000);
 
     //mainly for debug purpose
     SimpleGmailNotes.gmail = gmail;
