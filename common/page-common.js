@@ -115,7 +115,7 @@ SimpleGmailNotes.start = function(){
 
   var setupNotes = function(){
     setTimeout(function(){
-      if($(".sgn_input:visible").length)  //text area already exist
+      if($(".sgn_container:visible").length)  //text area already exist
           return;
 
       var currentPageMessageId = "";
