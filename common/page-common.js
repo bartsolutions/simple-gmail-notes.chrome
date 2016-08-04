@@ -115,6 +115,9 @@ SimpleGmailNotes.start = function(){
 
   var setupNotes = function(){
     setTimeout(function(){
+      if($(".sgn_input:visible").length)  //text area already exist
+          return;
+
       var currentPageMessageId = "";
 
       if(gmail.check.is_preview_pane()){
@@ -129,6 +132,7 @@ SimpleGmailNotes.start = function(){
       if(!currentPageMessageId)  //do nothing
           return;
      
+
       if(!acquireNetworkLock()){
           debugLog("sestupNotes failed to get network lock");
           return;
@@ -226,6 +230,7 @@ SimpleGmailNotes.start = function(){
 
     setTimeout(pullNotes, 0);
     setInterval(pullNotes, 2000);
+    setInterval(setupNotes, 2000);
 
     //mainly for debug purpose
     SimpleGmailNotes.gmail = gmail;
