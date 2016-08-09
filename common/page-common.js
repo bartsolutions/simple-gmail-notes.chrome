@@ -175,6 +175,7 @@ SimpleGmailNotes.start = function(){
     if(!$("tr.zA").length || 
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane())){
       debugLog("Skipped pulling because no tr to check with");
+      lastPullHash = null;
       return;   
     }
 

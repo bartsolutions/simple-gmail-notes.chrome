@@ -476,10 +476,6 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
       var emailKey = gEmailIdKeyDict[item.title];
       gEmailKeyNoteDict[emailKey] = {"description": item.description, 
                                      "short_description": item.short_description};
-      if(emailKey.indexOf("The best songs") >= 0){
-        var a =480;
-      }
-
     });
 
   }
@@ -489,17 +485,13 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     var emailKey = getEmailKey($(this));
     var emailNote = gEmailKeyNoteDict[emailKey];
 
-    if(emailKey.indexOf("The best songs") >= 0){
-        var a =490;
-    }
-
     if(emailNote && emailNote.description && $(this).find(".sgn").css("display") == "none"){
         $(this).find(".sgn").remove();  //remove the element, so it would be filled later
     }
 
     //debugLog("Working on email:", emailKey);
     if(!hasMarkedNote($(this))){
-      var emailNote = gEmailKeyNoteDict[emailKey];
+    //  var emailNote = gEmailKeyNoteDict[emailKey];
       markNote($(this), emailNote, emailKey);
     }
   });
