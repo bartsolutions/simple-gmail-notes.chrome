@@ -170,6 +170,7 @@ SimpleGmailNotes.start = function(){
 
   var lastPullDiff = 0;
   var lastPullHash = null;
+  var lastPullItemRange = null;
   var pullNotes = function(){
     if(!$("tr.zA").length || 
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane())){
@@ -181,13 +182,21 @@ SimpleGmailNotes.start = function(){
     var unmarkedRowCount = $("tr.zA[id]:visible").length;
     var thisPullDiff = unmarkedRowCount - markedRowCount;
     var thisPullHash = window.location.hash;
+    var thisPullItemRange = $(".Di .Dj:visible").text();
+
     debugLog("@104", unmarkedRowCount, markedRowCount, thisPullDiff);
-    if(thisPullDiff == lastPullDiff && thisPullHash == lastPullHash){
+    if(thisPullDiff == lastPullDiff 
+         && thisPullHash == lastPullHash
+         && thisPullItemRange == lastPullItemRange){
       debugLog("Skipped pulling because of duplicate network requests");
       return;
     }
 
-    var current_page = gmail.get.current_page();
+    if(thisPullDiff == 0){
+      debugLog("all rows already marked");
+      return;
+    }
+
     if(!gmail.tracker.at && gmail.check.is_query_page()){
       debugLog("tracker at is not defined");
       return;
@@ -201,6 +210,7 @@ SimpleGmailNotes.start = function(){
 
     lastPullDiff = thisPullDiff;
     lastPullHash = thisPullHash;
+    lastPullItemRange = thisPullItemRange;
 
     debugLog("Simple-gmail-notes: pulling notes");
     //skip the update if windows location (esp. hash part) is not changed
