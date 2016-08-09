@@ -629,28 +629,51 @@ pullNotes = function(sender, pendingPullList){
     return;
   }
 
+  if(pendingPullList.length == 0){
+    debugLog("Empty pending list, no need to pull");
+    return;
+  }
+
   var preferences = getPreferences();
   sendContentMessage(sender, {action:"update_preferences", preferences:preferences});
-
   debugLog("@414", pendingPullList);
-  var query = "1=1";
-  iterateArray(pendingPullList, function(index, messageId){
-    query += " or title contains '" + messageId + "'"
-  });
 
-  query = query.replace("1=1 or", "");  //remove the heading string
+  var totalRequests = Math.floor((pendingPullList.length-1) / 120) + 1;
 
-  debugLog("@431, query", query);
+  for(var i=0; i<totalRequests; i++){
+      var query = "1=1";
+      var startIndex = i*120;
+      var endIndex = (i+1)*120;
 
-  gdriveQuery(sender, query,
-    function(data){ //success callback
-      debugLog("@433, query succeed", data);
-      sendSummaryNotes(sender, pendingPullList, data.items);
-    },
-    function(data){ //error callback
-      debugLog("@439, query failed", data);
-    }
-  );
+      if(endIndex > pendingPullList.length)
+          endIndex = pendingPullList.length;
+
+
+      var partialPullList = pendingPullList.slice(startIndex, endIndex)
+
+      iterateArray(partialPullList, function(index, messageId){
+        query += " or title contains '" + messageId + "'";
+      });
+
+
+      query = query.replace("1=1 or", "");  //remove the heading string
+      debugLog("@431, query", query);
+      
+      (function(pullList){gdriveQuery(sender, query, 
+        function(data){ //success callback
+          debugLog("@433, query succeed", data);
+          sendSummaryNotes(sender, pullList, data.items);
+        },
+        function(data){ //error callback
+          debugLog("@439, query failed", data);
+        }
+      );
+      })(partialPullList);
+  }
+
+
+
+
 }
 
 //For messaging between background and content script
