@@ -192,7 +192,7 @@ SimpleGmailNotes.start = function(){
       return;
     }
 
-    if(thisPullDiff == 0){
+    if(thisPullDiff == 0 && unmarkedRowCount == 0){
       debugLog("all rows already marked");
       return;
     }
