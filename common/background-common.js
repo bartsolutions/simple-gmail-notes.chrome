@@ -133,7 +133,7 @@ updateDefaultPreferences = function(preferences)
     preferences["notePosition"] = "top";
 
   if(isEmptyPrefernce(preferences["showConnectionPrompt"]))
-    preferences["showConnectionPrompt"] = "true";
+    preferences["showConnectionPrompt"] = "false";
 
   if(isEmptyPrefernce(preferences["showAddCalendar"]))
     preferences["showAddCalendar"] = "true";

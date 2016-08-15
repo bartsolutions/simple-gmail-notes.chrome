@@ -352,7 +352,8 @@ setupNotes = function(email, messageId){
           //alert("extension problem");
           $(".sgn_input").text("WARNING! Simple Gmail Notes is not available.\n\n" +
                                "It's probably because the extension was disabled or updated, " +
-                               "in either case please refresh this page to remove the warning."
+                               "in either case please refresh this page to remove the warning. " +
+                               "(Left click the address bar and press the 'Enter' key.)"
                                )
                            .css("color", "red")
                            .css("font-weight", "bold");
