@@ -192,12 +192,6 @@ SimpleGmailNotes.start = function(){
       debugLog("Skipped pulling because of duplicate network requests");
       return;
     }
-
-    if(thisPullDiff == 0){
-      debugLog("all rows already marked");
-      return;
-    }
-
     if(!gmail.tracker.at && gmail.check.is_query_page()){
       debugLog("tracker at is not defined");
       return;
@@ -212,6 +206,11 @@ SimpleGmailNotes.start = function(){
     lastPullDiff = thisPullDiff;
     lastPullHash = thisPullHash;
     lastPullItemRange = thisPullItemRange;
+
+    if(thisPullDiff == 0){
+      debugLog("all rows already marked");
+      return;   //effectively no different to return from here
+    }
 
     debugLog("Simple-gmail-notes: pulling notes");
     //skip the update if windows location (esp. hash part) is not changed
