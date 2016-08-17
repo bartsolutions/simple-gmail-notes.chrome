@@ -362,9 +362,12 @@ setupNotes = function(email, messageId){
   }, 2000);
   sendBackgroundMessage({action:"validate_background_alive", email: email});    //if background script died, exception raise from here
 
+  var debugInfo = "";
+  sendBackgroundMessage({action:"update_debug_content_info", debugInfo: debugInfo});
+
   //load initial message
   debugLog("Start to initailize");
-  sendBackgroundMessage({action:"initialize", email: email, messageId:messageId});
+  sendBackgroundMessage({action:"initialize", email: email, messageId: messageId});
 }
 
 
@@ -706,9 +709,8 @@ setupListeners = function(){
     gCurrentEmailSubject = e.detail.subject;
     gCurrentEmailDatetime = e.detail.datetime;
     gCurrentEmailSender = e.detail.sender;
-
-
   });
+
 
   document.addEventListener('SGN_pull_notes', function(e) {
     debugLog("Requested to pull notes");
@@ -729,6 +731,12 @@ setupListeners = function(){
 
     pullNotes(email, emailList);
 
+  });
+
+  document.addEventListener('SGN_update_debug_page_info', function(e) {
+      debugLog("Got page debug info");
+      var debugInfo = e.detail.debugInfo;
+      sendBackgroundMessage({action: "update_debug_page_info", debugInfo: debugInfo});
   });
 }
 
