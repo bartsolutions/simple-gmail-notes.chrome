@@ -72,6 +72,11 @@ removeCachedToken = function(tokenValue){
 checkLogger = function(sender){
   //no need to implement this for chrome
 }
+
+getCurrentVersion = function(){
+    return chrome.runtime.getManifest().version;
+}
+
 /*** end of callback implementation ***/
 
 //For messaging between background and content script

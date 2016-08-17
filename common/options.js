@@ -2,7 +2,8 @@ var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor",
                         "backgroundColor", "fontSize", "abstractFontColor", 
                         "abstractBackgroundColor", "abstractFontSize", 
                         "notePosition", "showConnectionPrompt", 
-                        "showAddCalendar"];
+                        "showAddCalendar", "debugPageInfo",
+                        "debugContentInfo", "debugBackgroundInfo"];
 
 function isChrome(){
    return /chrom(e|ium)/.test(navigator.userAgent.toLowerCase());
@@ -132,6 +133,10 @@ function updateControls(preferences){
 
   var showAddCalendar = (preferences["showAddCalendar"] !== "false");
   $("#show_add_calendar").prop("checked", showAddCalendar);
+
+  $("#debug_page_info").text(String(preferences["debugPageInfo"]));
+  $("#debug_content_info").text(String(preferences["debugContentInfo"]));
+  $("#debug_background_info").text(String(preferences["debugBackgroundInfo"]));
 }
 
 

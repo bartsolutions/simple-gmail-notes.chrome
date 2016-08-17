@@ -21,7 +21,8 @@ var settings = {
 
 var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", 
                         "backgroundColor", "notePosition", 
-                        "showConnectionPrompt", "showAddCalendar"];
+                        "showConnectionPrompt", "showAddCalendar", 
+                        "debugPageInfo", "debugContentInfo", "debugBackgroundInfo"];
 var gSgnEmtpy = "<SGN_EMPTY>";
 
 /*
@@ -75,6 +76,10 @@ removeCachedToken = function(tokenValue){
 
 checkLogger = function(sender){
   throw "checkLogger not implemented";
+}
+
+getCurrentVersion = function(){
+  throw "getCurrentVersion not implemented";
 }
 
 /*
@@ -556,6 +561,8 @@ searchNote = function(sender, messageId){
 initialize = function(sender, messageId){
   var preferences = getPreferences();
 
+  preferences['debugBackgroundInfo'] = "Extension Version: " + getCurrentVersion();
+
   sendContentMessage(sender, {action:"update_preferences", preferences:preferences});
 
   debugLog("@476", preferences);
@@ -707,6 +714,14 @@ setupListeners = function(sender, request){
     case "validate_background_alive":
       //do nothing except echo back, to show it's alive
       sendContentMessage(sender, {action: "update_validation_timestamp"});
+      break;
+    case "update_debug_page_info":
+      var preferences = getPreferences();
+      preferences["debugPageInfo"] = request.debugInfo;
+      break;
+    case "update_debug_content_info":
+      var preferences = getPreferences();
+      preferences["debugContentInfo"] = request.debugInfo;
       break;
     default:
       debugLog("unknown request to background", request);

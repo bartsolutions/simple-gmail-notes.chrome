@@ -113,6 +113,12 @@ SimpleGmailNotes.start = function(){
     return true;
   }
 
+  var sendDebugInfo = function(){
+    var debugInfo = "Browser Version: " + navigator.userAgent + "\n" + debugInfoSummary + "\n" + debugInfoDetail;
+    sendEventMessage('SGN_update_debug_page_info', { debugInfo:debugInfo });
+
+  }
+
   var setupNotes = function(){
     setTimeout(function(){
       if($(".sgn_container:visible").length)  //text area already exist
@@ -154,7 +160,13 @@ SimpleGmailNotes.start = function(){
                           datetime:datetime,
                           subject:subject,
                           sender:sender});
+
       });
+
+      if(!debugInfoDetail){
+        debugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
+        sendDebugInfo();
+      }
 
     }, 0);  //setTimeout
   }
@@ -171,6 +183,8 @@ SimpleGmailNotes.start = function(){
   var lastPullDiff = 0;
   var lastPullHash = null;
   var lastPullItemRange = null;
+  var debugInfoDetail = "";
+  var debugInfoSummary = "";
   var pullNotes = function(){
     if(!$("tr.zA").length || 
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane())){
@@ -221,6 +235,16 @@ SimpleGmailNotes.start = function(){
                        {email: gmail.get.user_email(), emailList:emailList});
 
     });
+
+
+
+    if(!debugInfoSummary){
+        debugInfoSummary += "Is Vertical Split: " + gmail.check.is_vertical_split();
+        debugInfoSummary += "\nIs Horizontal Split: " + gmail.check.is_horizontal_split();
+        debugInfoSummary += "\nIs Preview Pane: " + gmail.check.is_preview_pane();
+        debugInfoSummary += "\nIs Multiple Inbox: " + gmail.check.is_multiple_inbox();
+        sendDebugInfo();
+    }
   }
 
   var main = function(){
