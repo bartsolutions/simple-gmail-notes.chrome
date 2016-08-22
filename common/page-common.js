@@ -163,10 +163,11 @@ SimpleGmailNotes.start = function(){
 
       });
 
-      if(!debugInfoDetail){
+      //if(!debugInfoDetail){
+        //debugInfoDetail = "Last Detail Page URL: " + window.location.href;
         debugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
         sendDebugInfo();
-      }
+      //}
 
     }, 0);  //setTimeout
   }
@@ -238,13 +239,14 @@ SimpleGmailNotes.start = function(){
 
 
 
-    if(!debugInfoSummary){
-        debugInfoSummary += "Is Vertical Split: " + gmail.check.is_vertical_split();
+    //if(!debugInfoSummary){
+        debugInfoSummary = "Last Summary Page URL: " + window.location.href;
+        debugInfoSummary += "\nIs Vertical Split: " + gmail.check.is_vertical_split();
         debugInfoSummary += "\nIs Horizontal Split: " + gmail.check.is_horizontal_split();
         debugInfoSummary += "\nIs Preview Pane: " + gmail.check.is_preview_pane();
         debugInfoSummary += "\nIs Multiple Inbox: " + gmail.check.is_multiple_inbox();
         sendDebugInfo();
-    }
+    //}
   }
 
   var main = function(){
