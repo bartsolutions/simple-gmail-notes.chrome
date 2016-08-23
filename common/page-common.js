@@ -148,12 +148,16 @@ SimpleGmailNotes.start = function(){
 
       
       //update the email info to the content page
-      gmail.get.email_data_async(currentPageMessageId, function(data){
-        var messageData = data["threads"][currentPageMessageId];
+      //gmail.get.email_data_async(currentPageMessageId, function(data){
+       // var messageData = data["threads"][currentPageMessageId];
 
-        var datetime = messageData["datetime"];
-        var subject = messageData["subject"];
-        var sender = messageData["from_email"];
+        //var datetime = messageData["datetime"];
+        //var subject = messageData["subject"];
+        //var sender = messageData["from_email"];
+
+        var subject = $(".ha h2.hP").text();
+        var sender = $("h3 span.gD").last().attr("email");
+        var datetime = $(".gK .g3").last().attr("title");
 
         sendEventMessage('SGN_setup_email_info', 
                          {messageId:currentPageMessageId, 
@@ -161,7 +165,7 @@ SimpleGmailNotes.start = function(){
                           subject:subject,
                           sender:sender});
 
-      });
+      //});
 
       //if(!debugInfoDetail){
         //debugInfoDetail = "Last Detail Page URL: " + window.location.href;
@@ -180,6 +184,82 @@ SimpleGmailNotes.start = function(){
     return currentDOMSignature;
   }
 
+
+  var updateEmailData = function(dataString){
+    var startString = ")]}'\n\n";
+    var totalLength = dataString.length;
+
+    if(dataString.substring(0, startString.length) != startString){
+      //not a valid view data string
+      return;
+    }
+
+    if(dataString.substring(totalLength-1, totalLength) != ']'){
+      //not a valid format
+      return;
+    }
+
+    var strippedString = dataString.substring(startString.length);
+
+    if(strippedString.indexOf('"ms"') < 0){
+      //not a json reponse
+      return;
+    }
+
+    var emailData = eval(strippedString);
+    var threads = gmail.tools.parse_email_data(emailData[0]).threads;
+    var parsedData = [];
+    for (var key in threads) {
+      if (threads.hasOwnProperty(key)) {
+        var thread = threads[key];
+        console.log(key + " -> " + threads[key]);
+
+        parsedData.push({
+          id: key,
+          title: thread.subject,
+          excerpt: thread.content_html,
+          time: thread.timestamp,
+          sender: thread.from_email,
+          attachment: thread.attachments,
+          labels: [], //can extract later if needed
+        });
+
+      }
+    }
+
+    sendEventMessage("SGN_pull_notes", 
+                     {email: gmail.get.user_email(), emailList:parsedData});
+    //update dict with parsedData
+  }
+
+  var updateViewData = function(dataString){
+    var totalLength = dataString.length;
+
+    var startString = "var GM_TIMING_START_CHUNK2=new Date().getTime(); var VIEW_DATA=";
+    var endString = "; var GM_TIMING_END_CHUNK2=new Date().getTime();";
+
+
+    if(dataString.substring(0, startString.length) != startString){
+      //not a valid view data string
+      return;
+    }
+
+    if(dataString.substring(totalLength - endString.length, totalLength) != endString){
+      //not a valid view data string
+      return;
+    };
+
+    var strippedString = dataString.substring(startString.length, totalLength-endString.length); 
+
+    var viewData = eval(strippedString);
+
+    var parsedData = gmail.tools.parse_view_data(viewData);
+
+    //update dict with parsedData
+    sendEventMessage("SGN_pull_notes", 
+                     {email: gmail.get.user_email(), emailList:parsedData});
+
+  }
 
   var lastPullDiff = 0;
   var lastPullHash = null;
@@ -227,8 +307,13 @@ SimpleGmailNotes.start = function(){
       return;   //effectively no different to return from here
     }
 
+    for(var i=0; i<document.scripts.length; i++){
+      updateViewData(document.scripts[i].text);
+    }
+
     debugLog("Simple-gmail-notes: pulling notes");
     //skip the update if windows location (esp. hash part) is not changed
+    /*
     gmail.get.visible_emails_async(function(emailList){
       debugLog("[page.js]sending email for pull request, total count:", 
                   emailList.length);
@@ -236,6 +321,7 @@ SimpleGmailNotes.start = function(){
                        {email: gmail.get.user_email(), emailList:emailList});
 
     });
+    */
 
 
 
@@ -262,6 +348,13 @@ SimpleGmailNotes.start = function(){
       debugLog("simple-gmail-notes: load event");
       g_lc += 1;
       setupNotes();
+    });
+
+    //id is always undefined
+    gmail.observe.after('http_event', function(params, id, xhr) {
+      console.log("url data:", params);
+      console.log("xhr:", xhr);
+      updateEmailData(xhr.responseText);
     });
 
     setTimeout(pullNotes, 0);
