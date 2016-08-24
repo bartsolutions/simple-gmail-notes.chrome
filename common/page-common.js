@@ -184,6 +184,71 @@ SimpleGmailNotes.start = function(){
     return currentDOMSignature;
   }
 
+  htmlEscape = function(str) {
+      return String(str)
+              .replace(/&/g, '&amp;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;');
+  }
+
+  stripHtml = function(value){
+    return value.replace(/<(?:.|\n)*?>/gm, '');
+  }
+
+  composeEmailKey = function(title, sender, time){
+    var emailKey = sender + "|" + time + "|" + stripHtml(title);
+
+
+    //in case already escaped
+    emailKey = htmlEscape(emailKey);
+    return emailKey;
+  }
+
+  var getTitle = function(mailNode){
+    var hook = $(mailNode).find(".xT .y6");
+
+    if(!hook.length)  //vertical split view
+      hook = $(mailNode).next().find(".xT .y6");
+
+    return hook.find("span").first().text();
+  }
+
+  var getTime = function(mailNode) {
+    var hook = $(mailNode).find(".xW");
+
+    if(!hook.length)  //vertical split view
+      hook = $(mailNode).find(".apm");
+
+    return hook.find("span").last().attr("title");
+  }
+
+  var getSender = function(mailNode) {
+    return mailNode.find(".yW .yP, .yW .zF").last().attr("email");
+  }
+
+  var getEmailKey = function(mailNode){
+    //var titleNode = getTitleNode(mailNode);
+    //var title = titleNode.text();
+    var title = getTitle(mailNode);
+    var sender = getSender(mailNode);
+
+    //if($(location).attr("href").indexOf("#sent") > 0){
+     // sender = userEmail;
+    //}
+
+    var time = getTime(mailNode);
+    var emailKey = composeEmailKey(title, sender, time);
+
+    debugLog("@249, email key:" + emailKey);
+
+
+
+    return emailKey;
+  }
+
+  var gEmailIdDict = {};
 
   var updateEmailData = function(dataString){
     var startString = ")]}'\n\n";
@@ -207,29 +272,19 @@ SimpleGmailNotes.start = function(){
     }
 
     var emailData = eval(strippedString);
-    var threads = gmail.tools.parse_email_data(emailData[0]).threads;
-    var parsedData = [];
-    for (var key in threads) {
-      if (threads.hasOwnProperty(key)) {
-        var thread = threads[key];
-        console.log(key + " -> " + threads[key]);
+    var email_list = gmail.tools.parse_json_data(emailData[0]);
 
-        parsedData.push({
-          id: key,
-          title: thread.subject,
-          excerpt: thread.content_html,
-          time: thread.timestamp,
-          sender: thread.from_email,
-          attachment: thread.attachments,
-          labels: [], //can extract later if needed
-        });
-
-      }
+    for(var i=0; i< email_list.length; i++){
+      var email = email_list[i];
+      var emailKey = composeEmailKey(email.title, email.sender, email.time);
+      gEmailIdDict[emailKey] = email;
     }
 
-    sendEventMessage("SGN_pull_notes", 
-                     {email: gmail.get.user_email(), emailList:parsedData});
+    //sendEventMessage("SGN_pull_notes", 
+     //                {email: gmail.get.user_email(), emailList:parsedData});
     //update dict with parsedData
+
+    var temp = 0;
   }
 
   var updateViewData = function(dataString){
@@ -253,12 +308,19 @@ SimpleGmailNotes.start = function(){
 
     var viewData = eval(strippedString);
 
-    var parsedData = gmail.tools.parse_view_data(viewData);
+    var email_list = gmail.tools.parse_view_data(viewData);
+
+    for(var i=0; i< email_list.length; i++){
+      var email = email_list[i];
+      var emailKey = composeEmailKey(email.title, email.sender, email.time);
+      gEmailIdDict[emailKey] = email;
+    }
 
     //update dict with parsedData
-    sendEventMessage("SGN_pull_notes", 
-                     {email: gmail.get.user_email(), emailList:parsedData});
+    //sendEventMessage("SGN_pull_notes", 
+     //                {email: gmail.get.user_email(), emailList:parsedData});
 
+    var temp = 0;
   }
 
   var lastPullDiff = 0;
@@ -275,12 +337,12 @@ SimpleGmailNotes.start = function(){
     }
 
     var markedRowCount = $("tr.zA:visible").find(".sgn").length;
-    var unmarkedRowCount = $("tr.zA[id]:visible").length;
-    var thisPullDiff = unmarkedRowCount - markedRowCount;
+    var totalRowCount = $("tr.zA[id]:visible").length;
+    var thisPullDiff = totalRowCount - markedRowCount;
     var thisPullHash = window.location.hash;
     var thisPullItemRange = $(".Di .Dj:visible").text();
 
-    debugLog("@104", unmarkedRowCount, markedRowCount, thisPullDiff);
+    debugLog("@104", totalRowCount, markedRowCount, thisPullDiff);
     if(thisPullDiff == lastPullDiff 
          && thisPullHash == lastPullHash
          && thisPullItemRange == lastPullItemRange){
@@ -324,6 +386,24 @@ SimpleGmailNotes.start = function(){
     */
 
 
+    var unmarkedElements = $("tr.zA[id]:visible:not(:has(>.sgn))");
+
+    var emailList = [];
+    unmarkedElements.each(function(){
+      var emailKey = getEmailKey($(this));
+      var email = gEmailIdDict[emailKey];
+
+      if(email){
+        emailList.push(email);
+        console.log("@395", emailKey, email);
+      }
+
+    });
+    sendEventMessage("SGN_pull_notes", 
+                     {email: gmail.get.user_email(), emailList:emailList});
+
+    var markedRowCount = $("tr.zA:visible").find(".sgn").length;
+    var totalRowCount = $("tr.zA[id]:visible").length;
 
     //if(!debugInfoSummary){
         debugInfoSummary = "Last Summary Page URL: " + window.location.href;

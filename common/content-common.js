@@ -189,7 +189,6 @@ hashFnv32a = function(str, asString, seed) {
 
 stripHtml = function(value){
   return value.replace(/<(?:.|\n)*?>/gm, '');
-
 }
 
 composeEmailKey = function(title, sender, time){
