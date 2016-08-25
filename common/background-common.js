@@ -589,24 +589,24 @@ sendSummaryNotes = function(sender, pullList, resultList){
   var abstractStyle = getPreferenceAbstractStyle();
 
   iterateArray(resultList, function(index, emailItem){
-    var title = emailItem.title.split(" ")[0];
-    debugLog("@477", title);
+    var emailId = emailItem.title.split(" ")[0];
+    debugLog("@477", emailId);
 
     //we collect the first one
-    if(emailItem.description && !itemDict[title]){
-      itemDict[title] = emailItem.description;
+    if(emailItem.description && !itemDict[emailId]){
+      itemDict[emailId] = emailItem.description;
     }
   });
 
   debugLog("@482", pullList, resultList);
 
   for(var i=0; i<pullList.length; i++){
-    var title = pullList[i];
+    var emailId = pullList[i];
     var description = ""; //empty string for not found
     var shortDescription = "";
 
-    if(itemDict[title] && itemDict[title] != gSgnEmtpy){
-      description = itemDict[title];
+    if(itemDict[emailId] && itemDict[emailId] != gSgnEmtpy){
+      description = itemDict[emailId];
 
       if(abstractStyle == "fixed_SGN")
         shortDescription = "SGN";
@@ -619,12 +619,17 @@ sendSummaryNotes = function(sender, pullList, resultList){
       }
 
     }
+    else{
+      emailId = gSgnEmtpy;
+      description = gSgnEmtpy;
+      shortDescription = gSgnEmtpy;
+    }
 
-    result.push({"title":title, "description":description, "short_description":shortDescription});
+    result.push({"id":emailId, "description":description, "short_description":shortDescription});
   }
 
   sendContentMessage(sender, {email:getStorage(sender, "gdrive_email"), 
-                       action:"update_summary", noteList:result});
+                              action:"update_summary", noteList:result});
 }
 
 pullNotes = function(sender, pendingPullList){
@@ -647,6 +652,7 @@ pullNotes = function(sender, pendingPullList){
 
   var totalRequests = Math.floor((pendingPullList.length-1) / 120) + 1;
 
+  var foundItemDict = {};
   for(var i=0; i<totalRequests; i++){
       var query = "1=1";
       var startIndex = i*120;
@@ -670,16 +676,31 @@ pullNotes = function(sender, pendingPullList){
         function(data){ //success callback
           debugLog("@433, query succeed", data);
           sendSummaryNotes(sender, pullList, data.items);
+
+          for(var i=0; i<data.items.length; i++){
+            var item = data.items[i];
+
+            foundItemDict[item.id] = true;
+          }
+
         },
         function(data){ //error callback
           debugLog("@439, query failed", data);
         }
       );
       })(partialPullList);
+
+      //find out the missing ones, and mark them as note not found
+      //
   }
 
-
-
+  var missedItems = [];
+  for(var i=0; i<pendingPullList.length; i++){
+    var id = pendingPullList[i];
+    if(!foundItemDict[id]){
+      missedItems.push(id);
+    }
+  }
 
 }
 

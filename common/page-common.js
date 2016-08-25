@@ -248,6 +248,16 @@ SimpleGmailNotes.start = function(){
     return emailKey;
   }
 
+  // I needed the opposite function today, so adding here too:
+  htmlUnescape = function(value){
+      return String(value)
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&amp;/g, '&');
+  }
+
   var gEmailIdDict = {};
 
   var updateEmailData = function(dataString){
@@ -276,7 +286,7 @@ SimpleGmailNotes.start = function(){
 
     for(var i=0; i< email_list.length; i++){
       var email = email_list[i];
-      var emailKey = composeEmailKey(email.title, email.sender, email.time);
+      var emailKey = composeEmailKey(htmlUnescape(email.title), email.sender, email.time);
       gEmailIdDict[emailKey] = email;
     }
 
@@ -386,24 +396,27 @@ SimpleGmailNotes.start = function(){
     */
 
 
-    var unmarkedElements = $("tr.zA[id]:visible:not(:has(>.sgn))");
+    var unmarkedElements = $("tr.zA[id]:visible:not([sgn_email_id])");
 
-    var emailList = [];
+    var requestList = [];
     unmarkedElements.each(function(){
       var emailKey = getEmailKey($(this));
       var email = gEmailIdDict[emailKey];
 
+
       if(email){
-        emailList.push(email);
+        //add email id to the TR element
+        $(this).attr("sgn_email_id", email.id);
+        requestList.push(email.id);
         console.log("@395", emailKey, email);
       }
 
     });
     sendEventMessage("SGN_pull_notes", 
-                     {email: gmail.get.user_email(), emailList:emailList});
+                     {email: gmail.get.user_email(), requestList:requestList});
 
-    var markedRowCount = $("tr.zA:visible").find(".sgn").length;
-    var totalRowCount = $("tr.zA[id]:visible").length;
+    //var markedRowCount = $("tr.zA:visible").find(".sgn").length;
+    //var totalRowCount = $("tr.zA[id]:visible").length;
 
     //if(!debugInfoSummary){
         debugInfoSummary = "Last Summary Page URL: " + window.location.href;

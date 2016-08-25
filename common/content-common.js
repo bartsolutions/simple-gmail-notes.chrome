@@ -103,6 +103,7 @@ disableEdit = function(retryCount)
   gEmailIdKeyDict = {};
   gEmailKeyIdDict = {};
   gEmailKeyNoteDict = {};
+  gEmailIdNoteDict = {};
 
   //keep trying until it's visible
   if(!$(".sgn_input").is(":disabled") || $(".sgn_padding").is(":visible")){  
@@ -248,6 +249,7 @@ var gAbstractFontColor = "";
 var gAbstractFontSize = "";
 
 var gLastValidationTimeStamp = 0;
+var gSgnEmtpy = "<SGN_EMPTY>";
 
 setupNotes = function(email, messageId){
   debugLog("Start to set up notes");
@@ -259,12 +261,12 @@ setupNotes = function(email, messageId){
 
   var injectionNode = $(".sgn_container");
 
-  var note = "";
 
   var emailKey = gEmailIdKeyDict[messageId];
-  if(emailKey && gEmailKeyNoteDict[emailKey])
-    note = gEmailKeyNoteDict[emailKey].description;
+  //if(emailKey && gEmailKeyNoteDict[emailKey])
+   // note = gEmailKeyNoteDict[emailKey].description;
     
+  var note = gEmailIdNoteDict[messageId];
 
   var textAreaNode = $("<textarea></textarea>", {
     "class": "sgn_input",
@@ -377,6 +379,7 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
 }
 
 
+var gEmailIdNoteDict = {};
 var gEmailKeyNoteDict = {};
 _updateNotesOnSummary = function(userEmail, pulledNoteList){
   var getTitle = function(mailNode){
@@ -427,8 +430,6 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
 
     debugLog("@249, email key:" + emailKey);
 
-
-
     return emailKey;
   }
 
@@ -436,6 +437,7 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     return mailNode.find(".sgn").length > 0;
   }
 
+  //email key can be remvoed later
   var markNote = function(mailNode, note, emailKey){
     //var titleNode = getTitleNode(mailNode);
     var labelNode;
@@ -443,9 +445,9 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     var sgnId = "sgn_" + hashFnv32a(emailKey, true);
 
 
-    if(note && note.description){
+    if(note && note.description && note.description != gSgnEmtpy){
 
-      labelNode = $('<div class="ar as sgn" sgn_id="' + sgnId + '">' +
+      labelNode = $('<div class="ar as sgn">' +
                             '<div class="at" title="Simple Gmail Notes: ' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
                             '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
                        '</div></div>');
@@ -460,73 +462,90 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
                           
     }
     else {
-      labelNode = $('<div style="display:none" class="sgn" sgn_id="' + sgnId + '"></div>');
+      labelNode = $('<div style="display:none" class="sgn"></div>');
     }
 
 
     addLabelToTitle(mailNode, labelNode);
 
     //it must be done after labelNode is added to DOM
-    var emailId = gEmailKeyIdDict[emailKey];
-    labelNode.parents("tr.zA").attr("sgn_email_id", emailId);
+    //var emailId = gEmailKeyIdDict[emailKey];
+    //labelNode.parents("tr.zA").attr("sgn_email_id", emailId);
   }
 
   if(pulledNoteList && pulledNoteList.length){
 
     debugLog("updated summary from pulled note, total count:", 
              pulledNoteList.length);
+
     $.each(pulledNoteList, function(index, item){
-      var emailKey = gEmailIdKeyDict[item.title];
-      gEmailKeyNoteDict[emailKey] = {"description": item.description, 
+      //var emailKey = gEmailIdKeyDict[item.id];
+      //gEmailKeyNoteDict[emailKey] = {"description": item.description, 
+       //                              "short_description": item.short_description};
+
+      gEmailIdNoteDict[item.id] = {"description": item.description, 
                                      "short_description": item.short_description};
+
     });
 
   }
 
   //loop for each email tr
-  $("tr.zA[id]").each(function(){
-    var emailKey = getEmailKey($(this));
-    var emailNote = gEmailKeyNoteDict[emailKey];
+  $("tr.zA[sgn_email_id]").each(function(){
+    //var emailKey = getEmailKey($(this));
+    //var emailNote = gEmailKeyNoteDict[emailKey];
+
+    var emailId = $(this).attr("sgn_email_id")
+    var emailNote = gEmailIdNoteDict[emailId];
 
     if(emailNote && emailNote.description && $(this).find(".sgn").css("display") == "none"){
         $(this).find(".sgn").remove();  //remove the element, so it would be filled later
+        $(this).removeAttr("sgn_email_id");
     }
+
 
     //debugLog("Working on email:", emailKey);
     if(!hasMarkedNote($(this))){
     //  var emailNote = gEmailKeyNoteDict[emailKey];
-      markNote($(this), emailNote, emailKey);
+      markNote($(this), emailNote, emailId);
     }
   });
 }
 
 var gEmailIdKeyDict = {};
 var gEmailKeyIdDict = {};
-pullNotes = function(userEmail, emailList){
+pullNotes = function(userEmail, requestList){
   var pendingPullList = [];
 
   debugLog("@418, pulling notes");
 
-  $.each(emailList, function(index, email){
-    if(!email.sender){
-      email.sender = userEmail;
-    }
+  $.each(requestList, function(index, emailId){
+    //if(!email.sender){
+     // email.sender = userEmail;
+    //}
 
-    var emailKey = composeEmailKey(htmlUnescape(email.title), email.sender, email.time);
-    debugLog("@318: email key:" + emailKey);
+    //var emailKey = composeEmailKey(htmlUnescape(email.title), email.sender, email.time);
+    //debugLog("@318: email key:" + emailKey);
 
 
+    /*
     if(gEmailKeyNoteDict[emailKey] == undefined){
       pendingPullList.push(email.id);
       gEmailIdKeyDict[email.id] = emailKey;
       gEmailKeyIdDict[emailKey] = email.id;
     }
+    */
+
+    //if(gEmailIdNoteDict[id] == undefined){
+     // pendingPullList.push(email.id);
+   // }
+
   });
 
   //batch pull logic here
-  if(pendingPullList.length){
+  if(requestList.length){
     sendBackgroundMessage({action:'pull_notes', email:userEmail, 
-                 pendingPullList:pendingPullList});
+                 pendingPullList:requestList});
   }
   else{
     debugLog("no pending item, skipped the pull");
@@ -714,21 +733,21 @@ setupListeners = function(){
   document.addEventListener('SGN_pull_notes', function(e) {
     debugLog("Requested to pull notes");
     var email = e.detail.email;
-    var emailList = e.detail.emailList;
+    var requestList = e.detail.requestList;
 
     if(!isValidEmail(email)){
       debugLog("invalid email (pull notes): " + email);
       return;
     }
 
-    $.each(emailList, function(_index, _email){
-      if(!isAlphaNumeric(_email.id)){
-        debugLog("invalid message ID (pull notes): " + _email.id);
+    $.each(requestList, function(_index, _emailId){
+      if(!isAlphaNumeric(_emailId)){
+        debugLog("invalid message ID (pull notes): " + _emailId);
         return;
       }
     });
 
-    pullNotes(email, emailList);
+    pullNotes(email, requestList);
 
   });
 
