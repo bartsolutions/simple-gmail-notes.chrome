@@ -346,13 +346,15 @@ SimpleGmailNotes.start = function(){
       return;   
     }
 
-    var markedRowCount = $("tr.zA:visible").find(".sgn").length;
+    var markedRowCount = $("tr.zA:visible[sgn_email_id]").length;
     var totalRowCount = $("tr.zA[id]:visible").length;
     var thisPullDiff = totalRowCount - markedRowCount;
     var thisPullHash = window.location.hash;
     var thisPullItemRange = $(".Di .Dj:visible").text();
 
     debugLog("@104", totalRowCount, markedRowCount, thisPullDiff);
+
+    /*
     if(thisPullDiff == lastPullDiff 
          && thisPullHash == lastPullHash
          && thisPullItemRange == lastPullItemRange){
@@ -369,6 +371,7 @@ SimpleGmailNotes.start = function(){
       debugLog("pullNotes failed to get network lock");
       return;
     }
+    */
 
     lastPullDiff = thisPullDiff;
     lastPullHash = thisPullHash;
@@ -377,10 +380,6 @@ SimpleGmailNotes.start = function(){
     if(thisPullDiff == 0){
       debugLog("all rows already marked");
       return;   //effectively no different to return from here
-    }
-
-    for(var i=0; i<document.scripts.length; i++){
-      updateViewData(document.scripts[i].text);
     }
 
     debugLog("Simple-gmail-notes: pulling notes");
@@ -449,6 +448,10 @@ SimpleGmailNotes.start = function(){
       console.log("xhr:", xhr);
       updateEmailData(xhr.responseText);
     });
+
+    for(var i=0; i<document.scripts.length; i++){
+      updateViewData(document.scripts[i].text);
+    }
 
     setTimeout(pullNotes, 0);
     setInterval(pullNotes, 2000);
