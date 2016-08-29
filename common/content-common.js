@@ -651,7 +651,14 @@ setupListeners = function(){
           debugLog("@485, move to bottom");
           //$(".nH.aHU").find(".sgn_container").remove();
           $(".nH.aHU").append(firstVisible);
+        } else if(notePosition == "side-top") {
+          $(".nH.adC").prepend(firstVisible);
+        } else if(notePosition == "side-bottom") {
+          $(".nH.adC").append(firstVisible);
         }
+
+        //reset class attribute with current 'position' class
+        firstVisible.attr('class', 'sgn_container sgn_position_' + notePosition);
 
         var showConnectionPrompt = (preferences["showConnectionPrompt"] !== "false");
         if(!showConnectionPrompt){
