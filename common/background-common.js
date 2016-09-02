@@ -185,7 +185,12 @@ getPreferenceAbstractStyle = function() {
 
 //Post message to google drive via REST API
 //Reference: https://developers.google.com/drive/web/quickstart/quickstart-js
-postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdriveNoteId, content){
+postNote = function(sender, message, gdriveFolderId, gdriveNoteId){
+  var messageId = message.id;
+  var emailTitleSuffix = message.title;
+  var content = message.content;
+  var messageKey = message.key;
+
   debugLog("Posting content", content);
   debugLog("Google Drive folder ID", gdriveFolderId);
 
@@ -200,7 +205,8 @@ postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdriveN
 
     var noteDescripton = content.substring(0,50);
 
-    var metadata = { title:messageId + " - " + emailTitleSuffix , parents:[{"id":gdriveFolderId}], 
+    var metadata = { title: messageKey + " - " + messageId + " - " + emailTitleSuffix, 
+                     parents: [{"id":gdriveFolderId}], 
                      description: noteDescripton };
     var boundary = "-------314159265358979323846";
     var contentType = "text/plain";
@@ -229,7 +235,7 @@ postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdriveN
       data: multipartRequestBody,
       success: function(data){
         debugLog("message posted successfully");
-        sendContentMessage(sender, {action:"revoke_summary_note", messageId: messageId});
+        sendContentMessage(sender, {action:"revoke_summary_note", messageKey: messageKey});
       },
       error: function(data){
         sendContentMessage(sender, {action:"show_error", 
@@ -423,13 +429,13 @@ loadMessage = function(sender, gdriveNoteId){
         data = "";
       sendContentMessage(sender, {action:"update_content", content:data});
       sendContentMessage(sender, {action:"enable_edit", 
-                           gdriveEmail:getStorage(sender, "gdrive_email")});  
+                                  gdriveEmail:getStorage(sender, "gdrive_email")});  
     },
     error: function(data){
       sendContentMessage(sender, {action:"show_error", 
                            type: "custom", 
                            message:"Faild load message, error: " + 
-                                    JSON.stringify(data)});
+                                   JSON.stringify(data)});
     }
   });
 }
@@ -583,30 +589,30 @@ initialize = function(sender, messageId){
   }
 }
 
-sendSummaryNotes = function(sender, pullList, resultList){
+sendSummaryNotes = function(sender, requestList, resultList){
   var result = [];
   var itemDict = {};
   var abstractStyle = getPreferenceAbstractStyle();
 
   iterateArray(resultList, function(index, emailItem){
-    var title = emailItem.title.split(" ")[0];
-    debugLog("@477", title);
+    var titleItems = emailItem.title.split(" - ");
+    var emailKey = titleItems[0];
 
     //we collect the first one
     if(emailItem.description && !itemDict[title]){
-      itemDict[title] = emailItem.description;
+      itemDict[emailKey] = emailItem.description;
     }
   });
 
-  debugLog("@482", pullList, resultList);
+  debugLog("@482", requestList, resultList);
 
-  for(var i=0; i<pullList.length; i++){
-    var title = pullList[i];
+  for(var i=0; i<requestList.length; i++){
+    var emailKey = requestList[i];
     var description = ""; //empty string for not found
     var shortDescription = "";
 
-    if(itemDict[title] && itemDict[title] != gSgnEmtpy){
-      description = itemDict[title];
+    if(itemDict[emailKey] && itemDict[emailKey] != gSgnEmtpy){
+      description = itemDict[emailKey];
 
       if(abstractStyle == "fixed_SGN")
         shortDescription = "SGN";
@@ -617,14 +623,17 @@ sendSummaryNotes = function(sender, pullList, resultList){
 
         shortDescription = "[" + description.substring(0, length) + "]";
       }
-
+    }
+    else{
+      description = gSgnEmtpy;
+      shortDescription = gSgnEmtpy;
     }
 
-    result.push({"title":title, "description":description, "short_description":shortDescription});
+    result.push({"key":emailKey, "description":description, "short_description":shortDescription});
   }
 
   sendContentMessage(sender, {email:getStorage(sender, "gdrive_email"), 
-                       action:"update_summary", noteList:result});
+                              action:"update_summary", noteList:result});
 }
 
 pullNotes = function(sender, pendingPullList){
@@ -645,8 +654,8 @@ pullNotes = function(sender, pendingPullList){
   sendContentMessage(sender, {action:"update_preferences", preferences:preferences});
   debugLog("@414", pendingPullList);
 
+  //split a long requests into multiple ones
   var totalRequests = Math.floor((pendingPullList.length-1) / 120) + 1;
-
   for(var i=0; i<totalRequests; i++){
       var query = "1=1";
       var startIndex = i*120;
@@ -677,10 +686,6 @@ pullNotes = function(sender, pendingPullList){
       );
       })(partialPullList);
   }
-
-
-
-
 }
 
 //For messaging between background and content script
@@ -698,8 +703,7 @@ setupListeners = function(sender, request){
       content = request.content;
       if(content == "")
           content = gSgnEmtpy;
-      postNote(sender, request.messageId, request.emailTitleSuffix,
-                 request.gdriveFolderId, request.gdriveNoteId, content);
+      postNote(sender, request.message, request.gdriveFolderId, request.gdriveNoteId);
       break;
     case "initialize":
       initialize(sender, request.messageId);

@@ -23,6 +23,7 @@
   "web_accessible_resources": [
     "lib/jquery-3.1.0.min.js",
     "lib/gmail.js",
+    "common/utils-common.js",
     "common/page-common.js",
     "page.js",
     "image/search.24.png",
@@ -37,7 +38,7 @@
   },
   "content_scripts":  [{
       "matches": [ "https://mail.google.com/*"],
-      "js": [ "lib/jquery-3.1.0.min.js", "common/content-common.js", "content.js"],
+      "js": [ "lib/jquery-3.1.0.min.js", "common/utils-common.js", "common/content-common.js", "content.js"],
       "css": [ "css/style.css"],
       "run_at": "document_end"
   }],

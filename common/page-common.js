@@ -31,17 +31,10 @@ SimpleGmailNotes.start = function(){
   /* 
    * callback declarations 
    */
-  SimpleGmailNotes.isDebug = function(callback) {
-    return false;
-  }
   /*** end of callback implementation ***/
 
-  var debugLog = function()
-  {
-    if (SimpleGmailNotes.isDebug()) {
-        console.log.apply(console, arguments);
-    }
-  }
+  //for shortcut
+  var debugLog = SimpleGmailNotes.debugLog;
 
   var gmail;
   
@@ -77,14 +70,12 @@ SimpleGmailNotes.start = function(){
         }
     }
 
-
     //avoid crazy pulling in case of multiple network requests
     if(timestamp - lastPullTimeStamp < 3)  //pull again in 3 seconds, for whatever reasons
       consecutiveRequests += 1;
     else{
       resetCounter = true;
     }
-
 
     if(consecutiveRequests >= 20){
         nextPullTimeStamp = timestamp + 60; //penalty timeout for 60 seconds
@@ -114,9 +105,8 @@ SimpleGmailNotes.start = function(){
   }
 
   var sendDebugInfo = function(){
-    var debugInfo = "Browser Version: " + navigator.userAgent + "\n" + debugInfoSummary + "\n" + debugInfoDetail;
+    var debugInfo = "Browser Version: " + navigator.userAgent + "\n" + gDebugInfoSummary + "\n" + gDebugInfoDetail;
     sendEventMessage('SGN_update_debug_page_info', { debugInfo:debugInfo });
-
   }
 
   var setupNotes = function(){
@@ -163,11 +153,8 @@ SimpleGmailNotes.start = function(){
 
       });
 
-      //if(!debugInfoDetail){
-        //debugInfoDetail = "Last Detail Page URL: " + window.location.href;
-        debugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
-        sendDebugInfo();
-      //}
+			gDebugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
+			sendDebugInfo();
 
     }, 0);  //setTimeout
   }
@@ -181,72 +168,57 @@ SimpleGmailNotes.start = function(){
   }
 
 
-  var lastPullDiff = 0;
-  var lastPullHash = null;
-  var lastPullItemRange = null;
-  var debugInfoDetail = "";
-  var debugInfoSummary = "";
+  //no need to check validation logic later
+  var gDebugInfoDetail = "";
+  var gDebugInfoSummary = "";
   var pullNotes = function(){
     if(!$("tr.zA").length || 
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane())){
       debugLog("Skipped pulling because no tr to check with");
-      lastPullHash = null;
       return;   
     }
 
-    var markedRowCount = $("tr.zA:visible").find(".sgn").length;
-    var unmarkedRowCount = $("tr.zA[id]:visible").length;
-    var thisPullDiff = unmarkedRowCount - markedRowCount;
-    var thisPullHash = window.location.hash;
-    var thisPullItemRange = $(".Di .Dj:visible").text();
-
-    debugLog("@104", unmarkedRowCount, markedRowCount, thisPullDiff);
-    if(thisPullDiff == lastPullDiff 
-         && thisPullHash == lastPullHash
-         && thisPullItemRange == lastPullItemRange){
-      debugLog("Skipped pulling because of duplicate network requests");
-      return;
-    }
-    if(!gmail.tracker.at && gmail.check.is_query_page()){
-      debugLog("tracker at is not defined");
-      return;
-    }
-
-    g_pnc += 1;
-    if(!acquireNetworkLock()){
-      debugLog("pullNotes failed to get network lock");
-      return;
-    }
-
-    lastPullDiff = thisPullDiff;
-    lastPullHash = thisPullHash;
-    lastPullItemRange = thisPullItemRange;
-
-    if(thisPullDiff == 0){
+    var unmarkedRows = $("tr.zA[id]:visible:not([sgn_email_id])");
+    if(!unmarkedRows.length){
       debugLog("all rows already marked");
       return;   //effectively no different to return from here
     }
 
     debugLog("Simple-gmail-notes: pulling notes");
-    //skip the update if windows location (esp. hash part) is not changed
-    gmail.get.visible_emails_async(function(emailList){
-      debugLog("[page.js]sending email for pull request, total count:", 
-                  emailList.length);
-      sendEventMessage("SGN_pull_notes", 
-                       {email: gmail.get.user_email(), emailList:emailList});
+		var requestList = []
+		unmarkedRows.each(function(){
+			var hook = null;
+			var mailNode = $(this);
 
-    });
+			//get title
+			hook = $(mailNode).find(".xT .y6");
+			if(!hook.length)  //vertical split view
+				hook = $(mailNode).next().find(".xT .y6");
+			var title = hook.find("span").first().text();
 
+			//get time
+			var hook = $(mailNode).find(".xW");
+			if(!hook.length)  //vertical split view
+				hook = $(mailNode).find(".apm");
+			var time = hook.find("span").last().attr("title");
 
+			//get sender
+			var sender = mailNode.find(".yW .yP, .yW .zF").last().attr("email");
 
-    //if(!debugInfoSummary){
-        debugInfoSummary = "Last Summary Page URL: " + window.location.href;
-        debugInfoSummary += "\nIs Vertical Split: " + gmail.check.is_vertical_split();
-        debugInfoSummary += "\nIs Horizontal Split: " + gmail.check.is_horizontal_split();
-        debugInfoSummary += "\nIs Preview Pane: " + gmail.check.is_preview_pane();
-        debugInfoSummary += "\nIs Multiple Inbox: " + gmail.check.is_multiple_inbox();
-        sendDebugInfo();
-    //}
+			var hashedKey = SimpleGmailNotes.getHashedKey(title, sender, time);
+			requestList.push(hashedKey);
+		});
+
+		if(requestList.length)
+			sendEventMessage("SGN_pull_notes", {email: gmail.get.user_email(), 
+																				  requestList: requestList});
+
+		gDebugInfoSummary = "Last Summary Page URL: " + window.location.href;
+		gDebugInfoSummary += "\nIs Vertical Split: " + gmail.check.is_vertical_split();
+		gDebugInfoSummary += "\nIs Horizontal Split: " + gmail.check.is_horizontal_split();
+		gDebugInfoSummary += "\nIs Preview Pane: " + gmail.check.is_preview_pane();
+		gDebugInfoSummary += "\nIs Multiple Inbox: " + gmail.check.is_multiple_inbox();
+		sendDebugInfo();
   }
 
   var main = function(){

@@ -31,50 +31,6 @@ isDebug = function(callback) {
   return false;
 }
 
-
-/*
- * Utilities
- */
-htmlEscape = function(str) {
-    return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-}
-
-// I needed the opposite function today, so adding here too:
-htmlUnescape = function(value){
-    return String(value)
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&');
-}
-
-//http://stackoverflow.com/questions/4434076/best-way-to-alphanumeric-check-in-javascript#25352300
-isAlphaNumeric = function(str) {
-  var code, i, len;
-
-  for (i = 0, len = str.length; i < len; i++) {
-    code = str.charCodeAt(i);
-    if (!(code > 47 && code < 58) && // numeric (0-9)
-        !(code > 64 && code < 91) && // upper alpha (A-Z)
-        !(code > 96 && code < 123)) { // lower alpha (a-z)
-      return false;
-    }
-  }
-  return true;
-};
-
-//http://stackoverflow.com/questions/46155/validate-email-address-in-javascript#1373724
-isValidEmail = function(email) {
-  var re = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i; 
-  return re.test(email);
-}
-  
 sendEventMessage = function(eventName, eventDetail){
   if(eventDetail == undefined){
     eventDetail = {}
@@ -83,13 +39,8 @@ sendEventMessage = function(eventName, eventDetail){
   document.dispatchEvent(new CustomEvent(eventName,  {}));
 }
 
-debugLog = function()
-{
-  var debugStatus = isDebug();
-  if (debugStatus) {
-      console.log.apply(console, arguments);
-  }
-}
+//for shortcut
+var debugLog = SimpleGmailNotes.debugLog;
 
 disableEdit = function(retryCount)
 {
@@ -100,8 +51,6 @@ disableEdit = function(retryCount)
   $(".sgn_input").val("");
 
   //clear up the cache
-  gEmailIdKeyDict = {};
-  gEmailKeyIdDict = {};
   gEmailKeyNoteDict = {};
 
   //keep trying until it's visible
@@ -167,40 +116,6 @@ showLogoutPrompt = function(email, retryCount){
   }
 }
 
-//http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery#22429679
-hashFnv32a = function(str, asString, seed) {
-  if(!str)
-    return "";
-
-  /*jshint bitwise:false */
-  var i, l,
-      hval = (seed === undefined) ? 0x811c9dc5 : seed;
-
-  for (i = 0, l = str.length; i < l; i++) {
-    hval ^= str.charCodeAt(i);
-    hval += (hval << 1) + (hval << 4) + (hval << 7) + (hval << 8) + (hval << 24);
-  }
-  if( asString ){
-    // Convert to 8 digit hex string
-    return ("0000000" + (hval >>> 0).toString(16)).substr(-8);
-  }
-  return hval >>> 0;
-}
-
-stripHtml = function(value){
-  return value.replace(/<(?:.|\n)*?>/gm, '');
-
-}
-
-composeEmailKey = function(title, sender, time){
-  var emailKey = sender + "|" + time + "|" + stripHtml(title);
-
-
-  //in case already escaped
-  emailKey = htmlEscape(emailKey);
-  return emailKey;
-}
-
 getGoogleAccountId = function(){
   var re = /mail\/u\/(\d+)/;
   var userId = "0";
@@ -262,11 +177,18 @@ setupNotes = function(email, messageId){
 
   var note = "";
 
-  var emailKey = gEmailIdKeyDict[messageId];
-  if(emailKey && gEmailKeyNoteDict[emailKey])
-    note = gEmailKeyNoteDict[emailKey].description;
-    
 
+  //  get the last email sender, last email datet time and first email subject  
+  var hook = null;
+
+  //get date
+  var time = $("gH g3[title]").last().attr("title");
+  var sender = $("gk span[email]").last().attr("email");
+  var title = $(".ha .hp").first().text();
+
+  var emailKey = SimpleGmailNotes.getHashedKey(title, sender, time)
+
+  //var email id
   var textAreaNode = $("<textarea></textarea>", {
     "class": "sgn_input",
     "text": note,
@@ -274,14 +196,21 @@ setupNotes = function(email, messageId){
   }).on("blur", function(){
     var content = $(this).val();
     if(gPreviousContent != content){
-      sendBackgroundMessage({action:"post_note", email:email, messageId:messageId, 
-                   emailTitleSuffix: gCurrentEmailSubject,
-                   gdriveNoteId:gCurrentGDriveNoteId, 
-                   gdriveFolderId:gCurrentGDriveFolderId, content:content});
+
+      content = "URL: " + window.location.href + "\n" +
+                  "-----" + "\n" +
+                  content;
+              
+      var message = {id: messageId, key: emailKey, title: gCurrentEmailSubject, content:content};
+
+      sendBackgroundMessage({action:"post_note", 
+                             email:email, 
+                             message:message,
+                             gdriveNoteId:gCurrentGDriveNoteId, 
+                             gdriveFolderId:gCurrentGDriveFolderId});
     }
 	  return true;
   });
-
 
   var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
       .html("<span class='sgn_current_connection'>Simple Gmail Notes connected to Google Drive of " +
@@ -380,28 +309,6 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
 
 var gEmailKeyNoteDict = {};
 _updateNotesOnSummary = function(userEmail, pulledNoteList){
-  var getTitle = function(mailNode){
-    var hook = $(mailNode).find(".xT .y6");
-
-    if(!hook.length)  //vertical split view
-      hook = $(mailNode).next().find(".xT .y6");
-
-    return hook.find("span").first().text();
-  }
-
-  var getTime = function(mailNode) {
-    var hook = $(mailNode).find(".xW");
-
-    if(!hook.length)  //vertical split view
-      hook = $(mailNode).find(".apm");
-
-    return hook.find("span").last().attr("title");
-  }
-
-  var getSender = function(mailNode) {
-    return mailNode.find(".yW .yP, .yW .zF").last().attr("email");
-  }
-
   var addLabelToTitle = function(mailNode, labelNode){
     var hook = $(mailNode).find(".xT .y6");
 
@@ -413,42 +320,21 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
       hook.prepend(labelNode);
   }
 
-  var getEmailKey = function(mailNode){
-    //var titleNode = getTitleNode(mailNode);
-    //var title = titleNode.text();
-    var title = getTitle(mailNode);
-    var sender = getSender(mailNode);
-
-    //if($(location).attr("href").indexOf("#sent") > 0){
-     // sender = userEmail;
-    //}
-
-    var time = getTime(mailNode);
-    var emailKey = composeEmailKey(title, sender, time);
-
-    debugLog("@249, email key:" + emailKey);
-
-
-
-    return emailKey;
-  }
-
   var hasMarkedNote = function(mailNode){
     return mailNode.find(".sgn").length > 0;
   }
 
-  var markNote = function(mailNode, note, emailKey){
+  var markNote = function(mailNode, note){
     //var titleNode = getTitleNode(mailNode);
     var labelNode;
 
-    var sgnId = "sgn_" + hashFnv32a(emailKey, true);
-
-
     if(note && note.description){
 
-      labelNode = $('<div class="ar as sgn" sgn_id="' + sgnId + '">' +
-                            '<div class="at" title="Simple Gmail Notes: ' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
-                            '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
+      labelNode = $('<div class="ar as sgn">' +
+                            '<div class="at" title="Simple Gmail Notes: ' + SimpleGmailNotes.htmlEscape(note.description) + 
+                                '" style="background-color: #ddd; border-color: #ddd;">' + 
+                            '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + 
+                                 SimpleGmailNotes.htmlEscape(note.short_description) + '</div></div>' + 
                        '</div></div>');
 
       labelNode.find(".at").css("background-color", gAbstractBackgroundColor)
@@ -461,80 +347,45 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
                           
     }
     else {
-      labelNode = $('<div style="display:none" class="sgn" sgn_id="' + sgnId + '"></div>');
+      labelNode = $('<div style="display:none" class="sgn"></div>');
     }
 
-
     addLabelToTitle(mailNode, labelNode);
-
-    //it must be done after labelNode is added to DOM
-    var emailId = gEmailKeyIdDict[emailKey];
-    labelNode.parents("tr.zA").attr("sgn_email_id", emailId);
   }
 
   if(pulledNoteList && pulledNoteList.length){
-
     debugLog("updated summary from pulled note, total count:", 
              pulledNoteList.length);
     $.each(pulledNoteList, function(index, item){
-      var emailKey = gEmailIdKeyDict[item.title];
-      gEmailKeyNoteDict[emailKey] = {"description": item.description, 
+      gEmailKeyNoteDict[email.key] = {"description": item.description, 
                                      "short_description": item.short_description};
     });
-
   }
 
   //loop for each email tr
-  $("tr.zA[id]").each(function(){
-    var emailKey = getEmailKey($(this));
-    var emailNote = gEmailKeyNoteDict[emailKey];
+  $("tr.zA[sgn_email_key]").each(function(){
+    var emailKey = SimpleGmailNotes.getHashedKey($(this));
+    var emailNote =  gEmailKeyNoteDict[emailKey];
 
     if(emailNote && emailNote.description && $(this).find(".sgn").css("display") == "none"){
         $(this).find(".sgn").remove();  //remove the element, so it would be filled later
+        $(this).removeAttr("sgn_email_key");
     }
 
     //debugLog("Working on email:", emailKey);
     if(!hasMarkedNote($(this))){
-    //  var emailNote = gEmailKeyNoteDict[emailKey];
       markNote($(this), emailNote, emailKey);
     }
   });
 }
 
-var gEmailIdKeyDict = {};
-var gEmailKeyIdDict = {};
-pullNotes = function(userEmail, emailList){
-  var pendingPullList = [];
-
+pullNotes = function(userEmail, requestList){
   debugLog("@418, pulling notes");
-
-  $.each(emailList, function(index, email){
-    if(!email.sender){
-      email.sender = userEmail;
-    }
-
-    var emailKey = composeEmailKey(htmlUnescape(email.title), email.sender, email.time);
-    debugLog("@318: email key:" + emailKey);
-
-
-    if(gEmailKeyNoteDict[emailKey] == undefined){
-      pendingPullList.push(email.id);
-      gEmailIdKeyDict[email.id] = emailKey;
-      gEmailKeyIdDict[emailKey] = email.id;
-    }
-  });
-
   //batch pull logic here
-  if(pendingPullList.length){
-    sendBackgroundMessage({action:'pull_notes', email:userEmail, 
-                 pendingPullList:pendingPullList});
-  }
-  else{
-    debugLog("no pending item, skipped the pull");
-    updateNotesOnSummary(userEmail, [])
-  }
+  sendBackgroundMessage({action:'pull_notes', 
+         		 email:userEmail, 
+			 pendingPullList:requestList});
 }
-
 
 setupListeners = function(){
   setupBackgroundEventsListener(function(request){
@@ -577,8 +428,20 @@ setupListeners = function(){
         $("div.sgn").remove();  //clean up all those outdated div
         break;
       case "update_content":
-        gPreviousContent = request.content;
-        $(".sgn_input").val(request.content);
+        var content = request.content;
+        var lineList = content.split("\n");
+        //remove all contents above separator
+        while(lineList.length){
+          var line = lineList.shift();
+
+          if(line.indexOf("-----") == 0){
+            break;
+          }
+        }
+        content = lineList.join("\n")
+
+        gPreviousContent = content;
+        $(".sgn_input").val(content);
         showLogoutPrompt(request.email);
         break;
       case "update_gdrive_note_info":
@@ -600,13 +463,13 @@ setupListeners = function(){
       //remove the note in cache, so the new notes would be collected next time
       case "revoke_summary_note":
         debugLog("Trying to revoke summary note", request);
-        var emailId = request.messageId;
-        var emailKey = gEmailIdKeyDict[emailId];
-        var sgnId = "sgn_" + hashFnv32a(emailKey, true);
+        //var emailId = request.messageId;
+        var emailKey = request.messageKey;
+        var sgnId = "sgn_" + SimpleGmailNotes.hashFnv32a(emailKey, true);
 
         $(".sgn[sgn_id='" + sgnId + "']").remove();
 
-        debugLog("@447", emailKey, emailId);
+        debugLog("@447", emailKey);
 
         //gEmailKeyNoteDict = {};
         delete gEmailKeyNoteDict[emailKey];
@@ -625,7 +488,7 @@ setupListeners = function(){
 
         var fontColor = preferences["fontColor"];
         if(fontColor)
-          $(".sgn_input").css("color", htmlEscape(fontColor));
+          $(".sgn_input").css("color", SimpleGmailNotes.htmlEscape(fontColor));
 
         var backgroundColor = preferences["backgroundColor"];
         if(backgroundColor)
@@ -678,16 +541,15 @@ setupListeners = function(){
     var email = e.detail.email;
     var messageId = e.detail.messageId;
 
-    if(!isAlphaNumeric(messageId)){
+    if(!SimpleGmailNotes.isAlphaNumeric(messageId)){
       debugLog("invalid message ID (setup notes): " + messageId);
       return;
     }
 
-    if(!isValidEmail(email)){
+    if(!SimpleGmailNotes.isValidEmail(email)){
       debugLog("invalid email (setup notes): " + email);
       return;
     }
-
     setupNotes(email, messageId);
   });
 
@@ -695,12 +557,12 @@ setupListeners = function(){
     var email = e.detail.email;
     var messageId = e.detail.messageId;
 
-    if(!isAlphaNumeric(messageId)){
+    if(!SimpleGmailNotes.isAlphaNumeric(messageId)){
       debugLog("invalid message ID (setup email info): " + messageId);
       return;
     }
 
-    if(!isValidEmail(email)){
+    if(!SimpleGmailNotes.isValidEmail(email)){
       debugLog("invalid email (setup email info): " + email);
       return;
     }
@@ -717,13 +579,13 @@ setupListeners = function(){
     var email = e.detail.email;
     var emailList = e.detail.emailList;
 
-    if(!isValidEmail(email)){
+    if(!SimpleGmailNotes.isValidEmail(email)){
       debugLog("invalid email (pull notes): " + email);
       return;
     }
 
     $.each(emailList, function(_index, _email){
-      if(!isAlphaNumeric(_email.id)){
+      if(!SimpleGmailNotes.isAlphaNumeric(_email.id)){
         debugLog("invalid message ID (pull notes): " + _email.id);
         return;
       }

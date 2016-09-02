@@ -45,6 +45,10 @@ function setupPage(){
     (document.head || document.documentElement).appendChild(j);
 
     var j = document.createElement('script');
+    j.src = chrome.extension.getURL('common/utils-common.js');
+    (document.head || document.documentElement).appendChild(j);
+
+    var j = document.createElement('script');
     j.src = chrome.extension.getURL('common/page-common.js');
     (document.head || document.documentElement).appendChild(j);
 
