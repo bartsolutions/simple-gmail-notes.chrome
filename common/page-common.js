@@ -260,6 +260,18 @@ SimpleGmailNotes.start = function(){
 
   var gEmailIdDict = {};
 
+  var isNumeric = function(str){
+    var code, i, len;
+
+    for (i = 0, len = str.length; i < len; i++) {
+      code = str.charCodeAt(i);
+      if (!(code > 47 && code < 58)){ // numeric (0-9)
+        return false;
+      }
+    }
+    return true;
+  }
+
   var updateEmailData = function(dataString){
     var startString = ")]}'\n\n";
     var totalLength = dataString.length;
@@ -269,26 +281,75 @@ SimpleGmailNotes.start = function(){
       return;
     }
 
-    if(dataString.substring(totalLength-1, totalLength) != ']'){
-      //not a valid format
-      return;
-    }
-
     var strippedString = dataString.substring(startString.length);
 
-    if(strippedString.indexOf('"ms"') < 0){
-      //not a json reponse
-      return;
-    }
+    var lineList = dataString.split("\n");
 
-    var emailData = eval(strippedString);
-    var email_list = gmail.tools.parse_json_data(emailData[0]);
+    if(lineList.length == 3){  //JSON data
+        return; //walty temp
+
+        if(dataString.substring(totalLength-1, totalLength) != ']'){
+          //not a valid format
+          return;
+        }
+
+
+        if(strippedString.indexOf('"ms"') < 0){
+          //not a json reponse
+          return;
+        }
+
+        if(strippedString.indexOf("b2af") >= 0){
+            var dummy = 1;
+        }
+
+        var emailData = eval(strippedString);
+        var email_list = gmail.tools.parse_json_data(emailData[0]);
+
+    }
+    else if(lineList.length > 3){
+      if(dataString.substring(totalLength-2, totalLength-1) != ']'){
+        //not a valid format
+        return;
+      }
+
+      var firstByteCount = lineList[2];
+
+      if(!isNumeric(firstByteCount)){
+        return; //invalid format
+      }
+
+      if(strippedString.indexOf('"tb"') < 0){
+        return; //invalid format
+      }
+
+      var tempString = "[null";
+      var resultList = [];
+
+      for(var i=3; i<lineList.length; i++){
+        var line = lineList[i];
+        if(isNumeric(line)){
+          continue;
+        }
+
+        if(line.indexOf('[["tb"') != 0){
+          continue;
+        }
+
+        var tempList = eval(line);
+
+        resultList.push(tempList[0]);
+      }
+
+      var email_list = gmail.tools.parse_view_data(resultList);
+    }
 
     for(var i=0; i< email_list.length; i++){
       var email = email_list[i];
       var emailKey = composeEmailKey(htmlUnescape(email.title), email.sender, email.time);
       gEmailIdDict[emailKey] = email;
     }
+
 
     //sendEventMessage("SGN_pull_notes", 
      //                {email: gmail.get.user_email(), emailList:parsedData});
@@ -462,10 +523,13 @@ SimpleGmailNotes.start = function(){
   }
 
   main();
+  //alert("@465@gmail.js");
 
 
 }(window.SimpleGmailNotes = window.SimpleGmailNotes || {}, jQuery.noConflict(true)));
 
 } //end of SimpleGmailNotes.start
 
-SimpleGmailNotes.refresh(SimpleGmailNotes.start);
+//SimpleGmailNotes.refresh(SimpleGmailNotes.start);
+//
+SimpleGmailNotes.start();
