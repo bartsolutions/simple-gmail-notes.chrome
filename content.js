@@ -38,6 +38,7 @@ function addScript(scriptPath){
     var j = document.createElement('script');
     j.src = chrome.extension.getURL(scriptPath);
     j.async = false;
+    j.defer = false;
     (document.head || document.documentElement).appendChild(j);
 }
 

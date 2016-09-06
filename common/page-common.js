@@ -22,6 +22,7 @@ SimpleGmailNotes.start = function(){
 
 (function(SimpleGmailNotes, localJQuery){
   var $ = localJQuery;
+  SimpleGmailNotes.gLastHeartBeat = Date.now();
  // alert("@11: " + localJQuery);
 
 
@@ -51,9 +52,7 @@ SimpleGmailNotes.start = function(){
     }
 
     eventDetail.email = gmail.get.user_email();
-    document.dispatchEvent(new CustomEvent(eventName,  
-                                           {detail: eventDetail}
-    ));
+    document.dispatchEvent(new CustomEvent(eventName,  {detail: eventDetail}));
   }
 
   var lastPullTimeStamp = null;
@@ -89,7 +88,7 @@ SimpleGmailNotes.start = function(){
     if(consecutiveRequests >= 20){
         nextPullTimeStamp = timestamp + 60; //penalty timeout for 60 seconds
 
-        var message = "20 consecutive network requests detected from Simple Gmail Notes, the extension would be self-disabled for 60 seconds. Please consider to disable/uninstall this extension to avoid locking of your Gmail account. Currently the developer (me) cannot reproduce this problem and therefore has no idea how to fix it, sorry.\n\nHowever, if possible, please kindly send the following information to the extension bug report page, it would be helpful for the developer to diagnose the problem. Thank you!\n\n";
+        var message = "20 consecutive network requests detected from Simple Gmail Notes, the extension would be self-disabled for 60 seconds. Please consider to disable/uninstall this extension to avoid locking of your Gmail account. This message is embeddeed by the extension developer to ensure account safetly.\n\nHowever, if possible, please kindly send the following information to the extension bug report page, it would be helpful for the developer to diagnose the problem. Thank you!\n\n";
         message += "oec:" + g_oec;
         message += "; lc:" + g_lc; 
         message += "; pnc:" + g_pnc;
@@ -145,33 +144,19 @@ SimpleGmailNotes.start = function(){
       }
         
       sendEventMessage('SGN_setup_notes', {messageId:currentPageMessageId});
-
       
-      //update the email info to the content page
-      //gmail.get.email_data_async(currentPageMessageId, function(data){
-       // var messageData = data["threads"][currentPageMessageId];
+      var subject = $(".ha h2.hP").text();
+      var sender = $("h3 span.gD").last().attr("email");
+      var datetime = $(".gK .g3").last().attr("title");
 
-        //var datetime = messageData["datetime"];
-        //var subject = messageData["subject"];
-        //var sender = messageData["from_email"];
+      sendEventMessage('SGN_setup_email_info', 
+                       {messageId:currentPageMessageId, 
+                        datetime:datetime,
+                        subject:subject,
+                        sender:sender});
 
-        var subject = $(".ha h2.hP").text();
-        var sender = $("h3 span.gD").last().attr("email");
-        var datetime = $(".gK .g3").last().attr("title");
-
-        sendEventMessage('SGN_setup_email_info', 
-                         {messageId:currentPageMessageId, 
-                          datetime:datetime,
-                          subject:subject,
-                          sender:sender});
-
-      //});
-
-      //if(!debugInfoDetail){
-        //debugInfoDetail = "Last Detail Page URL: " + window.location.href;
-        debugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
-        sendDebugInfo();
-      //}
+      debugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
+      sendDebugInfo();
 
     }, 0);  //setTimeout
   }
@@ -394,6 +379,10 @@ SimpleGmailNotes.start = function(){
     var temp = 0;
   }
 
+  var isBackgroundDead = function(){
+      return Date.now() - SimpleGmailNotes.gLastHeartBeat > 3000;
+  }
+
   var lastPullDiff = 0;
   var lastPullHash = null;
   var lastPullItemRange = null;
@@ -407,59 +396,27 @@ SimpleGmailNotes.start = function(){
       return;   
     }
 
-    var markedRowCount = $("tr.zA:visible[sgn_email_id]").length;
-    var totalRowCount = $("tr.zA[id]:visible").length;
-    var thisPullDiff = totalRowCount - markedRowCount;
-    var thisPullHash = window.location.hash;
-    var thisPullItemRange = $(".Di .Dj:visible").text();
-
-    debugLog("@104", totalRowCount, markedRowCount, thisPullDiff);
-
-    /*
-    if(thisPullDiff == lastPullDiff 
-         && thisPullHash == lastPullHash
-         && thisPullItemRange == lastPullItemRange){
-      debugLog("Skipped pulling because of duplicate network requests");
-      return;
-    }
-    if(!gmail.tracker.at && gmail.check.is_query_page()){
-      debugLog("tracker at is not defined");
-      return;
+    if(isBackgroundDead()){
+      return; //no need to pull
     }
 
-    g_pnc += 1;
-    if(!acquireNetworkLock()){
-      debugLog("pullNotes failed to get network lock");
+    var visibleRows = $("tr.zA:visible");
+    var markedRows = visibleRows.filter("[sgn_email_id]");
+    var notedRows = markedRows.filter(":has(div.sgn)")
+
+
+    var unmarkedRows = $("tr.zA[id]:visible:not(:has(div.sgn))");
+    debugLog("@104, total unmarked rows", unmarkedRows.length);
+
+    if(unmarkedRows.length  == 0){
+      debugLog("no need to pull rows");
       return;
-    }
-    */
-
-    lastPullDiff = thisPullDiff;
-    lastPullHash = thisPullHash;
-    lastPullItemRange = thisPullItemRange;
-
-    if(thisPullDiff == 0){
-      debugLog("all rows already marked");
-      return;   //effectively no different to return from here
     }
 
     debugLog("Simple-gmail-notes: pulling notes");
-    //skip the update if windows location (esp. hash part) is not changed
-    /*
-    gmail.get.visible_emails_async(function(emailList){
-      debugLog("[page.js]sending email for pull request, total count:", 
-                  emailList.length);
-      sendEventMessage("SGN_pull_notes", 
-                       {email: gmail.get.user_email(), emailList:emailList});
-
-    });
-    */
-
-
-    var unmarkedElements = $("tr.zA[id]:visible:not([sgn_email_id])");
 
     var requestList = [];
-    unmarkedElements.each(function(){
+    unmarkedRows.each(function(){
       var emailKey = getEmailKey($(this));
       var email = gEmailIdDict[emailKey];
 
@@ -468,24 +425,30 @@ SimpleGmailNotes.start = function(){
         //add email id to the TR element
         $(this).attr("sgn_email_id", email.id);
         requestList.push(email.id);
-        console.log("@395", emailKey, email);
+        //console.log("@395", emailKey, email);
       }
 
     });
+
+
+    g_pnc += 1;
+    if(!acquireNetworkLock()){
+      debugLog("pullNotes failed to get network lock");
+      return;
+    }
+
     sendEventMessage("SGN_pull_notes", 
                      {email: gmail.get.user_email(), requestList:requestList});
+    debugInfoSummary = "Last Summary Page URL: " + window.location.href;
+    debugInfoSummary += "\nIs Vertical Split: " + gmail.check.is_vertical_split();
+    debugInfoSummary += "\nIs Horizontal Split: " + gmail.check.is_horizontal_split();
+    debugInfoSummary += "\nIs Preview Pane: " + gmail.check.is_preview_pane();
+    debugInfoSummary += "\nIs Multiple Inbox: " + gmail.check.is_multiple_inbox();
+    sendDebugInfo();
+  }
 
-    //var markedRowCount = $("tr.zA:visible").find(".sgn").length;
-    //var totalRowCount = $("tr.zA[id]:visible").length;
-
-    //if(!debugInfoSummary){
-        debugInfoSummary = "Last Summary Page URL: " + window.location.href;
-        debugInfoSummary += "\nIs Vertical Split: " + gmail.check.is_vertical_split();
-        debugInfoSummary += "\nIs Horizontal Split: " + gmail.check.is_horizontal_split();
-        debugInfoSummary += "\nIs Preview Pane: " + gmail.check.is_preview_pane();
-        debugInfoSummary += "\nIs Multiple Inbox: " + gmail.check.is_multiple_inbox();
-        sendDebugInfo();
-    //}
+  var sendHeartBeat = function(){
+    sendEventMessage("SGN_heart_beat_request");
   }
 
   var main = function(){
@@ -505,9 +468,13 @@ SimpleGmailNotes.start = function(){
 
     //id is always undefined
     gmail.observe.after('http_event', function(params, id, xhr) {
-      console.log("url data:", params);
-      console.log("xhr:", xhr);
+      debugLog("url data:", params);
+      debugLog("xhr:", xhr);
       updateEmailData(xhr.responseText);
+    });
+
+    document.addEventListener('SGN_PAGE_heart_beat_response', function(e) {
+      SimpleGmailNotes.gLastHeartBeat = Date.now();
     });
 
     for(var i=0; i<document.scripts.length; i++){
@@ -516,10 +483,12 @@ SimpleGmailNotes.start = function(){
 
     setTimeout(pullNotes, 0);
     setInterval(pullNotes, 2000);
-    setInterval(setupNotes, 1770);  //better not to overlapp to much with the above one
+    setInterval(setupNotes, 1770); //better not to overlapp to much with the above one
+    setInterval(sendHeartBeat, 2000);
 
     //mainly for debug purpose
     SimpleGmailNotes.gmail = gmail;
+
   }
 
   main();

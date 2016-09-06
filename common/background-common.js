@@ -732,9 +732,9 @@ setupListeners = function(sender, request){
     case "open_options":
       openTab("options.html");
       break;
-    case "validate_background_alive":
+    case "heart_beart_request":
       //do nothing except echo back, to show it's alive
-      sendContentMessage(sender, {action: "update_validation_timestamp"});
+      sendContentMessage(sender, {action: "heart_beat_response"});
       break;
     case "update_debug_page_info":
       var preferences = getPreferences();

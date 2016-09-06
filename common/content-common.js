@@ -80,7 +80,7 @@ sendEventMessage = function(eventName, eventDetail){
     eventDetail = {}
   }
 
-  document.dispatchEvent(new CustomEvent(eventName,  {}));
+  document.dispatchEvent(new CustomEvent(eventName,  {detail: eventDetail}));
 }
 
 debugLog = function()
@@ -248,8 +248,12 @@ var gAbstractBackgroundColor = "";
 var gAbstractFontColor = "";
 var gAbstractFontSize = "";
 
-var gLastValidationTimeStamp = 0;
+var gLastHeartBeat = Date.now();
 var gSgnEmtpy = "<SGN_EMPTY>";
+
+isBackgroundDead = function(){
+    return Date.now() - gLastHeartBeat > 3000;
+}
 
 setupNotes = function(email, messageId){
   debugLog("Start to set up notes");
@@ -266,7 +270,11 @@ setupNotes = function(email, messageId){
   //if(emailKey && gEmailKeyNoteDict[emailKey])
    // note = gEmailKeyNoteDict[emailKey].description;
     
-  var note = gEmailIdNoteDict[messageId];
+  var message = gEmailIdNoteDict[messageId];
+
+  var note = ""
+  if(message && message.description)
+      note = message.description;
 
   var textAreaNode = $("<textarea></textarea>", {
     "class": "sgn_input",
@@ -348,7 +356,7 @@ setupNotes = function(email, messageId){
   setTimeout(function(){
      var timestamp = Date.now();
 
-      if(Date.now() - gLastValidationTimeStamp > 3000){ 
+      if(isBackgroundDead()){ 
           //there is something wrong with the extension
           //alert("extension problem");
           $(".sgn_input").text("WARNING! Simple Gmail Notes is not available.\n\n" +
@@ -361,7 +369,7 @@ setupNotes = function(email, messageId){
       }
 
   }, 2000);
-  sendBackgroundMessage({action:"validate_background_alive", email: email});    //if background script died, exception raise from here
+
 
   var debugInfo = "";
   sendBackgroundMessage({action:"update_debug_content_info", debugInfo: debugInfo});
@@ -380,7 +388,7 @@ updateNotesOnSummary = function(userEmail, pulledNoteList){
 
 
 var gEmailIdNoteDict = {};
-var gEmailKeyNoteDict = {};
+//var gEmailKeyNoteDict = {};
 _updateNotesOnSummary = function(userEmail, pulledNoteList){
   var getTitle = function(mailNode){
     var hook = $(mailNode).find(".xT .y6");
@@ -591,7 +599,6 @@ setupListeners = function(){
         break;
       case "update_user":
         $(".sgn_user").text(request.email);
-
         $("div.sgn").remove();  //clean up all those outdated div
         break;
       case "update_content":
@@ -619,18 +626,18 @@ setupListeners = function(){
       case "revoke_summary_note":
         debugLog("Trying to revoke summary note", request);
         var emailId = request.messageId;
-        var emailKey = gEmailIdKeyDict[emailId];
-        var sgnId = "sgn_" + hashFnv32a(emailKey, true);
+        //var emailKey = gEmailIdKeyDict[emailId];
+        //var sgnId = "sgn_" + hashFnv32a(emailKey, true);
 
-        $(".sgn[sgn_id='" + sgnId + "']").remove();
+        $("tr[sgn_email_id='" + emailId + "'] .sgn").remove();
 
-        debugLog("@447", emailKey, emailId);
+        debugLog("@447", emailId);
 
         //gEmailKeyNoteDict = {};
-        delete gEmailKeyNoteDict[emailKey];
+        //delete gEmailKeyNoteDict[emailKey];
 
         debugLog("Requesting force reload");
-        sendEventMessage("SGN_force_reload");
+        sendEventMessage("SGN_PAGE_force_reload");  //no effect to the page script now
 
         break;
 
@@ -683,13 +690,15 @@ setupListeners = function(){
 
         debugLog("@470", preferences);
         break;
-      case "update_validation_timestamp":
-        gLastValidationTimeStamp = Date.now();
+      case "heart_beat_response":
+        gLastHeartBeat = Date.now();
+        sendEventMessage('SGN_PAGE_heart_beat_response');
         break;
       default:
         debugLog("unknown background request", request);
     }
   });
+
 
   // Event listener for page
   document.addEventListener('SGN_setup_notes', function(e) {
@@ -707,6 +716,10 @@ setupListeners = function(){
     }
 
     setupNotes(email, messageId);
+  });
+
+  document.addEventListener('SGN_heart_beat_request', function(e){
+    sendBackgroundMessage({action:"heart_beart_request"});    //if background script died, exception raise from here
   });
 
   document.addEventListener('SGN_setup_email_info', function(e) {
