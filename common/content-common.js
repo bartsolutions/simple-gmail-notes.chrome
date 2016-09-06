@@ -654,7 +654,7 @@ setupListeners = function(){
         } else if(notePosition == "side-top") {
           $(".nH.adC").prepend(firstVisible);
         } else if(notePosition == "side-bottom") {
-          $(".nH.adC").append(firstVisible);
+          $(".nH.adC .nH .u5").before(firstVisible);
         }
 
         //reset class attribute with current 'position' class
