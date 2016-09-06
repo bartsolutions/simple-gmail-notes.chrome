@@ -401,36 +401,31 @@ SimpleGmailNotes.start = function(){
     }
 
     var visibleRows = $("tr.zA:visible");
-    var markedRows = visibleRows.filter("[sgn_email_id]");
-    var notedRows = markedRows.filter(":has(div.sgn)")
+    var unmarkedRows = visibleRows.filter(":not([sgn_email_id])");
+    unmarkedRows.each(function(){
+      var emailKey = getEmailKey($(this));
+      var email = gEmailIdDict[emailKey];
+      if(email){
+        //add email id to the TR element
+        $(this).attr("sgn_email_id", email.id);
+      }
+    });
 
-
-    var unmarkedRows = $("tr.zA[id]:visible:not(:has(div.sgn))");
+    //rows that has been marked, but has no notes
+    var pendingRows = visibleRows.filter("[sgn_email_id]:not(:has(div.sgn))");
     debugLog("@104, total unmarked rows", unmarkedRows.length);
-
-    if(unmarkedRows.length  == 0){
+    if(pendingRows.length  == 0){
       debugLog("no need to pull rows");
       return;
     }
 
-    debugLog("Simple-gmail-notes: pulling notes");
-
     var requestList = [];
-    unmarkedRows.each(function(){
-      var emailKey = getEmailKey($(this));
-      var email = gEmailIdDict[emailKey];
-
-
-      if(email){
-        //add email id to the TR element
-        $(this).attr("sgn_email_id", email.id);
-        requestList.push(email.id);
-        //console.log("@395", emailKey, email);
-      }
-
+    pendingRows.each(function(){
+        var email_id = $(this).attr("sgn_email_id");
+        requestList.push(email_id);
     });
 
-
+    debugLog("Simple-gmail-notes: pulling notes");
     g_pnc += 1;
     if(!acquireNetworkLock()){
       debugLog("pullNotes failed to get network lock");
