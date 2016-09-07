@@ -6,6 +6,12 @@
 
 }
 
+.sgn_container.sgn_position_side-top,
+.sgn_container.sgn_position_side-bottom {
+  margin-left: 0;
+  margin-right: 0;
+}
+
 .sgn_container .sgn_action,
 .sgn_container .sgn_prompt_logout,
 .sgn_container .sgn_prompt_login {
@@ -32,6 +38,12 @@
   height: 72px;
   color: gray;
   margin: 5px;
+  box-sizing: border-box;
+}
+
+.sgn_container.sgn_position_side-top textarea.sgn_input,
+.sgn_container.sgn_position_side-bottom textarea.sgn_input {
+  margin: 5px 0;
 }
 
 .sgn_search img {
