@@ -269,30 +269,37 @@ SimpleGmailNotes.start = function(){
     var strippedString = dataString.substring(startString.length);
 
     var lineList = dataString.split("\n");
+    var email_list = []
 
     if(lineList.length == 3){  //JSON data
-        return; //walty temp
-
         if(dataString.substring(totalLength-1, totalLength) != ']'){
           //not a valid format
           return;
         }
 
-
-        if(strippedString.indexOf('"ms"') < 0){
-          //not a json reponse
-          return;
+        if(strippedString.indexOf('["tb"') > 0){ //new email arrived for priority inbox view
+          var emailData = eval(strippedString);
+          email_list = gmail.tools.parse_view_data(emailData[0]);
         }
+        else if(strippedString.indexOf('["stu"') > 0){
+          var emailData = eval(strippedString);
+          var newData = [];
 
-        if(strippedString.indexOf("b2af") >= 0){
-            var dummy = 1;
+          emailData = emailData[0];
+
+          if(emailData[7] && emailData[7].length >= 3 && emailData[7][0] == "stu" 
+             && emailData[7][2] && emailData[7][2].length){
+             var tempData = emailData[7][2];
+             //to wrap up into a format that could be parsed by parse_view_data
+             for(var i=0; i<tempData.length; i++){
+                newData.push(["tb", "", [tempData[i][1]]]);
+             }
+          }
+
+          email_list = gmail.tools.parse_view_data(newData);
         }
-
-        var emailData = eval(strippedString);
-        var email_list = gmail.tools.parse_json_data(emailData[0]);
-
     }
-    else if(lineList.length > 3){
+    else if(lineList.length > 3){ //JSON data mingled with byte size
       if(dataString.substring(totalLength-2, totalLength-1) != ']'){
         //not a valid format
         return;
@@ -304,7 +311,7 @@ SimpleGmailNotes.start = function(){
         return; //invalid format
       }
 
-      if(strippedString.indexOf('"tb"') < 0){
+      if(strippedString.indexOf('["tb"') < 0){
         return; //invalid format
       }
 
@@ -326,21 +333,15 @@ SimpleGmailNotes.start = function(){
         resultList.push(tempList[0]);
       }
 
-      var email_list = gmail.tools.parse_view_data(resultList);
+      email_list = gmail.tools.parse_view_data(resultList);
     }
 
-    for(var i=0; i< email_list.length; i++){
+    for(var i=0; i < email_list.length; i++){
       var email = email_list[i];
       var emailKey = composeEmailKey(htmlUnescape(email.title), email.sender, email.time);
       gEmailIdDict[emailKey] = email;
     }
 
-
-    //sendEventMessage("SGN_pull_notes", 
-     //                {email: gmail.get.user_email(), emailList:parsedData});
-    //update dict with parsedData
-
-    var temp = 0;
   }
 
   var updateViewData = function(dataString){
@@ -400,7 +401,7 @@ SimpleGmailNotes.start = function(){
       return; //no need to pull
     }
 
-    var visibleRows = $("tr.zA:visible");
+    var visibleRows = $("tr.zA[id]:visible");
     var unmarkedRows = visibleRows.filter(":not([sgn_email_id])");
     unmarkedRows.each(function(){
       var emailKey = getEmailKey($(this));
@@ -414,16 +415,24 @@ SimpleGmailNotes.start = function(){
     //rows that has been marked, but has no notes
     var pendingRows = visibleRows.filter("[sgn_email_id]:not(:has(div.sgn))");
     debugLog("@104, total unmarked rows", unmarkedRows.length);
-    if(pendingRows.length  == 0){
-      debugLog("no need to pull rows");
-      return;
-    }
 
     var requestList = [];
     pendingRows.each(function(){
+      if(gmail.check.is_preview_pane() && 
+        $(this).next().next().find(".apB .apu .sgn").length){
+          //marked in preview pane
+          var dummy = 1;
+      }
+      else{
         var email_id = $(this).attr("sgn_email_id");
         requestList.push(email_id);
+      }
     });
+
+    if(requestList.length  == 0){
+      debugLog("no need to pull rows");
+      return;
+    }
 
     debugLog("Simple-gmail-notes: pulling notes");
     g_pnc += 1;
