@@ -1,5 +1,5 @@
 /*
- * Simple Gmail Notes 
+ * Simple Gmail Notes
  * https://github.com/walty8
  * Copyright (C) 2015 Walty Yeung <walty8@gmail.com>
  *
@@ -9,10 +9,11 @@
 window.SimpleGmailNotes = window.SimpleGmailNotes || {};
 
 SimpleGmailNotes.refresh = function(f){
-    if( (/in/.test(document.readyState)) || (undefined === window.Gmail) 
+    if( (/in/.test(document.readyState)) || (undefined === window.Gmail)
         || (undefined === window.jQuery) ) {
       setTimeout(SimpleGmailNotes.refresh, 10, f);
-    } else {
+    }
+    else {
       f();
     }
 }
@@ -22,21 +23,29 @@ SimpleGmailNotes.start = function(){
 
 (function(SimpleGmailNotes, localJQuery){
   var $ = localJQuery;
-  SimpleGmailNotes.gLastHeartBeat = Date.now();
- // alert("@11: " + localJQuery);
 
-
-//  var $ = localJQuery;
-//  alert("@12: " + $);
-
-  /* 
-   * callback declarations 
-   */
+  /* callback declarations */
   SimpleGmailNotes.isDebug = function(callback) {
     return false;
   }
-  /*** end of callback implementation ***/
+  /* -- end -- */
 
+  /* global variables (inside the closure)*/
+  var gmail;
+  var gEmailIdDict = {};
+  var gDebugInfoDetail = "";
+  var gDebugInfoSummary = "";
+  var gLastHeartBeat = Date.now();
+  //followings are for network request locking control
+  var gLastPullTimestamp = null;
+  var gNextPullTimestamp = null;
+  var gConsecutiveRequests = 0;
+  var gConsecutiveStartTime = 0;
+  var g_oec = 0;    //open email trigger count
+  var g_lc = 0;     //local trigger count
+  var g_pnc = 0;    //pulled network trigger count
+  /* -- end -- */
+ 
   var debugLog = function()
   {
     if (SimpleGmailNotes.isDebug()) {
@@ -44,8 +53,6 @@ SimpleGmailNotes.start = function(){
     }
   }
 
-  var gmail;
-  
   var sendEventMessage = function(eventName, eventDetail){
     if(eventDetail == undefined){
       eventDetail = {};
@@ -55,121 +62,72 @@ SimpleGmailNotes.start = function(){
     document.dispatchEvent(new CustomEvent(eventName,  {detail: eventDetail}));
   }
 
-  var lastPullTimeStamp = null;
-  var nextPullTimeStamp = null;
-  var consecutiveRequests = 0;
-  var consecutiveStartTime = 0;
-  var g_oec = 0;    //open email trigger count
-  var g_lc = 0;     //local trigger count
-  var g_pnc = 0;    //pulled network trigger count
 
   var acquireNetworkLock = function() {
-     var timestamp = Date.now() / 1000;
-     var resetCounter = false;
+    var timestamp = Date.now(); 
+    var resetCounter = false;
 
-    if(nextPullTimeStamp){//if nextPullTimeStamp is set
-        if(nextPullTimeStamp > timestamp) //skip the request
+    if(gNextPullTimestamp){//if gNextPullTimestamp is set
+        if(gNextPullTimestamp > timestamp) //skip the request
             return false;
         else {
-            nextPullTimeStamp = null;
+            gNextPullTimestamp = null;
             return true;
         }
     }
 
-
     //avoid crazy pulling in case of multiple network requests
-    if(timestamp - lastPullTimeStamp < 3)  //pull again in 3 seconds, for whatever reasons
-      consecutiveRequests += 1;
+    if(timestamp - gLastPullTimestamp < 3 * 1000)  //pull again in 3 seconds, for whatever reasons
+      gConsecutiveRequests += 1;
     else{
       resetCounter = true;
     }
 
+    if(gConsecutiveRequests >= 20){
+        gNextPullTimestamp = timestamp + 60 * 1000; //penalty timeout for 60 seconds
 
-    if(consecutiveRequests >= 20){
-        nextPullTimeStamp = timestamp + 60; //penalty timeout for 60 seconds
-
-        var message = "20 consecutive network requests detected from Simple Gmail Notes, the extension would be self-disabled for 60 seconds. Please consider to disable/uninstall this extension to avoid locking of your Gmail account. This message is embeddeed by the extension developer to ensure account safetly.\n\nHowever, if possible, please kindly send the following information to the extension bug report page, it would be helpful for the developer to diagnose the problem. Thank you!\n\n";
+        var message = "20 consecutive network requests detected from Simple Gmail Notes, the extension would be self-disabled for 60 seconds. " +
+                      "Please consider to disable/uninstall this extension to avoid locking of your Gmail account. " +
+                      "This warning message is raised by the extension developer (not Google), just to ensure your account safety.\n\n" +
+                      "If possible, please kindly send the following information to the extension bug report page, " +
+                      "it would be helpful for the developer to diagnose the problem. Thank you!\n\n";
         message += "oec:" + g_oec;
-        message += "; lc:" + g_lc; 
+        message += "; lc:" + g_lc;
         message += "; pnc:" + g_pnc;
-        message += "; tt:" + Math.round(timestamp - consecutiveStartTime);
+        message += "; tt:" + Math.round(timestamp - gConsecutiveStartTime);
 
-        alert(message); //very intrusive, but it's a very serious problem
+        alert(message); //very intrusive, but it's still better then have the account locked up by Gmail
 
         resetCounter = true;
     }
 
     if(resetCounter){
-        consecutiveRequests = 0;
-        consecutiveStartTime = timestamp;
+        gConsecutiveRequests = 0;
+        gConsecutiveStartTime = timestamp;
         g_oec = 0;
         g_lc = 0;
         g_pnc = 0;
     }
 
-    lastPullTimeStamp = timestamp;
+    gLastPullTimestamp = timestamp;
 
     return true;
   }
 
   var sendDebugInfo = function(){
-    var debugInfo = "Browser Version: " + navigator.userAgent + "\n" + debugInfoSummary + "\n" + debugInfoDetail;
-    sendEventMessage('SGN_update_debug_page_info', { debugInfo:debugInfo });
-
+    var debugInfo = "Browser Version: " + navigator.userAgent + "\n" + debugInfoSummary + "\n" + gDebugInfoDetail;
+    sendEventMessage('SGN_update_debug_page_info', {debugInfo:debugInfo});
   }
 
-  var setupNotes = function(){
-    setTimeout(function(){
-      if($(".sgn_container:visible").length)  //text area already exist
-          return;
-
-      var currentPageMessageId = "";
-
-      if(gmail.check.is_preview_pane()){
-          var idNode = $("tr.zA.aps:visible[sgn_email_id]").first();
-
-          if(idNode.length)
-              currentPageMessageId = idNode.attr("sgn_email_id"); 
-      }
-      else
-          currentPageMessageId = gmail.get.email_id();
-
-      if(!currentPageMessageId)  //do nothing
-          return;
-     
-
-      if(!acquireNetworkLock()){
-          debugLog("sestupNotes failed to get network lock");
-          return;
-      }
-        
-      sendEventMessage('SGN_setup_notes', {messageId:currentPageMessageId});
-      
-      var subject = $(".ha h2.hP").text();
-      var sender = $("h3 span.gD").last().attr("email");
-      var datetime = $(".gK .g3").last().attr("title");
-
-      sendEventMessage('SGN_setup_email_info', 
-                       {messageId:currentPageMessageId, 
-                        datetime:datetime,
-                        subject:subject,
-                        sender:sender});
-
-      debugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
-      sendDebugInfo();
-
-    }, 0);  //setTimeout
+  var sendHeartBeat = function(){
+    sendEventMessage("SGN_heart_beat_request");
   }
 
-  var getDOMSignature = function(){
-    var currentDOMSignature = "";
-    $('tr.zA').each(function() {
-       currentDOMSignature += $(this).text();
-    });
-    return currentDOMSignature;
+  var isBackgroundDead = function(){
+      return Date.now() - gLastHeartBeat > 3000;
   }
 
-  htmlEscape = function(str) {
+  var htmlEscape = function(str) {
       return String(str)
               .replace(/&/g, '&amp;')
               .replace(/"/g, '&quot;')
@@ -178,13 +136,12 @@ SimpleGmailNotes.start = function(){
               .replace(/>/g, '&gt;');
   }
 
-  stripHtml = function(value){
+  var stripHtml = function(value){
     return value.replace(/<(?:.|\n)*?>/gm, '');
   }
 
-  composeEmailKey = function(title, sender, time){
+  var getEmailKey = function(title, sender, time){
     var emailKey = sender + "|" + time + "|" + stripHtml(title);
-
 
     //in case already escaped
     emailKey = htmlEscape(emailKey);
@@ -213,28 +170,19 @@ SimpleGmailNotes.start = function(){
     return mailNode.find(".yW .yP, .yW .zF").last().attr("email");
   }
 
-  var getEmailKey = function(mailNode){
-    //var titleNode = getTitleNode(mailNode);
-    //var title = titleNode.text();
+  var getEmailKeyFromNode = function(mailNode){
     var title = getTitle(mailNode);
     var sender = getSender(mailNode);
-
-    //if($(location).attr("href").indexOf("#sent") > 0){
-     // sender = userEmail;
-    //}
-
     var time = getTime(mailNode);
-    var emailKey = composeEmailKey(title, sender, time);
+    var emailKey = getEmailKey(title, sender, time);
 
     debugLog("@249, email key:" + emailKey);
-
-
 
     return emailKey;
   }
 
   // I needed the opposite function today, so adding here too:
-  htmlUnescape = function(value){
+  var htmlUnescape = function(value){
       return String(value)
           .replace(/&quot;/g, '"')
           .replace(/&#39;/g, "'")
@@ -243,7 +191,6 @@ SimpleGmailNotes.start = function(){
           .replace(/&amp;/g, '&');
   }
 
-  var gEmailIdDict = {};
 
   var isNumeric = function(str){
     var code, i, len;
@@ -257,7 +204,42 @@ SimpleGmailNotes.start = function(){
     return true;
   }
 
-  var updateEmailData = function(dataString){
+  //set up note editor in the email detail page
+  var setupNoteEditor = function(){
+    setTimeout(function(){
+      if($(".sgn_container:visible").length)  //text area already exist
+          return;
+
+      var subject = $(".ha h2.hP").text();
+      var messageId = "";
+
+      if(gmail.check.is_preview_pane()){
+          var idNode = $("tr.zA.aps:visible[sgn_email_id]").first();
+          if(idNode.length)
+              messageId = idNode.attr("sgn_email_id");
+      }
+      else
+          messageId = gmail.get.email_id();
+
+      if(!messageId)  //do nothing
+          return;
+
+      if(!acquireNetworkLock()){
+          debugLog("setupNoteEditor failed to get network lock");
+          return;
+      }
+       
+      sendEventMessage('SGN_setup_note_editor', {messageId:messageId});
+      sendEventMessage('SGN_setup_email_info', {messageId:messageId, subject:subject});
+
+      gDebugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
+      sendDebugInfo();
+
+    }, 0);  //setTimeout
+  }
+
+
+  var updateEmailIdByJSON = function(dataString){
     var startString = ")]}'\n\n";
     var totalLength = dataString.length;
 
@@ -287,7 +269,7 @@ SimpleGmailNotes.start = function(){
 
           emailData = emailData[0];
 
-          if(emailData[7] && emailData[7].length >= 3 && emailData[7][0] == "stu" 
+          if(emailData[7] && emailData[7].length >= 3 && emailData[7][0] == "stu"
              && emailData[7][2] && emailData[7][2].length){
              var tempData = emailData[7][2];
              //to wrap up into a format that could be parsed by parse_view_data
@@ -338,13 +320,13 @@ SimpleGmailNotes.start = function(){
 
     for(var i=0; i < email_list.length; i++){
       var email = email_list[i];
-      var emailKey = composeEmailKey(htmlUnescape(email.title), email.sender, email.time);
+      var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time);
       gEmailIdDict[emailKey] = email;
     }
 
   }
 
-  var updateViewData = function(dataString){
+  var updateEmailIdByDOM = function(dataString){
     var totalLength = dataString.length;
 
     var startString = "var GM_TIMING_START_CHUNK2=new Date().getTime(); var VIEW_DATA=";
@@ -361,7 +343,7 @@ SimpleGmailNotes.start = function(){
       return;
     };
 
-    var strippedString = dataString.substring(startString.length, totalLength-endString.length); 
+    var strippedString = dataString.substring(startString.length, totalLength-endString.length);
 
     var viewData = eval(strippedString);
 
@@ -369,32 +351,19 @@ SimpleGmailNotes.start = function(){
 
     for(var i=0; i< email_list.length; i++){
       var email = email_list[i];
-      var emailKey = composeEmailKey(email.title, email.sender, email.time);
+      var emailKey = getEmailKey(email.title, email.sender, email.time);
       gEmailIdDict[emailKey] = email;
     }
-
-    //update dict with parsedData
-    //sendEventMessage("SGN_pull_notes", 
-     //                {email: gmail.get.user_email(), emailList:parsedData});
 
     var temp = 0;
   }
 
-  var isBackgroundDead = function(){
-      return Date.now() - SimpleGmailNotes.gLastHeartBeat > 3000;
-  }
 
-  var lastPullDiff = 0;
-  var lastPullHash = null;
-  var lastPullItemRange = null;
-  var debugInfoDetail = "";
-  var debugInfoSummary = "";
   var pullNotes = function(){
-    if(!$("tr.zA").length || 
+    if(!$("tr.zA").length ||
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane())){
       debugLog("Skipped pulling because no tr to check with");
-      lastPullHash = null;
-      return;   
+      return;  
     }
 
     if(isBackgroundDead()){
@@ -402,9 +371,11 @@ SimpleGmailNotes.start = function(){
     }
 
     var visibleRows = $("tr.zA[id]:visible");
+
     var unmarkedRows = visibleRows.filter(":not([sgn_email_id])");
+    debugLog("@104, total unmarked rows", unmarkedRows.length);
     unmarkedRows.each(function(){
-      var emailKey = getEmailKey($(this));
+      var emailKey = getEmailKeyFromNode($(this));
       var email = gEmailIdDict[emailKey];
       if(email){
         //add email id to the TR element
@@ -414,11 +385,9 @@ SimpleGmailNotes.start = function(){
 
     //rows that has been marked, but has no notes
     var pendingRows = visibleRows.filter("[sgn_email_id]:not(:has(div.sgn))");
-    debugLog("@104, total unmarked rows", unmarkedRows.length);
-
     var requestList = [];
     pendingRows.each(function(){
-      if(gmail.check.is_preview_pane() && 
+      if(gmail.check.is_preview_pane() &&
         $(this).next().next().find(".apB .apu .sgn").length){
           //marked in preview pane
           var dummy = 1;
@@ -441,7 +410,7 @@ SimpleGmailNotes.start = function(){
       return;
     }
 
-    sendEventMessage("SGN_pull_notes", 
+    sendEventMessage("SGN_pull_notes",
                      {email: gmail.get.user_email(), requestList:requestList});
     debugInfoSummary = "Last Summary Page URL: " + window.location.href;
     debugInfoSummary += "\nIs Vertical Split: " + gmail.check.is_vertical_split();
@@ -451,58 +420,49 @@ SimpleGmailNotes.start = function(){
     sendDebugInfo();
   }
 
-  var sendHeartBeat = function(){
-    sendEventMessage("SGN_heart_beat_request");
-  }
-
   var main = function(){
     gmail = new Gmail(localJQuery);
 
     gmail.observe.on('open_email', function(obj){
       debugLog("simple-gmail-notes: open email event", obj);
       g_oec += 1;
-      setupNotes();
+      setupNoteEditor();
     });
 
     gmail.observe.on('load', function(obj){
       debugLog("simple-gmail-notes: load event");
       g_lc += 1;
-      setupNotes();
+      setupNoteEditor();
     });
 
     //id is always undefined
     gmail.observe.after('http_event', function(params, id, xhr) {
-      debugLog("url data:", params);
       debugLog("xhr:", xhr);
-      updateEmailData(xhr.responseText);
+      updateEmailIdByJSON(xhr.responseText);
     });
 
     document.addEventListener('SGN_PAGE_heart_beat_response', function(e) {
-      SimpleGmailNotes.gLastHeartBeat = Date.now();
+      gLastHeartBeat = Date.now();
     });
 
+    //use current DOM to update email ID of first page
     for(var i=0; i<document.scripts.length; i++){
-      updateViewData(document.scripts[i].text);
+      updateEmailIdByDOM(document.scripts[i].text);
     }
 
     setTimeout(pullNotes, 0);
     setInterval(pullNotes, 2000);
-    setInterval(setupNotes, 1770); //better not to overlapp to much with the above one
+    setInterval(setupNoteEditor, 1770); //better not to overlapp to much with the above one
     setInterval(sendHeartBeat, 2000);
 
     //mainly for debug purpose
     SimpleGmailNotes.gmail = gmail;
-
   }
 
   main();
-  //alert("@465@gmail.js");
-
 
 }(window.SimpleGmailNotes = window.SimpleGmailNotes || {}, jQuery.noConflict(true)));
 
 } //end of SimpleGmailNotes.start
 
-//SimpleGmailNotes.refresh(SimpleGmailNotes.start);
-//
 SimpleGmailNotes.start();

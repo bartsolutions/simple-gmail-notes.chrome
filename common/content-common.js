@@ -11,31 +11,43 @@ var settings = {
   MAX_RETRY_COUNT : 20
 }
 
-/*
- * Callback declarations
- */
-sendBackgroundMessage = function(messge) {
+/* callback declarations */
+var sendBackgroundMessage = function(messge) {
   throw "sendBackgroundMessage not implemented";
 }
 
-setupBackgroundEventsListener = function(callback) {
+var setupBackgroundEventsListener = function(callback) {
   throw "setupBackgroundEventsListener not implemented";
 }
 
-getIconBaseUrl = function(){
+var getIconBaseUrl = function(){
   throw "getIconBaseUrl not implemented";
 }
 
-isDebug = function(callback) {
+var isDebug = function(callback) {
   //return true;  //turn on this only if u want to check initilization part
   return false;
 }
+/* -- end -- */
 
+/* global variables to mark the status of current tab */
+var gEmailIdNoteDict = {};
 
-/*
- * Utilities
- */
-htmlEscape = function(str) {
+var gCurrentGDriveNoteId = "";
+var gCurrentGDriveFolderId = "";
+var gPreviousContent = "";
+
+var gCurrentEmailSubject = "";
+
+var gAbstractBackgroundColor = "";
+var gAbstractFontColor = "";
+var gAbstractFontSize = "";
+
+var gLastHeartBeat = Date.now();
+var gSgnEmtpy = "<SGN_EMPTY>";
+/* -- end -- */
+
+var htmlEscape = function(str) {
     return String(str)
             .replace(/&/g, '&amp;')
             .replace(/"/g, '&quot;')
@@ -44,18 +56,8 @@ htmlEscape = function(str) {
             .replace(/>/g, '&gt;');
 }
 
-// I needed the opposite function today, so adding here too:
-htmlUnescape = function(value){
-    return String(value)
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&');
-}
-
 //http://stackoverflow.com/questions/4434076/best-way-to-alphanumeric-check-in-javascript#25352300
-isAlphaNumeric = function(str) {
+var isAlphaNumeric = function(str) {
   var code, i, len;
 
   for (i = 0, len = str.length; i < len; i++) {
@@ -70,12 +72,12 @@ isAlphaNumeric = function(str) {
 };
 
 //http://stackoverflow.com/questions/46155/validate-email-address-in-javascript#1373724
-isValidEmail = function(email) {
+var isValidEmail = function(email) {
   var re = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i; 
   return re.test(email);
 }
   
-sendEventMessage = function(eventName, eventDetail){
+var sendEventMessage = function(eventName, eventDetail){
   if(eventDetail == undefined){
     eventDetail = {}
   }
@@ -83,7 +85,7 @@ sendEventMessage = function(eventName, eventDetail){
   document.dispatchEvent(new CustomEvent(eventName,  {detail: eventDetail}));
 }
 
-debugLog = function()
+var debugLog = function()
 {
   var debugStatus = isDebug();
   if (debugStatus) {
@@ -91,7 +93,7 @@ debugLog = function()
   }
 }
 
-disableEdit = function(retryCount)
+var disableEdit = function(retryCount)
 {
   if(retryCount == undefined)
     retryCount = settings.MAX_RETRY_COUNT;
@@ -100,9 +102,6 @@ disableEdit = function(retryCount)
   $(".sgn_input").val("");
 
   //clear up the cache
-  gEmailIdKeyDict = {};
-  gEmailKeyIdDict = {};
-  gEmailKeyNoteDict = {};
   gEmailIdNoteDict = {};
 
   //keep trying until it's visible
@@ -114,7 +113,7 @@ disableEdit = function(retryCount)
   }
 }
 
-enableEdit = function(retryCount)
+var enableEdit = function(retryCount)
 {
   if(retryCount == undefined)
       retryCount = settings.MAX_RETRY_COUNT;
@@ -128,7 +127,7 @@ enableEdit = function(retryCount)
   }
 }
 
-showLoginPrompt = function(retryCount){
+var showLoginPrompt = function(retryCount){
   if(retryCount == undefined)
       retryCount = settings.MAX_RETRY_COUNT;
 
@@ -144,7 +143,7 @@ showLoginPrompt = function(retryCount){
   }
 }
 
-showLogoutPrompt = function(email, retryCount){
+var showLogoutPrompt = function(email, retryCount){
   if(retryCount == undefined)
       retryCount = settings.MAX_RETRY_COUNT;
 
@@ -168,40 +167,7 @@ showLogoutPrompt = function(email, retryCount){
   }
 }
 
-//http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery#22429679
-hashFnv32a = function(str, asString, seed) {
-  if(!str)
-    return "";
-
-  /*jshint bitwise:false */
-  var i, l,
-      hval = (seed === undefined) ? 0x811c9dc5 : seed;
-
-  for (i = 0, l = str.length; i < l; i++) {
-    hval ^= str.charCodeAt(i);
-    hval += (hval << 1) + (hval << 4) + (hval << 7) + (hval << 8) + (hval << 24);
-  }
-  if( asString ){
-    // Convert to 8 digit hex string
-    return ("0000000" + (hval >>> 0).toString(16)).substr(-8);
-  }
-  return hval >>> 0;
-}
-
-stripHtml = function(value){
-  return value.replace(/<(?:.|\n)*?>/gm, '');
-}
-
-composeEmailKey = function(title, sender, time){
-  var emailKey = sender + "|" + time + "|" + stripHtml(title);
-
-
-  //in case already escaped
-  emailKey = htmlEscape(emailKey);
-  return emailKey;
-}
-
-getGoogleAccountId = function(){
+var getCurrentGoogleAccountId = function(){
   var re = /mail\/u\/(\d+)/;
   var userId = "0";
   var match = window.location.href.match(re);
@@ -211,16 +177,15 @@ getGoogleAccountId = function(){
   return userId;
 }
 
-getSearchNoteURL = function(){
-  //users may have logged into mutliple email addresses
-  var userId = getGoogleAccountId();
+var getSearchNoteURL = function(){
+  var userId = getCurrentGoogleAccountId();
   var searchUrl = "https://drive.google.com/drive/u/" + userId + "/folders/" + gCurrentGDriveFolderId;
 
   return searchUrl;
 }
 
-getAddCalendarURL = function(){
-  var userId = getGoogleAccountId();
+var getAddCalendarURL = function(){
+  var userId = getCurrentGoogleAccountId();
   var details = window.location.href + "\n-----\n" + $(".sgn_input").val();
   var title = gCurrentEmailSubject;
 
@@ -235,27 +200,11 @@ getAddCalendarURL = function(){
   return addCalendarURL;
 }
 
-//global variables to mark the status of current tab
-var gCurrentGDriveNoteId = "";
-var gCurrentGDriveFolderId = "";
-var gPreviousContent = "";
-
-var gCurrentEmailSubject = "";
-var gCurrentEmailDatetime = "";
-var gCurrentEmailSender = "";
-
-var gAbstractBackgroundColor = "";
-var gAbstractFontColor = "";
-var gAbstractFontSize = "";
-
-var gLastHeartBeat = Date.now();
-var gSgnEmtpy = "<SGN_EMPTY>";
-
-isBackgroundDead = function(){
+var isBackgroundDead = function(){
     return Date.now() - gLastHeartBeat > 3000;
 }
 
-setupNotes = function(email, messageId){
+var setupNoteEditor = function(email, messageId){
   debugLog("Start to set up notes");
   debugLog("Email", email);
 
@@ -264,12 +213,6 @@ setupNotes = function(email, messageId){
   })); //hopefully this one is stable
 
   var injectionNode = $(".sgn_container");
-
-
-  var emailKey = gEmailIdKeyDict[messageId];
-  //if(emailKey && gEmailKeyNoteDict[emailKey])
-   // note = gEmailKeyNoteDict[emailKey].description;
-    
   var message = gEmailIdNoteDict[messageId];
 
   var note = ""
@@ -314,7 +257,7 @@ setupNotes = function(email, messageId){
                       .html("Error connecting to Google Drive <span class='sgn_error_timestamp'></span>, " +
                           "please try to <a class='sgn_reconnect sgn_action'>connect</a> again. \n" +
                           "If error persists after 5 attempts, you may try to manually " +
-                          "<a href='https://accounts.google.com/b/" + getGoogleAccountId() + 
+                          "<a href='https://accounts.google.com/b/" + getCurrentGoogleAccountId() + 
                           "/IssuedAuthSubTokens'>revoke</a> previous tokens.");
 
   var userErrorPrompt = $("<div class='sgn_error sgn_user'></div>")
@@ -358,7 +301,6 @@ setupNotes = function(email, messageId){
 
       if(isBackgroundDead()){ 
           //there is something wrong with the extension
-          //alert("extension problem");
           $(".sgn_input").text("WARNING! Simple Gmail Notes is not available.\n\n" +
                                "It's probably because the extension was disabled or updated, " +
                                "in either case please refresh this page to remove the warning. " +
@@ -371,8 +313,8 @@ setupNotes = function(email, messageId){
   }, 2000);
 
 
-  var debugInfo = "";
-  sendBackgroundMessage({action:"update_debug_content_info", debugInfo: debugInfo});
+  //nothing to show now
+  sendBackgroundMessage({action:"update_debug_content_info", debugInfo: ""});
 
   //load initial message
   debugLog("Start to initailize");
@@ -380,39 +322,8 @@ setupNotes = function(email, messageId){
 }
 
 
-updateNotesOnSummary = function(userEmail, pulledNoteList){
-  setTimeout(function(){
-    _updateNotesOnSummary(userEmail, pulledNoteList);
-  }, 300);  //wait until gmail script processing finished
-}
-
-
-var gEmailIdNoteDict = {};
-//var gEmailKeyNoteDict = {};
-_updateNotesOnSummary = function(userEmail, pulledNoteList){
-  var getTitle = function(mailNode){
-    var hook = $(mailNode).find(".xT .y6");
-
-    if(!hook.length)  //vertical split view
-      hook = $(mailNode).next().find(".xT .y6");
-
-    return hook.find("span").first().text();
-  }
-
-  var getTime = function(mailNode) {
-    var hook = $(mailNode).find(".xW");
-
-    if(!hook.length)  //vertical split view
-      hook = $(mailNode).find(".apm");
-
-    return hook.find("span").last().attr("title");
-  }
-
-  var getSender = function(mailNode) {
-    return mailNode.find(".yW .yP, .yW .zF").last().attr("email");
-  }
-
-  var addLabelToTitle = function(mailNode, labelNode){
+var updateNotesOnSummary = function(userEmail, pulledNoteList){
+  var addAbstractNode = function(mailNode, abstractNode){
     var hook = $(mailNode).find(".xT .y6");
 
     if(!hook.length){ //vertical split view
@@ -420,89 +331,50 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
     }
 
     if(!hook.find(".sgn").length)
-      hook.prepend(labelNode);
+      hook.prepend(abstractNode);
   }
 
-  var getEmailKey = function(mailNode){
-    //var titleNode = getTitleNode(mailNode);
-    //var title = titleNode.text();
-    var title = getTitle(mailNode);
-    var sender = getSender(mailNode);
-
-    //if($(location).attr("href").indexOf("#sent") > 0){
-     // sender = userEmail;
-    //}
-
-    var time = getTime(mailNode);
-    var emailKey = composeEmailKey(title, sender, time);
-
-    debugLog("@249, email key:" + emailKey);
-
-    return emailKey;
-  }
-
-  var hasMarkedNote = function(mailNode){
+  var hasMarked = function(mailNode){
     return mailNode.find(".sgn").length > 0;
   }
 
-  //email key can be remvoed later
-  var markNote = function(mailNode, note, emailKey){
-    //var titleNode = getTitleNode(mailNode);
-    var labelNode;
-
-    var sgnId = "sgn_" + hashFnv32a(emailKey, true);
-
+  var markAbstract = function(mailNode, note, emailKey){
+    var abstractNode;
 
     if(note && note.description && note.description != gSgnEmtpy){
-
-      labelNode = $('<div class="ar as sgn">' +
+      abstractNode = $('<div class="ar as sgn">' +
                             '<div class="at" title="Simple Gmail Notes: ' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
                             '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
                        '</div></div>');
 
-      labelNode.find(".at").css("background-color", gAbstractBackgroundColor)
+      abstractNode.find(".at").css("background-color", gAbstractBackgroundColor)
                            .css("border-color", gAbstractBackgroundColor);
-      labelNode.find(".au").css("border-color", gAbstractBackgroundColor);
-      labelNode.find(".av").css("color", gAbstractFontColor);
+      abstractNode.find(".au").css("border-color", gAbstractBackgroundColor);
+      abstractNode.find(".av").css("color", gAbstractFontColor);
 
       if(gAbstractFontSize != "default")
-          labelNode.find(".av").css("font-size", gAbstractFontSize + "pt");
+          abstractNode.find(".av").css("font-size", gAbstractFontSize + "pt");
                           
     }
     else {
-      labelNode = $('<div style="display:none" class="sgn"></div>');
+      abstractNode = $('<div style="display:none" class="sgn"></div>');
     }
 
-
-    addLabelToTitle(mailNode, labelNode);
-
-    //it must be done after labelNode is added to DOM
-    //var emailId = gEmailKeyIdDict[emailKey];
-    //labelNode.parents("tr.zA").attr("sgn_email_id", emailId);
+    addAbstractNode(mailNode, abstractNode);
   }
 
   if(pulledNoteList && pulledNoteList.length){
-
     debugLog("updated summary from pulled note, total count:", 
              pulledNoteList.length);
 
     $.each(pulledNoteList, function(index, item){
-      //var emailKey = gEmailIdKeyDict[item.id];
-      //gEmailKeyNoteDict[emailKey] = {"description": item.description, 
-       //                              "short_description": item.short_description};
-
       gEmailIdNoteDict[item.id] = {"description": item.description, 
-                                     "short_description": item.short_description};
-
+                                   "short_description": item.short_description};
     });
-
   }
 
   //loop for each email tr
   $("tr.zA[sgn_email_id]").each(function(){
-    //var emailKey = getEmailKey($(this));
-    //var emailNote = gEmailKeyNoteDict[emailKey];
-
     var emailId = $(this).attr("sgn_email_id")
     var emailNote = gEmailIdNoteDict[emailId];
 
@@ -511,49 +383,21 @@ _updateNotesOnSummary = function(userEmail, pulledNoteList){
         $(this).removeAttr("sgn_email_id");
     }
 
-
-    //debugLog("Working on email:", emailKey);
-    if(!hasMarkedNote($(this))){
-    //  var emailNote = gEmailKeyNoteDict[emailKey];
-      markNote($(this), emailNote, emailId);
+    if(!hasMarked($(this))){
+      markAbstract($(this), emailNote, emailId);
     }
   });
 }
 
-var gEmailIdKeyDict = {};
-var gEmailKeyIdDict = {};
-pullNotes = function(userEmail, requestList){
+var pullNotes = function(userEmail, requestList){
   var pendingPullList = [];
 
   debugLog("@418, pulling notes");
 
-  $.each(requestList, function(index, emailId){
-    //if(!email.sender){
-     // email.sender = userEmail;
-    //}
-
-    //var emailKey = composeEmailKey(htmlUnescape(email.title), email.sender, email.time);
-    //debugLog("@318: email key:" + emailKey);
-
-
-    /*
-    if(gEmailKeyNoteDict[emailKey] == undefined){
-      pendingPullList.push(email.id);
-      gEmailIdKeyDict[email.id] = emailKey;
-      gEmailKeyIdDict[emailKey] = email.id;
-    }
-    */
-
-    //if(gEmailIdNoteDict[id] == undefined){
-     // pendingPullList.push(email.id);
-   // }
-
-  });
-
   //batch pull logic here
   if(requestList.length){
     sendBackgroundMessage({action:'pull_notes', email:userEmail, 
-                 pendingPullList:requestList});
+                           pendingPullList:requestList});
   }
   else{
     debugLog("no pending item, skipped the pull");
@@ -562,7 +406,77 @@ pullNotes = function(userEmail, requestList){
 }
 
 
-setupListeners = function(){
+var setupListeners = function(){
+  /* Event listener for page */
+  document.addEventListener('SGN_setup_note_editor', function(e) {
+    var email = e.detail.email;
+    var messageId = e.detail.messageId;
+
+    if(!isAlphaNumeric(messageId)){
+      debugLog("invalid message ID (setup note editor): " + messageId);
+      return;
+    }
+
+    if(!isValidEmail(email)){
+      debugLog("invalid email (setup note editor): " + email);
+      return;
+    }
+
+    setupNoteEditor(email, messageId);
+  });
+
+  document.addEventListener('SGN_heart_beat_request', function(e){
+    sendBackgroundMessage({action:"heart_beart_request"});    //if background script died, exception raise from here
+  });
+
+  document.addEventListener('SGN_setup_email_info', function(e) {
+    var email = e.detail.email;
+    var messageId = e.detail.messageId;
+
+    if(!isAlphaNumeric(messageId)){
+      debugLog("invalid message ID (setup email info): " + messageId);
+      return;
+    }
+
+    if(!isValidEmail(email)){
+      debugLog("invalid email (setup email info): " + email);
+      return;
+    }
+
+    //for add to calendar use
+    gCurrentEmailSubject = e.detail.subject;
+  });
+
+
+  document.addEventListener('SGN_pull_notes', function(e) {
+    debugLog("Requested to pull notes");
+    var email = e.detail.email;
+    var requestList = e.detail.requestList;
+
+    if(!isValidEmail(email)){
+      debugLog("invalid email (pull notes): " + email);
+      return;
+    }
+
+    $.each(requestList, function(_index, _emailId){
+      if(!isAlphaNumeric(_emailId)){
+        debugLog("invalid message ID (pull notes): " + _emailId);
+        return;
+      }
+    });
+
+    pullNotes(email, requestList);
+
+  });
+
+  document.addEventListener('SGN_update_debug_page_info', function(e) {
+      debugLog("Got page debug info");
+      var debugInfo = e.detail.debugInfo;
+      sendBackgroundMessage({action: "update_debug_page_info", debugInfo: debugInfo});
+  });
+  /* -- end -- */
+
+  /* handle events from background script */
   setupBackgroundEventsListener(function(request){
     debugLog("Handle request", request);
     switch(request.action){
@@ -622,23 +536,17 @@ setupListeners = function(){
         var noteList = request.noteList;
         updateNotesOnSummary(request.email, noteList);
         break;
-      //remove the note in cache, so the new notes would be collected next time
       case "revoke_summary_note":
         debugLog("Trying to revoke summary note", request);
         var emailId = request.messageId;
-        //var emailKey = gEmailIdKeyDict[emailId];
-        //var sgnId = "sgn_" + hashFnv32a(emailKey, true);
 
+        //remove the note in cache, so the new notes would be collected next time
         $("tr[sgn_email_id='" + emailId + "'] .sgn").remove();
 
         debugLog("@447", emailId);
-
-        //gEmailKeyNoteDict = {};
-        //delete gEmailKeyNoteDict[emailKey];
-
         debugLog("Requesting force reload");
-        sendEventMessage("SGN_PAGE_force_reload");  //no effect to the page script now
 
+        sendEventMessage("SGN_PAGE_force_reload");  //no effect to the page script now
         break;
 
       case "update_preferences":
@@ -674,7 +582,6 @@ setupListeners = function(){
         var notePosition = preferences["notePosition"];
         if(notePosition == "bottom"){
           debugLog("@485, move to bottom");
-          //$(".nH.aHU").find(".sgn_container").remove();
           $(".nH.aHU").append(firstVisible);
         }
 
@@ -698,77 +605,8 @@ setupListeners = function(){
         debugLog("unknown background request", request);
     }
   });
-
-
-  // Event listener for page
-  document.addEventListener('SGN_setup_notes', function(e) {
-    var email = e.detail.email;
-    var messageId = e.detail.messageId;
-
-    if(!isAlphaNumeric(messageId)){
-      debugLog("invalid message ID (setup notes): " + messageId);
-      return;
-    }
-
-    if(!isValidEmail(email)){
-      debugLog("invalid email (setup notes): " + email);
-      return;
-    }
-
-    setupNotes(email, messageId);
-  });
-
-  document.addEventListener('SGN_heart_beat_request', function(e){
-    sendBackgroundMessage({action:"heart_beart_request"});    //if background script died, exception raise from here
-  });
-
-  document.addEventListener('SGN_setup_email_info', function(e) {
-    var email = e.detail.email;
-    var messageId = e.detail.messageId;
-
-    if(!isAlphaNumeric(messageId)){
-      debugLog("invalid message ID (setup email info): " + messageId);
-      return;
-    }
-
-    if(!isValidEmail(email)){
-      debugLog("invalid email (setup email info): " + email);
-      return;
-    }
-
-    //for future post note use
-    gCurrentEmailSubject = e.detail.subject;
-    gCurrentEmailDatetime = e.detail.datetime;
-    gCurrentEmailSender = e.detail.sender;
-  });
-
-
-  document.addEventListener('SGN_pull_notes', function(e) {
-    debugLog("Requested to pull notes");
-    var email = e.detail.email;
-    var requestList = e.detail.requestList;
-
-    if(!isValidEmail(email)){
-      debugLog("invalid email (pull notes): " + email);
-      return;
-    }
-
-    $.each(requestList, function(_index, _emailId){
-      if(!isAlphaNumeric(_emailId)){
-        debugLog("invalid message ID (pull notes): " + _emailId);
-        return;
-      }
-    });
-
-    pullNotes(email, requestList);
-
-  });
-
-  document.addEventListener('SGN_update_debug_page_info', function(e) {
-      debugLog("Got page debug info");
-      var debugInfo = e.detail.debugInfo;
-      sendBackgroundMessage({action: "update_debug_page_info", debugInfo: debugInfo});
-  });
+  /* -- end -- */
 }
+
 
 debugLog("Finished content script (common)");
