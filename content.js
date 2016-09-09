@@ -34,27 +34,25 @@ getIconBaseUrl = function(){
 }
 
 
-//initalization
-function setupPage(){
+function addScript(scriptPath){
     var j = document.createElement('script');
-    j.src = chrome.extension.getURL('lib/jquery-3.1.0.min.js');
-    (document.head || document.documentElement).appendChild(j);
-
-    var j = document.createElement('script');
-    j.src = chrome.extension.getURL('lib/gmail.js');
-    (document.head || document.documentElement).appendChild(j);
-
-    var j = document.createElement('script');
-    j.src = chrome.extension.getURL('common/page-common.js');
-    (document.head || document.documentElement).appendChild(j);
-
-    var j = document.createElement('script');
-    j.src = chrome.extension.getURL('page.js');
+    j.src = chrome.extension.getURL(scriptPath);
+    j.async = false;
+    j.defer = false;
     (document.head || document.documentElement).appendChild(j);
 }
 
-$(document).ready(function(){
+//initalization
+function setupPage(){
+    addScript('lib/jquery-3.1.0.min.js');
+    addScript('lib/gmail.js');
+    addScript('common/page-common.js');
+    addScript('page.js');
+}
+
+
+//$(document).ready(function(){
     setupListeners();
     setupPage();
-});
+//});
 
