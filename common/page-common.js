@@ -451,7 +451,7 @@ SimpleGmailNotes.start = function(){
     setTimeout(pullNotes, 0);
     setInterval(pullNotes, 2000);
     setInterval(setupNoteEditor, 1770); //better not to overlapp to much with the above one
-    setInterval(sendHeartBeat, 2000);
+    setInterval(sendHeartBeat, 1400);
 
     //mainly for debug purpose
     SimpleGmailNotes.gmail = gmail;
