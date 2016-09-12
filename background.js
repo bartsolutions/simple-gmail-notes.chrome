@@ -56,7 +56,7 @@ launchAuthorizer = function(sender, callback) {
           "redirect_uri": getRedirectUri(),
           "response_type":"code",
           "access_type":"offline",
-//          "login_hint":sender.email,
+          "login_hint":sender.email,
           "prompt":"consent"
       }), 
      "interactive": true
