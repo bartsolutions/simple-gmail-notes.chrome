@@ -357,6 +357,10 @@ SimpleGmailNotes.start = function(){
   }
 
 
+  var lastPullDiff = 0;
+  var lastPullHash = null;
+  var lastPullItemRange = null;
+
   var pullNotes = function(){
     if(!$("tr.zA").length ||
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane())){
@@ -368,9 +372,25 @@ SimpleGmailNotes.start = function(){
       return; //no need to pull
     }
 
-    var visibleRows = $("tr.zA[id]:visible");
 
+
+
+    var visibleRows = $("tr.zA[id]:visible");
     var unmarkedRows = visibleRows.filter(":not([sgn_email_id])");
+
+    var thisPullDiff = visibleRows.length - unmarkedRows.length;
+    var thisPullHash = window.location.hash;
+    var thisPullItemRange = $(".Di .Dj:visible").text();
+
+    debugLog("@104", visibleRows.length, unmarkedRows.length, thisPullDiff);
+    if(thisPullDiff == lastPullDiff 
+         && thisPullHash == lastPullHash
+         && thisPullItemRange == lastPullItemRange){
+      debugLog("Skipped pulling because of duplicate network requests");
+      return;
+    }
+
+
     debugLog("@104, total unmarked rows", unmarkedRows.length);
     unmarkedRows.each(function(){
       var emailKey = getEmailKeyFromNode($(this));
@@ -396,15 +416,20 @@ SimpleGmailNotes.start = function(){
       }
     });
 
-    if(requestList.length  == 0){
-      debugLog("no need to pull rows");
-      return;
-    }
 
     debugLog("Simple-gmail-notes: pulling notes");
     g_pnc += 1;
     if(!acquireNetworkLock()){
       debugLog("pullNotes failed to get network lock");
+      return;
+    }
+
+    lastPullDiff = thisPullDiff;
+    lastPullHash = thisPullHash;
+    lastPullItemRange = thisPullItemRange;
+
+    if(requestList.length  == 0){
+      debugLog("no need to pull rows");
       return;
     }
 
