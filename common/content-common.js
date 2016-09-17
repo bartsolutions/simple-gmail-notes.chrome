@@ -310,7 +310,7 @@ var setupNoteEditor = function(email, messageId){
                            .css("font-weight", "bold");
       }
 
-  }, 2000);
+  }, 3000);
 
   //nothing to show now
   sendBackgroundMessage({action:"update_debug_content_info", debugInfo: ""});

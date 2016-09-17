@@ -703,7 +703,7 @@ var pullNotes = function(sender, pendingPullList){
 }
 
 //For messaging between background and content script
-var setupListeners = function(sender, request){
+var handleRequest = function(sender, request){
   debugLog("Request body:", request);
   switch (request.action){
     case "logout":
