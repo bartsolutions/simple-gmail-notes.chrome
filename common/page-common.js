@@ -305,13 +305,19 @@ SimpleGmailNotes.start = function(){
           continue;
         }
 
-        if(line.indexOf('[["tb"') != 0){
+        if(line.indexOf('["tb"') < 0){
           continue;
         }
 
         var tempList = eval(line);
 
-        resultList.push(tempList[0]);
+        for(var j=0; j<tempList.length; j++){
+          if(tempList[j][0] == 'tb'){
+            resultList.push(tempList[j]);
+          }
+        }
+
+        //resultList.push(tempList[0]);
       }
 
       email_list = gmail.tools.parse_view_data(resultList);
