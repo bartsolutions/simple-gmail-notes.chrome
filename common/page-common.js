@@ -366,6 +366,7 @@ SimpleGmailNotes.start = function(){
   var lastPullDiff = 0;
   var lastPullHash = null;
   var lastPullItemRange = null;
+  var lastPendingCount = 0;
 
   var pullNotes = function(){
     if(!$("tr.zA").length ||
@@ -383,15 +384,19 @@ SimpleGmailNotes.start = function(){
 
     var visibleRows = $("tr.zA[id]:visible");
     var unmarkedRows = visibleRows.filter(":not([sgn_email_id])");
+    //rows that has been marked, but has no notes
+    var pendingRows = visibleRows.filter("[sgn_email_id]:not(:has(div.sgn))");
 
     var thisPullDiff = visibleRows.length - unmarkedRows.length;
     var thisPullHash = window.location.hash;
     var thisPullItemRange = $(".Di .Dj:visible").text();
+    var thisPendingCount = pendingRows.length;
 
     debugLog("@104", visibleRows.length, unmarkedRows.length, thisPullDiff);
     if(thisPullDiff == lastPullDiff 
          && thisPullHash == lastPullHash
-         && thisPullItemRange == lastPullItemRange){
+         && thisPullItemRange == lastPullItemRange
+         && thisPendingCount == lastPendingCount){
       debugLog("Skipped pulling because of duplicate network requests");
       return;
     }
@@ -407,8 +412,6 @@ SimpleGmailNotes.start = function(){
       }
     });
 
-    //rows that has been marked, but has no notes
-    var pendingRows = visibleRows.filter("[sgn_email_id]:not(:has(div.sgn))");
     var requestList = [];
     pendingRows.each(function(){
       if(gmail.check.is_preview_pane() &&
@@ -433,6 +436,7 @@ SimpleGmailNotes.start = function(){
     lastPullDiff = thisPullDiff;
     lastPullHash = thisPullHash;
     lastPullItemRange = thisPullItemRange;
+    lastPendingCount = thisPendingCount;
 
     if(requestList.length  == 0){
       debugLog("no need to pull rows");
@@ -495,3 +499,5 @@ SimpleGmailNotes.start = function(){
 } //end of SimpleGmailNotes.start
 
 SimpleGmailNotes.start();
+
+
