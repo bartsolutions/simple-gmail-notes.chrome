@@ -50,9 +50,10 @@ function setupPage(){
     addScript('page.js');
 }
 
+document.addEventListener('DOMContentLoaded', fireContentLoadedEvent, false);
 
-//$(document).ready(function(){
+function fireContentLoadedEvent() {
     setupListeners();
     setupPage();
-//});
+}
 

@@ -208,9 +208,6 @@ var setupNoteEditor = function(email, messageId){
   debugLog("Start to set up notes");
   debugLog("Email", email);
 
-  $(".nH.if").prepend($("<div></div>", {
-    "class" : "sgn_container"
-  })); //hopefully this one is stable
 
   var injectionNode = $(".sgn_container");
   var message = gEmailIdNoteDict[messageId];

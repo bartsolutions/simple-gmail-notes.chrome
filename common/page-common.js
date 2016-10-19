@@ -86,8 +86,9 @@ SimpleGmailNotes.start = function(){
     if(gConsecutiveRequests >= 20){
         gNextPullTimestamp = timestamp + 60 * 1000; //penalty timeout for 60 seconds
 
-        var message = "20 consecutive network requests detected from Simple Gmail Notes, the extension would be self-disabled for 60 seconds. " +
-                      "Please consider to disable/uninstall this extension to avoid locking of your Gmail account. " +
+        var message = "20 consecutive network requests detected from Simple Gmail Notes, the extension would be self-disabled for 60 seconds.\n\n" +
+											"Please try to close and reopen the browser to clear the cache of extension. " + 
+                      "If the problem persists, please consider to disable/uninstall this extension to avoid locking of your Gmail account. " +
                       "This warning message is raised by the extension developer (not Google), just to ensure your account safety.\n\n" +
                       "If possible, please kindly send the following information to the extension bug report page, " +
                       "it would be helpful for the developer to diagnose the problem. Thank you!\n\n";
@@ -224,11 +225,18 @@ SimpleGmailNotes.start = function(){
       if(!messageId)  //do nothing
           return;
 
+			$(".nH.if").prepend($("<div></div>", {
+				"class" : "sgn_container"
+			})); //hopefully this one is stable
+
+      if(!$(".sgn_container:visible").length)  //text area failed to create, may cause dead loop
+				return;
+
       if(!acquireNetworkLock()){
           debugLog("setupNoteEditor failed to get network lock");
           return;
       }
-       
+
       sendEventMessage('SGN_setup_note_editor', {messageId:messageId});
       sendEventMessage('SGN_setup_email_info', {messageId:messageId, subject:subject});
 
