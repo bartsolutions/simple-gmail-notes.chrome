@@ -44,7 +44,8 @@ SimpleGmailNotes.start = function(){
   var g_lc = 0;     //local trigger count
   var g_pnc = 0;    //pulled network trigger count
 
-  SimpleGmailNotes.gLastHeartBeat = Date.now();
+  SimpleGmailNotes.startHeartBeat = Date.now();
+  SimpleGmailNotes.lastHeartBeat = SimpleGmailNotes.startHeartBeat;
   /* -- end -- */
  
   var debugLog = function()
@@ -127,18 +128,23 @@ SimpleGmailNotes.start = function(){
     sendEventMessage("SGN_heart_beat_request");
 
     if(isBackgroundDead()){
-      var warningMessage = "WARNING! Simple Gmail Notes is not available.\n\n" +
+      var warningMessage = "WARNING! Simple Gmail Notes is currently unavailable.\n\n" +
                                "It's probably because the extension was disabled or automatically upgraded, " +
                                "in either case please refresh this page to remove the warning. " +
                                "(Left click the address bar and press the 'Enter' key.)";
 
       if($(".sgn_input").is(":visible")){
           //there is something wrong with the extension
-          $(".sgn_input").text(warningMessage).css("color", "red").css("font-weight", "bold");
+          $(".sgn_input").prop("disabled", true);
+          var previousVal = $(".sgn_input").val();
+          if(previousVal.indexOf(warningMessage)< 0){
+            $(".sgn_input").css("background-color", "").css("font-size", "").css("color", "red");
+            $(".sgn_input").val(warningMessage + "\n\n--\n\n" + previousVal); //just in case the user has put some note at that moment
+          }
       }
       else {
-        if(!heartBeatAlertSent){
-          //alert(warningMessage);  //may be later
+        if(!heartBeatAlertSent && isLoggedIn()){
+          //alert(warningMessage);    //may be do it later, the checking of current page is still a bit tricky
           heartBeatAlertSent = true;  //the alert is quite annoying, only do it once
         }
       }
@@ -146,7 +152,13 @@ SimpleGmailNotes.start = function(){
   }
 
   var isBackgroundDead = function(){
-      return Date.now() - SimpleGmailNotes.gLastHeartBeat > 3000;
+      var currentTime = Date.now();
+      var lastHeartBeat = SimpleGmailNotes.lastHeartBeat; //copy out to avoid race condition
+      var isDead = (currentTime - lastHeartBeat > 5000);
+      if(isDead){
+        debugLog("background died");
+      }
+      return isDead;
   }
 
   var htmlEscape = function(str) {
@@ -411,6 +423,10 @@ SimpleGmailNotes.start = function(){
       return; //no need to pull
     }
 
+    if(!isLoggedIn()){
+      SimpleGmailNotes.duplicateRequestCount = 0;
+      return;
+    }
 
 
 
@@ -508,6 +524,10 @@ SimpleGmailNotes.start = function(){
     sendDebugInfo();
   }
 
+  var isLoggedIn = function(){
+    return SimpleGmailNotes.gdriveEmail && SimpleGmailNotes.gdriveEmail != ""
+  }
+
   var main = function(){
     gmail = new Gmail(localJQuery);
 
@@ -530,7 +550,8 @@ SimpleGmailNotes.start = function(){
     });
 
     document.addEventListener('SGN_PAGE_heart_beat_response', function(e) {
-      SimpleGmailNotes.gLastHeartBeat = Date.now();
+      SimpleGmailNotes.lastHeartBeat = Date.now();
+      SimpleGmailNotes.gdriveEmail = e.detail.gdriveEmail;
     });
 
     //use current DOM to update email ID of first page

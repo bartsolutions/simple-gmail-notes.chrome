@@ -217,8 +217,9 @@ var setupNoteEditor = function(email, messageId){
     "text": note,
     "disabled":"disabled"
   }).on("blur", function(){
+    var isDisabled = $('textbox').prop('disabled');
     var content = $(this).val();
-    if(gPreviousContent != content){
+    if(!isDisabled && gPreviousContent != content){
       sendBackgroundMessage({action:"post_note", email:email, messageId:messageId, 
                    emailTitleSuffix: gCurrentEmailSubject,
                    gdriveNoteId:gCurrentGDriveNoteId, 
@@ -402,7 +403,7 @@ var setupListeners = function(){
   });
 
   document.addEventListener('SGN_heart_beat_request', function(e){
-    sendBackgroundMessage({action:"heart_beart_request"});    //if background script died, exception raise from here
+    sendBackgroundMessage({action:"heart_beat_request", email:e.detail.email});    //if background script died, exception raise from here
   });
 
   document.addEventListener('SGN_setup_email_info', function(e) {
@@ -582,7 +583,8 @@ var setupListeners = function(){
         break;
       case "heart_beat_response":
         gLastHeartBeat = Date.now();
-        sendEventMessage('SGN_PAGE_heart_beat_response');
+        sendEventMessage('SGN_PAGE_heart_beat_response',
+                         {gdriveEmail:request.gdriveEmail});  
         break;
       default:
         debugLog("unknown background request", request);

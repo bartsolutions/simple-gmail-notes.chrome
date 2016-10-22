@@ -730,9 +730,10 @@ var setupListeners = function(sender, request){
     case "open_options":
       openTab("options.html");
       break;
-    case "heart_beart_request":
+    case "heart_beat_request":
       //do nothing except echo back, to show it's alive
-      sendContentMessage(sender, {action: "heart_beat_response"});
+      sendContentMessage(sender, {action: "heart_beat_response", 
+                                  gdriveEmail:getStorage(sender, "gdrive_email")});  
       break;
     case "update_debug_page_info":
       var preferences = getPreferences();
