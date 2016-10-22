@@ -35,7 +35,6 @@ SimpleGmailNotes.start = function(){
   var gEmailIdDict = {};
   var gDebugInfoDetail = "";
   var gDebugInfoSummary = "";
-  var gLastHeartBeat = Date.now();
   //followings are for network request locking control
   var gLastPullTimestamp = null;
   var gNextPullTimestamp = null;
@@ -44,6 +43,8 @@ SimpleGmailNotes.start = function(){
   var g_oec = 0;    //open email trigger count
   var g_lc = 0;     //local trigger count
   var g_pnc = 0;    //pulled network trigger count
+
+  SimpleGmailNotes.gLastHeartBeat = Date.now();
   /* -- end -- */
  
   var debugLog = function()
@@ -120,12 +121,32 @@ SimpleGmailNotes.start = function(){
     sendEventMessage('SGN_update_debug_page_info', {debugInfo:debugInfo});
   }
 
+  var heartBeatAlertSent = false;
+
   var sendHeartBeat = function(){
     sendEventMessage("SGN_heart_beat_request");
+
+    if(isBackgroundDead()){
+      var warningMessage = "WARNING! Simple Gmail Notes is not available.\n\n" +
+                               "It's probably because the extension was disabled or automatically upgraded, " +
+                               "in either case please refresh this page to remove the warning. " +
+                               "(Left click the address bar and press the 'Enter' key.)";
+
+      if($(".sgn_input").is(":visible")){
+          //there is something wrong with the extension
+          $(".sgn_input").text(warningMessage).css("color", "red").css("font-weight", "bold");
+      }
+      else {
+        if(!heartBeatAlertSent){
+          //alert(warningMessage);  //may be later
+          heartBeatAlertSent = true;  //the alert is quite annoying, only do it once
+        }
+      }
+    }
   }
 
   var isBackgroundDead = function(){
-      return Date.now() - gLastHeartBeat > 3000;
+      return Date.now() - SimpleGmailNotes.gLastHeartBeat > 3000;
   }
 
   var htmlEscape = function(str) {
@@ -376,6 +397,9 @@ SimpleGmailNotes.start = function(){
   var lastPullItemRange = null;
   var lastPendingCount = 0;
 
+  var lastAbstractSignature = "";
+  SimpleGmailNotes.duplicateRequestCount = 0;
+
   var pullNotes = function(){
     if(!$("tr.zA").length ||
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane())){
@@ -401,6 +425,10 @@ SimpleGmailNotes.start = function(){
     var thisPendingCount = pendingRows.length;
 
     debugLog("@104", visibleRows.length, unmarkedRows.length, thisPullDiff);
+
+    var thisAbstractSignature = thisPullDiff + "|" + thisPullHash + "|" + thisPullItemRange + "|" + thisPendingCount;
+
+    /*
     if(thisPullDiff == lastPullDiff 
          && thisPullHash == lastPullHash
          && thisPullItemRange == lastPullItemRange
@@ -408,7 +436,22 @@ SimpleGmailNotes.start = function(){
       debugLog("Skipped pulling because of duplicate network requests");
       return;
     }
+    */
 
+
+    if(thisAbstractSignature == lastAbstractSignature){
+      SimpleGmailNotes.duplicateRequestCount += 1;
+    }
+    else
+      SimpleGmailNotes.duplicateRequestCount = 0;
+
+    if(SimpleGmailNotes.duplicateRequestCount > 3)
+      return; //danger, may be endless loop here
+
+    if(unmarkedRows.length == 0 && pendingRows.length == 0){
+      debugLog("no need to check");
+      return;
+    }
 
     debugLog("@104, total unmarked rows", unmarkedRows.length);
     unmarkedRows.each(function(){
@@ -441,10 +484,14 @@ SimpleGmailNotes.start = function(){
       return;
     }
 
+    /*
     lastPullDiff = thisPullDiff;
     lastPullHash = thisPullHash;
     lastPullItemRange = thisPullItemRange;
     lastPendingCount = thisPendingCount;
+    */
+
+    lastAbstractSignature = thisAbstractSignature;
 
     if(requestList.length  == 0){
       debugLog("no need to pull rows");
@@ -483,7 +530,7 @@ SimpleGmailNotes.start = function(){
     });
 
     document.addEventListener('SGN_PAGE_heart_beat_response', function(e) {
-      gLastHeartBeat = Date.now();
+      SimpleGmailNotes.gLastHeartBeat = Date.now();
     });
 
     //use current DOM to update email ID of first page
