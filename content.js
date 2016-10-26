@@ -43,6 +43,9 @@ function addScript(scriptPath){
 }
 
 //initalization
+var contentLoadStarted = false;
+var contentLoadDone = false;
+
 function setupPage(){
     addScript('lib/jquery-3.1.0.min.js');
     addScript('lib/gmail.js');
@@ -50,10 +53,22 @@ function setupPage(){
     addScript('page.js');
 }
 
-document.addEventListener('DOMContentLoaded', fireContentLoadedEvent, false);
-
 function fireContentLoadedEvent() {
+    if(contentLoadStarted)
+        return;
+
+    contentLoadStarted = true;
+    sendBackgroundMessage({action:"update_debug_content_info", debugInfo: "contentLoadStarted"});
+
     setupListeners();
     setupPage();
+
+    contentLoadDone = true;
+    sendBackgroundMessage({action:"update_debug_content_info", debugInfo: "contentLoadDone"});
 }
 
+document.addEventListener('DOMContentLoaded', fireContentLoadedEvent, false);
+
+$(document).ready(function(){
+  fireContentLoadedEvent();
+})
