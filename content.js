@@ -70,6 +70,7 @@ function fireContentLoadedEvent() {
     appendDebugInfo("contentLoadDone");
 }
 
+/*
 document.addEventListener('DOMContentLoaded', 
     function(){
         appendDebugInfo("DOMContentLoaded");
@@ -77,6 +78,7 @@ document.addEventListener('DOMContentLoaded',
     }, 
     false
 );
+*/
 
 $(document).ready(function(){
     appendDebugInfo("documentReady");
