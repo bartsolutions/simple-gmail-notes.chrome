@@ -291,7 +291,7 @@ var setupNoteEditor = function(email, messageId){
 
 
   //nothing to show now
-  sendBackgroundMessage({action:"update_debug_content_info", debugInfo: ""});
+  //sendBackgroundMessage({action:"update_debug_content_info", debugInfo: ""});
 
   //load initial message
   debugLog("Start to initailize");
@@ -590,6 +590,15 @@ var setupListeners = function(){
         debugLog("unknown background request", request);
     }
   });
+}
+
+var gDebugInfo = "";
+var appendDebugInfo = function(message){
+  if(gDebugInfo)
+    gDebugInfo += ", "
+
+  gDebugInfo += message ;
+  sendBackgroundMessage({action:"update_debug_content_info", debugInfo: gDebugInfo});
 }
 
 

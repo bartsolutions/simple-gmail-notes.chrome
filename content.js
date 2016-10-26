@@ -43,6 +43,7 @@ function addScript(scriptPath){
 }
 
 //initalization
+var debugInfo = "";
 var contentLoadStarted = false;
 var contentLoadDone = false;
 
@@ -54,21 +55,30 @@ function setupPage(){
 }
 
 function fireContentLoadedEvent() {
-    if(contentLoadStarted)
+    if(contentLoadStarted){
+        appendDebugInfo("skipLoading");
         return;
+    }
 
     contentLoadStarted = true;
-    sendBackgroundMessage({action:"update_debug_content_info", debugInfo: "contentLoadStarted"});
+    appendDebugInfo("contentLoadStarted");
 
     setupListeners();
     setupPage();
 
     contentLoadDone = true;
-    sendBackgroundMessage({action:"update_debug_content_info", debugInfo: "contentLoadDone"});
+    appendDebugInfo("contentLoadDone");
 }
 
-document.addEventListener('DOMContentLoaded', fireContentLoadedEvent, false);
+document.addEventListener('DOMContentLoaded', 
+    function(){
+        appendDebugInfo("DOMContentLoaded");
+        fireContentLoadedEvent();
+    }, 
+    false
+);
 
 $(document).ready(function(){
-  fireContentLoadedEvent();
+    appendDebugInfo("documentReady");
+    fireContentLoadedEvent();
 })
