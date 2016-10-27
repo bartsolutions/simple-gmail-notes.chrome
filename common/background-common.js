@@ -743,14 +743,6 @@ var setupListeners = function(sender, request){
       var preferences = getPreferences();
       preferences["debugContentInfo"] = request.debugInfo;
       break;
-    case "update_debug_page_info":
-      var preferences = getPreferences();
-      preferences["debugPageInfo"] = request.debugInfo;
-      break;
-    case "update_debug_content_info":
-      var preferences = getPreferences();
-      preferences["debugContentInfo"] = request.debugInfo;
-      break;
     default:
       debugLog("unknown request to background", request);
       break;

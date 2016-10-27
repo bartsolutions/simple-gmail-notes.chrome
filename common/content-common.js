@@ -204,6 +204,7 @@ var setupNoteEditor = function(email, messageId){
   debugLog("Start to set up notes");
   debugLog("Email", email);
 
+  appendDebugInfo("startSetupNote");
 
   var injectionNode = $(".sgn_container");
   var message = gEmailIdNoteDict[messageId];
