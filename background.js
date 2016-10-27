@@ -90,5 +90,13 @@ $(window).on('load', function(){
   });
 });
 
+chrome.runtime.onInstalled.addListener(function(details){
+    if(details.reason == "install"){
+        alert("Thanks for installing. Please reload the Gmail page (click address bar & press enter key) to start using the extension!");
+    } 
+    else{
+        alert("The exteions of \'Simple Gmail Notes\' was updated. Please reload the Gmail page (click address bar & press enter key) to continue using the extension!");
+    }
+});
 
 debugLog("Finished background script");
