@@ -99,5 +99,4 @@ chrome.runtime.onInstalled.addListener(function(details){
     }
 });
 
-
 debugLog("Finished background script");
