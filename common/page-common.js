@@ -35,6 +35,7 @@ SimpleGmailNotes.start = function(){
   var gEmailIdDict = {};
   var gDebugInfoDetail = "";
   var gDebugInfoSummary = "";
+  var gDebugInfoErrorTrace = "";
   //followings are for network request locking control
   var gLastPullTimestamp = null;
   var gNextPullTimestamp = null;
@@ -118,7 +119,7 @@ SimpleGmailNotes.start = function(){
   }
 
   var sendDebugInfo = function(){
-    var debugInfo = "Browser Version: " + navigator.userAgent + "\n" + gDebugInfoSummary + "\n" + gDebugInfoDetail;
+    var debugInfo = "Browser Version: " + navigator.userAgent + "\n" + gDebugInfoSummary + "\n" + gDebugInfoDetail + "\nPE:" + gDebugInfoErrorTrace
     sendEventMessage('SGN_update_debug_page_info', {debugInfo:debugInfo});
   }
 
@@ -240,43 +241,41 @@ SimpleGmailNotes.start = function(){
 
   //set up note editor in the email detail page
   var setupNoteEditor = function(){
-    setTimeout(function(){
-      if($(".sgn_container:visible").length)  //text area already exist
-          return;
+    if($(".sgn_container:visible").length)  //text area already exist
+        return;
 
-      var subject = $(".ha h2.hP").text();
-      var messageId = "";
+    var subject = $(".ha h2.hP").text();
+    var messageId = "";
 
-      if(gmail.check.is_preview_pane()){
-          var idNode = $("tr.zA.aps:visible[sgn_email_id]").first();
-          if(idNode.length)
-              messageId = idNode.attr("sgn_email_id");
-      }
-      else
-          messageId = gmail.get.email_id();
+    if(gmail.check.is_preview_pane()){
+        var idNode = $("tr.zA.aps:visible[sgn_email_id]").first();
+        if(idNode.length)
+            messageId = idNode.attr("sgn_email_id");
+    }
+    else
+        messageId = gmail.get.email_id();
 
-      if(!messageId)  //do nothing
-          return;
+    if(!messageId)  //do nothing
+        return;
 
-			$(".nH.if").prepend($("<div></div>", {
-				"class" : "sgn_container"
-			})); //hopefully this one is stable
+    $(".nH.if").prepend($("<div></div>", {
+      "class" : "sgn_container"
+    })); //hopefully this one is stable
 
-      if(!$(".sgn_container:visible").length)  //text area failed to create, may cause dead loop
-				return;
+    if(!$(".sgn_container:visible").length)  //text area failed to create, may cause dead loop
+      return;
 
-      if(!acquireNetworkLock()){
-          debugLog("setupNoteEditor failed to get network lock");
-          return;
-      }
+    if(!acquireNetworkLock()){
+        debugLog("setupNoteEditor failed to get network lock");
+        return;
+    }
 
-      sendEventMessage('SGN_setup_note_editor', {messageId:messageId});
-      sendEventMessage('SGN_setup_email_info', {messageId:messageId, subject:subject});
+    sendEventMessage('SGN_setup_note_editor', {messageId:messageId});
+    sendEventMessage('SGN_setup_email_info', {messageId:messageId, subject:subject});
 
-      gDebugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
-      sendDebugInfo();
+    gDebugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
+    sendDebugInfo();
 
-    }, 0);  //setTimeout
   }
 
   var updateEmailIdByJSON = function(dataString){
@@ -428,8 +427,6 @@ SimpleGmailNotes.start = function(){
       return;
     }
 
-
-
     var visibleRows = $("tr.zA[id]:visible");
     var unmarkedRows = visibleRows.filter(":not([sgn_email_id])");
     //rows that has been marked, but has no notes
@@ -528,19 +525,69 @@ SimpleGmailNotes.start = function(){
     return SimpleGmailNotes.gdriveEmail && SimpleGmailNotes.gdriveEmail != ""
   }
 
+  var addErrorToLog = function(err){
+    if(gDebugInfoErrorTrace.length > 4096)  //better to give a limit 
+      return;
+
+    var result = "";
+
+    if(err.message)
+      result += err.message + ":\n"
+
+    if(err.stack)
+      result += err.stack + "\n--\n\n"
+
+    if(!result)
+      result += "[" + err + "]";  //this would cast err to string
+
+    if(gDebugInfoErrorTrace.indexOf(result) < 0) //do not repeatly record
+      gDebugInfoErrorTrace += result;
+  }
+
+  //I have to use try/catch instead of window.onerror because of restriction of
+  //of same origin policy: http://stackoverflow.com/questions/28348008/chrome-extension-how-to-trap-handle-content-script-errors-globally
+  var pullNotesCatchingError = function(){
+    try{
+      pullNotes();
+    }
+    catch(err){
+      addErrorToLog(err)
+    }
+  }
+
+  var setupNoteEditorCatchingError = function(){
+    setTimeout(function(){
+      try{
+        setupNoteEditor();
+      }
+      catch(err){
+        addErrorToLog(err)
+      }
+    }, 0);
+  }
+
+  var sendHeartBeatCatchingError = function(){
+    try{
+      sendHeartBeat();
+    }
+    catch(err){
+      addErrorToLog(err)
+    }
+  }
+
   var main = function(){
     gmail = new Gmail(localJQuery);
 
     gmail.observe.on('open_email', function(obj){
       debugLog("simple-gmail-notes: open email event", obj);
       g_oec += 1;
-      setupNoteEditor();
+      setupNoteEditorCatchingError();
     });
 
     gmail.observe.on('load', function(obj){
       debugLog("simple-gmail-notes: load event");
       g_lc += 1;
-      setupNoteEditor();
+      setupNoteEditorCatchingError();
     });
 
     //id is always undefined
@@ -559,10 +606,13 @@ SimpleGmailNotes.start = function(){
       updateEmailIdByDOM(document.scripts[i].text);
     }
 
-    setTimeout(pullNotes, 0);
-    setInterval(pullNotes, 2000);
-    setInterval(setupNoteEditor, 1770); //better not to overlapp to much with the above one
-    setInterval(sendHeartBeat, 1400);
+    setTimeout(pullNotesCatchingError, 0);
+    setInterval(pullNotesCatchingError, 2000);
+    setInterval(setupNoteEditorCatchingError, 1770); //better not to overlapp to much with the above one
+    setInterval(sendHeartBeatCatchingError, 1400);
+
+
+    setInterval(sendDebugInfo, 3000); //update debug info to back side
 
     //mainly for debug purpose
     SimpleGmailNotes.gmail = gmail;
