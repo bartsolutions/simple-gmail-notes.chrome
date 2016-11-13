@@ -221,6 +221,7 @@ var setupNoteEditor = function(email, messageId){
     var isDisabled = $('textbox').prop('disabled');
     var content = $(this).val();
     if(!isDisabled && gPreviousContent != content){
+      delete gEmailIdNoteDict[messageId];//delete the prevoius note
       sendBackgroundMessage({action:"post_note", email:email, messageId:messageId, 
                    emailTitleSuffix: gCurrentEmailSubject,
                    gdriveNoteId:gCurrentGDriveNoteId, 
@@ -357,13 +358,14 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
     var emailNote = gEmailIdNoteDict[emailId];
 
     if(emailNote && emailNote.description && $(this).find(".sgn").css("display") == "none"){
-        $(this).find(".sgn").remove();  //remove the element, so it would be filled later
-        $(this).removeAttr("sgn_email_id");
+      $(this).find(".sgn").remove();  //remove the element, so it would be filled later
+      $(this).removeAttr("sgn_email_id");
     }
 
     if(!hasMarked($(this))){
       markAbstract($(this), emailNote, emailId);
     }
+
   });
 }
 
