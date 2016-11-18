@@ -242,7 +242,10 @@ SimpleGmailNotes.start = function(){
   //set up note editor in the email detail page
   var setupNoteEditor = function(){
     if($(".sgn_container:visible").length)  //text area already exist
+    {
+        addErrorToLog("textarea already exists");
         return;
+    }
 
     var subject = $(".ha h2.hP").text();
     var messageId = "";
@@ -255,17 +258,23 @@ SimpleGmailNotes.start = function(){
     else
         messageId = gmail.get.email_id();
 
-    if(!messageId)  //do nothing
+    if(!messageId){  //do nothing
+        addErrorToLog("message not found");
         return;
+    }
 
-    $(".nH.if").prepend($("<div></div>", {
-      "class" : "sgn_container"
-    })); //hopefully this one is stable
+    var injenctionNode = $("<div></div>", { "class" : "sgn_container" }); 
+    $(".nH.if").prepend(injenctionNode);  //hopefully this one is stable
+    injenctionNode.show();
 
     if(!$(".sgn_container:visible").length)  //text area failed to create, may cause dead loop
-      return;
+    {
+        addErrorToLog("Injection node failed to be found");
+        return;
+    }
 
     if(!acquireNetworkLock()){
+        addErrorToLog("Network lock failed");
         debugLog("setupNoteEditor failed to get network lock");
         return;
     }
@@ -414,15 +423,18 @@ SimpleGmailNotes.start = function(){
   var pullNotes = function(){
     if(!$("tr.zA").length ||
        (gmail.check.is_inside_email() && !gmail.check.is_preview_pane())){
+      addErrorToLog("pull skipped");
       debugLog("Skipped pulling because no tr to check with");
       return;  
     }
 
     if(isBackgroundDead()){
+      addErrorToLog("background is dead.");
       return; //no need to pull
     }
 
     if(!isLoggedIn()){
+      addErrorToLog("not logged in.");
       SimpleGmailNotes.duplicateRequestCount = 0;
       return;
     }
@@ -458,11 +470,13 @@ SimpleGmailNotes.start = function(){
     else
       SimpleGmailNotes.duplicateRequestCount = 0;
 
-    if(SimpleGmailNotes.duplicateRequestCount > 3)
+    if(SimpleGmailNotes.duplicateRequestCount > 3){
+      addErrorToLog("3 duplicate requests");
       return; //danger, may be endless loop here
+    }
 
     if(unmarkedRows.length == 0 && pendingRows.length == 0){
-      debugLog("no need to check");
+      addErrorToLog("no need to check");
       return;
     }
 
@@ -493,7 +507,7 @@ SimpleGmailNotes.start = function(){
     debugLog("Simple-gmail-notes: pulling notes");
     g_pnc += 1;
     if(!acquireNetworkLock()){
-      debugLog("pullNotes failed to get network lock");
+      addErrorToLog("pullNotes failed to get network lock");
       return;
     }
 
@@ -508,6 +522,7 @@ SimpleGmailNotes.start = function(){
 
     if(requestList.length  == 0){
       debugLog("no need to pull rows");
+      addErrorToLog("no need to pull rows");
       return;
     }
 
