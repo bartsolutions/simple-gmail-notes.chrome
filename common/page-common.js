@@ -263,6 +263,9 @@ SimpleGmailNotes.start = function(){
         return;
     }
 
+    gDebugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
+    sendDebugInfo();
+
     var injenctionNode = $("<div></div>", { "class" : "sgn_container" }); 
     $(".nH.if").prepend(injenctionNode);  //hopefully this one is stable
     injenctionNode.show();
@@ -282,7 +285,7 @@ SimpleGmailNotes.start = function(){
     sendEventMessage('SGN_setup_note_editor', {messageId:messageId});
     sendEventMessage('SGN_setup_email_info', {messageId:messageId, subject:subject});
 
-    gDebugInfoDetail = "Is Conversation View: " + gmail.check.is_conversation_view();
+    addErrorToLog("set up request sent");
     sendDebugInfo();
 
   }
@@ -428,6 +431,13 @@ SimpleGmailNotes.start = function(){
       return;  
     }
 
+    gDebugInfoSummary = "Last Summary Page URL: " + window.location.href;
+    gDebugInfoSummary += "\nIs Vertical Split: " + gmail.check.is_vertical_split();
+    gDebugInfoSummary += "\nIs Horizontal Split: " + gmail.check.is_horizontal_split();
+    gDebugInfoSummary += "\nIs Preview Pane: " + gmail.check.is_preview_pane();
+    gDebugInfoSummary += "\nIs Multiple Inbox: " + gmail.check.is_multiple_inbox();
+    sendDebugInfo();
+
     if(isBackgroundDead()){
       addErrorToLog("background is dead.");
       return; //no need to pull
@@ -528,11 +538,8 @@ SimpleGmailNotes.start = function(){
 
     sendEventMessage("SGN_pull_notes",
                      {email: gmail.get.user_email(), requestList:requestList});
-    gDebugInfoSummary = "Last Summary Page URL: " + window.location.href;
-    gDebugInfoSummary += "\nIs Vertical Split: " + gmail.check.is_vertical_split();
-    gDebugInfoSummary += "\nIs Horizontal Split: " + gmail.check.is_horizontal_split();
-    gDebugInfoSummary += "\nIs Preview Pane: " + gmail.check.is_preview_pane();
-    gDebugInfoSummary += "\nIs Multiple Inbox: " + gmail.check.is_multiple_inbox();
+
+    addErrorToLog("pull request sent");
     sendDebugInfo();
   }
 
