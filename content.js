@@ -26,7 +26,6 @@ isDebug = function(callback){
 
   return isDebugCache;
 }
-/*** end of callback implementation ***/
 
 var extensionID = chrome.runtime.id;
 getIconBaseUrl = function(){
@@ -41,35 +40,9 @@ function addScript(scriptPath){
     j.defer = false;
     (document.head || document.documentElement).appendChild(j);
 }
+/*** end of callback implementation ***/
 
 //initalization
-var debugInfo = "";
-var contentLoadStarted = false;
-var contentLoadDone = false;
-
-function setupPage(){
-    addScript('lib/jquery-3.1.0.min.js');
-    addScript('lib/gmail.js');
-    addScript('common/page-common.js');
-    addScript('page.js');
-}
-
-function fireContentLoadedEvent() {
-    if(contentLoadStarted){
-        appendDebugInfo("skipLoading");
-        return;
-    }
-
-    contentLoadStarted = true;
-    appendDebugInfo("contentLoadStarted");
-
-    setupListeners();
-    setupPage();
-
-    contentLoadDone = true;
-    appendDebugInfo("contentLoadDone");
-}
-
 /*
 document.addEventListener('DOMContentLoaded', 
     function(){

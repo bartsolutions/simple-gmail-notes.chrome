@@ -24,10 +24,15 @@ var getIconBaseUrl = function(){
   throw "getIconBaseUrl not implemented";
 }
 
+var addScript = function(scriptPath){
+  throw "addScript is not implemented";
+}
+
 var isDebug = function(callback) {
   //return true;  //turn on this only if u want to check initilization part
   return false;
 }
+
 /* -- end -- */
 
 /* global variables to mark the status of current tab */
@@ -586,8 +591,7 @@ var setupListeners = function(){
         break;
       case "heart_beat_response":
         gLastHeartBeat = Date.now();
-        sendEventMessage('SGN_PAGE_heart_beat_response',
-                         {gdriveEmail:request.gdriveEmail});  
+        sendEventMessage('SGN_PAGE_heart_beat_response', request.gdriveEmail);  
         break;
       default:
         debugLog("unknown background request", request);
@@ -597,12 +601,42 @@ var setupListeners = function(){
 
 var gDebugInfo = "";
 var appendDebugInfo = function(message){
-  if(gDebugInfo)
-    gDebugInfo += ", "
+  if(gDebugInfo.indexOf(message) < 0){
+    if(gDebugInfo)
+      gDebugInfo += ", "
 
-  gDebugInfo += message ;
-  sendBackgroundMessage({action:"update_debug_content_info", debugInfo: gDebugInfo});
+    gDebugInfo += message ;
+    sendBackgroundMessage({action:"update_debug_content_info", debugInfo: gDebugInfo});
+  }
 }
 
+
+//use for page script set up
+var contentLoadStarted = false;
+var contentLoadDone = false;
+
+function setupPage(){
+    addScript('lib/jquery-3.1.0.min.js');
+    addScript('lib/gmail.js');
+    addScript('common/page-common.js');
+    addScript('page.js');
+}
+
+
+function fireContentLoadedEvent() {
+    if(contentLoadStarted){
+        appendDebugInfo("skipLoading");
+        return;
+    }
+
+    contentLoadStarted = true;
+    appendDebugInfo("contentLoadStarted");
+
+    setupListeners();
+    setupPage();
+
+    contentLoadDone = true;
+    appendDebugInfo("contentLoadDone");
+}
 
 debugLog("Finished content script (common)");

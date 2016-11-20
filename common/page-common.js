@@ -8,6 +8,8 @@
 
 window.SimpleGmailNotes = window.SimpleGmailNotes || {};
 
+SimpleGmailNotes.gdriveEmail = "";
+
 SimpleGmailNotes.refresh = function(f){
     if( (/in/.test(document.readyState)) || (undefined === window.Gmail)
         || (undefined === window.jQuery) ) {
@@ -620,7 +622,7 @@ SimpleGmailNotes.start = function(){
 
     document.addEventListener('SGN_PAGE_heart_beat_response', function(e) {
       SimpleGmailNotes.lastHeartBeat = Date.now();
-      SimpleGmailNotes.gdriveEmail = e.detail.gdriveEmail;
+      SimpleGmailNotes.gdriveEmail = e.detail;
     });
 
     //use current DOM to update email ID of first page
