@@ -257,7 +257,8 @@ SimpleGmailNotes.start = function(){
         if(idNode.length)
             messageId = idNode.attr("sgn_email_id");
     }
-    else
+
+    if(!messageId)
         messageId = gmail.get.email_id();
 
     if(!messageId){  //do nothing
