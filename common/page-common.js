@@ -517,12 +517,6 @@ SimpleGmailNotes.start = function(){
     });
 
 
-    debugLog("Simple-gmail-notes: pulling notes");
-    g_pnc += 1;
-    if(!acquireNetworkLock()){
-      addErrorToLog("pullNotes failed to get network lock");
-      return;
-    }
 
     /*
     lastPullDiff = thisPullDiff;
@@ -531,7 +525,6 @@ SimpleGmailNotes.start = function(){
     lastPendingCount = thisPendingCount;
     */
 
-    lastAbstractSignature = thisAbstractSignature;
 
     if(requestList.length  == 0){
       debugLog("no need to pull rows");
@@ -539,8 +532,21 @@ SimpleGmailNotes.start = function(){
       return;
     }
 
+
+    //this line MUST be above acquireNetworkLock, otherwise it would be point less
+    lastAbstractSignature = thisAbstractSignature;
+
+    debugLog("Simple-gmail-notes: pulling notes");
+    g_pnc += 1;
+    //the lock must be acaquired right before the request is issued
+    if(!acquireNetworkLock()){
+      addErrorToLog("pullNotes failed to get network lock");
+      return;
+    }
+
     sendEventMessage("SGN_pull_notes",
                      {email: gmail.get.user_email(), requestList:requestList});
+
 
     addErrorToLog("pull request sent");
     sendDebugInfo();
