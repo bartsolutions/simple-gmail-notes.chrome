@@ -132,9 +132,8 @@ SimpleGmailNotes.start = function(){
 
     if(isBackgroundDead()){
       var warningMessage = "WARNING! Simple Gmail Notes is currently unavailable.\n\n" +
-                               "It's probably because the extension was disabled or automatically upgraded, " +
-                               "in either case please refresh this page to remove the warning. " +
-                               "(Left click the address bar and press the 'Enter' key.)";
+                               "Please refresh this page to remove the warning. " +
+                               "(Left click the address bar and press the 'Enter' key)";
 
       if($(".sgn_input").is(":visible")){
           //there is something wrong with the extension
