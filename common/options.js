@@ -145,7 +145,7 @@ function initPreferences(){
     $("#abstract_style").append("<option value=" + i + ">First " + i + " Characters</option>");
   }
 
-  for(var i=1; i<=8; i++){
+  for(var i=1; i<=16; i++){
     $("#note_height").append("<option>" + i + "</option>");
   }
 

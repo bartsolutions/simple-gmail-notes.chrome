@@ -6,6 +6,11 @@
 <script src="common/background-common.js"></script>
 <script src="common/options.js"></script>
 <style>
+  * {
+   font-size: 16px;
+   font-family: Arial;
+  }
+
   td {
     padding: 10px;
   }
@@ -141,15 +146,28 @@
     </tr>
   </table>
 
+  <br/>
+  <h2 style='color:red'>Donations</h2>
+  <ul>
+    <li><b>Reasons:</b></li>
+    <li>A. The development and support become more and more time consuming as number of users gradually increase.</li>
+    <li>B. I need a good reason to tell my wife why I need to work for hours at the weekend for an open source project &#128517;</li>
+  </ul>
+  <ul>
+    <li><b>How to Donate:</b></li>
+    <li>If you do like this extension, please support the development by clicking the <a target='_blank' href='https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=KFSJU27WGWRY2'>Paypal donation link</a>.
+  </ul>
+  <br/>
+
   <h2>FAQ</h2>
   <ul>
       <li><b>How do I refresh the Gmail page?</b></li>
-    <li>Please left click the address bar and press 'Enter' key to do a full refresh.</ul>
-  </li>
+      <li>Please left click the address bar and press 'Enter' key to do a full refresh.</li>
+  </ul>
   <ul>
       <li><b>Why I can't see the note abstract?</b></li>
-    <li>Some times the note abstract would take up to 2 seconds to appear. If the abstract does not appear after a long time, please help report a bug.</ul>
-  </li>
+    <li>Some times the note abstract would take up to 2 seconds to appear. If the abstract does not appear after a long time, please help report a bug.</li>
+  </ul>
   <ul>
       <li><b>How do I report a bug?</b></li>
       <li><div>Please report your bug in the <a target='_blank' href='https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm/support?hl=en'>Chrome extension site</a>.</div> 
@@ -158,6 +176,7 @@
           <pre id='debug_content_info'> </pre>
           <pre id='debug_background_info'> </pre>
       </li>
-</ul>
+  </ul>
+</div>
 </body>
 </html>
