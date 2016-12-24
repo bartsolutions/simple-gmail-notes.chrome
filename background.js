@@ -95,7 +95,7 @@ chrome.runtime.onInstalled.addListener(function(details){
         alert("Thanks for installing. Please reload the Gmail page (click address bar & press enter key) to start using the extension!");
     } 
     else{
-        alert("The exteions of \'Simple Gmail Notes\' was updated. Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\nIf you think the extension is helpful, please consider a donation. You might find the donation details inside the preferences page of the extension.");
+//        alert("The exteions of \'Simple Gmail Notes\' was updated. Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\nIf you think the extension is helpful, please consider a donation. You might find the donation details inside the preferences page of the extension.");
     }
 });
 

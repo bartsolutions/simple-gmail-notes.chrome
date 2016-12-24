@@ -129,12 +129,11 @@ SimpleGmailNotes.start = function(){
 
   var sendHeartBeat = function(){
     sendEventMessage("SGN_heart_beat_request");
+    var warningMessage = "WARNING! Simple Gmail Notes is currently unavailable.\n\n" +
+                             "Please refresh this page to remove the warning. " +
+                             "(Left click the address bar and press the 'Enter' key)";
 
     if(isBackgroundDead()){
-      var warningMessage = "WARNING! Simple Gmail Notes is currently unavailable.\n\n" +
-                               "Please refresh this page to remove the warning. " +
-                               "(Left click the address bar and press the 'Enter' key)";
-
       if($(".sgn_input").is(":visible")){
           //there is something wrong with the extension
           $(".sgn_input").prop("disabled", true);
@@ -151,6 +150,14 @@ SimpleGmailNotes.start = function(){
         }
       }
     }
+    else {  //back ground is alive
+      if($(".sgn_input").is(":visible") && $(".sgn_input").val().indexOf(warningMessage) == 0){
+        //network is just recovered
+        $(".sgn_container:visible").remove();
+        setupNoteEditorCatchingError();
+      }
+    }
+
   }
 
   var isBackgroundDead = function(){
@@ -160,6 +167,7 @@ SimpleGmailNotes.start = function(){
       if(isDead){
         debugLog("background died");
       }
+
       return isDead;
   }
 
