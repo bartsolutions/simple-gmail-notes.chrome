@@ -141,7 +141,7 @@ function updateControls(preferences){
 
 
 function initPreferences(){
-  for(var i=2; i<=30; i++){
+  for(var i=2; i<=50; i++){
     $("#abstract_style").append("<option value=" + i + ">First " + i + " Characters</option>");
   }
 
