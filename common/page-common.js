@@ -129,9 +129,7 @@ SimpleGmailNotes.start = function(){
 
   var sendHeartBeat = function(){
     sendEventMessage("SGN_heart_beat_request");
-    var warningMessage = "WARNING! Simple Gmail Notes is currently unavailable.\n\n" +
-                             "Please refresh this page to remove the warning. " +
-                             "(Left click the address bar and press the 'Enter' key)";
+    var warningMessage = SimpleGmailNotes.offlineMessage;
 
     if(isBackgroundDead()){
       if($(".sgn_input").is(":visible")){
