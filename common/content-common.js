@@ -216,7 +216,8 @@ var setupNoteEditor = function(email, messageId){
 
   var note = ""
   if(message && message.description)
-      note = message.description;
+    note = message.description;
+
 
   var textAreaNode = $("<textarea></textarea>", {
     "class": "sgn_input",
@@ -504,7 +505,14 @@ var setupListeners = function(){
         break;
       case "update_content":
         gPreviousContent = request.content;
-        $(".sgn_input").val(request.content);
+
+        var displayContent = request.content;
+        var warningMessage = SimpleGmailNotes.offlineMessage;
+        if(displayContent.indexOf(warningMessage) == 0){
+          displayContent = displayContent.substring(warningMessage.length); //truncate the warning message part
+        }
+        $(".sgn_input").val(displayContent);
+
         showLogoutPrompt(request.email);
         break;
       case "update_gdrive_note_info":
@@ -627,6 +635,7 @@ var contentLoadDone = false;
 function setupPage(){
     addScript('lib/jquery-3.1.0.min.js');
     addScript('lib/gmail.js');
+    addScript('common/shared-common.js');
     addScript('common/page-common.js');
     addScript('page.js');
 }
