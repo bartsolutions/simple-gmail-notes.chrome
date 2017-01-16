@@ -243,6 +243,8 @@ var setupNoteEditor = function(email, messageId){
               "<img title='Log Out' src='" + getIconBaseUrl() + "/logout.24.png'></a>" + 
               "<a class='sgn_open_options sgn_action'>" +
               "<img title='Preferences' src='" + getIconBaseUrl() + "/preferences.24.png'></a>" +
+              "<a class='sgn_action sgn_delete' target='_blank'>" +
+              "<img title='Delete' src='" + getIconBaseUrl() + "/delete.24.png'/></a> " +
               "<a class='sgn_action sgn_add_calendar' target='_blank'>" +
               "<img title='Add to Google Calendar' src='" + getIconBaseUrl() + "/calendar.24.png'/></a> " +
               "<a class='sgn_action sgn_search' target='_blank'>" +
@@ -586,6 +588,13 @@ var setupListeners = function(){
         if(!showAddCalendar){
           $(".sgn_add_calendar").hide();
         }
+
+        var showDeleteButton = (preferences["showDelete"] !== "false");
+        if(!showDeleteButton){
+          $(".sgn_delete").hide();
+        }
+
+
 
         debugLog("@470", preferences);
         break;

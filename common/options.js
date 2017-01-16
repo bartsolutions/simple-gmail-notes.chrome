@@ -77,6 +77,7 @@ function savePreferences() {
   preferences["notePosition"] = $("#note_position").val();
   preferences["showConnectionPrompt"] = String($("#show_connection_prompt").is(":checked"));
   preferences["showAddCalendar"] = String($("#show_add_calendar").is(":checked"));
+  preferences["showDelete"] = String($("#show_delete").is(":checked"));
 
   pushPreferences(preferences);
 
@@ -133,6 +134,9 @@ function updateControls(preferences){
 
   var showAddCalendar = (preferences["showAddCalendar"] !== "false");
   $("#show_add_calendar").prop("checked", showAddCalendar);
+
+  var showDelete = (preferences["showDelete"] !== "false");
+  $("#show_delete").prop("checked", showAddCalendar);
 
   $("#debug_page_info").text(String(preferences["debugPageInfo"]));
   $("#debug_content_info").text(String(preferences["debugContentInfo"]));
