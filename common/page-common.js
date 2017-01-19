@@ -254,7 +254,7 @@ SimpleGmailNotes.start = function(){
         return;
     }
 
-    var subject = $(".ha h2.hP").text();
+    var subject = $(".ha h2.hP:visible").text();
     var messageId = "";
 
     if(gmail.check.is_preview_pane()){
