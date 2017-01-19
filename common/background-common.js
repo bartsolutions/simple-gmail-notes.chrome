@@ -705,9 +705,7 @@ var pullNotes = function(sender, pendingPullList){
 
 }
 
-var deleteNote = function(sender, messageId, gdriveNoteId){
-  debugLog("Delete note", gdriveNoteId);
-
+var deleteNoteByNoteId = function(sender, messageId, gdriveNoteId){
   executeIfValidToken(sender, function(data){
     var deleteUrl =  "https://www.googleapis.com/drive/v2/files/" + gdriveNoteId + "/trash";
     var methodType = "POST";
@@ -732,6 +730,22 @@ var deleteNote = function(sender, messageId, gdriveNoteId){
       }
     });
   });
+}
+
+var deleteNoteByMessageId = function(sender, messageId){
+  debugLog("Delete note for message", messageId);
+
+  gdriveQuery(sender, "title contains '" + messageId + "'",
+      function(data){ //success callback
+        for(var i=0; i<data.items.length; i++){
+          var item = data.items[i];
+          deleteNoteByNoteId(sender, messageId, item.id);
+        }
+      },
+      function(data){ //error backback
+        debugLog("@743, query failed", data);
+      }
+  );
 
 }
 
@@ -777,7 +791,7 @@ var setupListeners = function(sender, request){
       preferences["debugContentInfo"] = request.debugInfo;
       break;
     case "delete":
-      deleteNote(sender, request.messageId, request.gdriveNoteId);
+      deleteNoteByMessageId(sender, request.messageId);
       break;
     default:
       debugLog("unknown request to background", request);

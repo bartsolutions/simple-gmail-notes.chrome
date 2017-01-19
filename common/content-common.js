@@ -307,6 +307,7 @@ var setupNoteEditor = function(email, messageId){
             if(!gCurrentGDriveNoteId)
               return;
 
+            delete gEmailIdNoteDict[messageId];//delete the prevoius note
             gCurrentGDriveNoteId = "";
           }
 
