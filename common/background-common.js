@@ -23,7 +23,7 @@ var settings = {
 
 var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", 
                         "backgroundColor", "notePosition", 
-                        "showConnectionPrompt", "showAddCalendar", 
+                        "showConnectionPrompt", "showAddCalendar", "showDelete",
                         "debugPageInfo", "debugContentInfo", "debugBackgroundInfo"];
 var gSgnEmtpy = "<SGN_EMPTY>";
 /* -- end -- */
@@ -145,6 +145,9 @@ var updateDefaultPreferences = function(preferences)
 
   if(isEmptyPrefernce(preferences["showAddCalendar"]))
     preferences["showAddCalendar"] = "true";
+
+  if(isEmptyPrefernce(preferences["showDelete"]))
+    preferences["showDelete"] = "true";
 
 
   return preferences;
@@ -702,6 +705,36 @@ var pullNotes = function(sender, pendingPullList){
 
 }
 
+var deleteNote = function(sender, messageId, gdriveNoteId){
+  debugLog("Delete note", gdriveNoteId);
+
+  executeIfValidToken(sender, function(data){
+    var deleteUrl =  "https://www.googleapis.com/drive/v2/files/" + gdriveNoteId + "/trash";
+    var methodType = "POST";
+
+    sendAjax({
+      type:methodType,
+      url:deleteUrl,
+      dataType: 'json',
+      contentType: "application/json",
+      headers: {
+          "Authorization": "Bearer " + getStorage(sender, "access_token")
+      },
+      success: function(data){
+        debugLog("message deleted successfully");
+        sendContentMessage(sender, {action:"revoke_summary_note", messageId: messageId});
+      },
+      error: function(data){
+        sendContentMessage(sender, {action:"show_error", 
+                                    type:"custom", 
+                                    message:"Faild delete message, error: " + 
+                                    JSON.stringify(data)});
+      }
+    });
+  });
+
+}
+
 //For messaging between background and content script
 var setupListeners = function(sender, request){
   debugLog("Request body:", request);
@@ -742,6 +775,9 @@ var setupListeners = function(sender, request){
     case "update_debug_content_info":
       var preferences = getPreferences();
       preferences["debugContentInfo"] = request.debugInfo;
+      break;
+    case "delete":
+      deleteNote(sender, request.messageId, request.gdriveNoteId);
       break;
     default:
       debugLog("unknown request to background", request);

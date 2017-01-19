@@ -294,7 +294,24 @@ var setupNoteEditor = function(email, messageId){
     $.each(classList, function(index, item){
       if(item != 'sgn_action'){  //for all other actions
           var action = item.substring(4);   //remove the 'sgn_' prefix
-          sendBackgroundMessage({action: action, email: email, messageId:messageId});
+          var request = {action: action, email: email, messageId:messageId, 
+                         gdriveNoteId:gCurrentGDriveNoteId};
+
+          if(action == "delete"){
+            if(!confirm("Are you sure you want to delete this note?"))
+              return;
+
+            $(".sgn_input:visible").val("");  //remove the note in text area
+
+            //check if note exists
+            if(!gCurrentGDriveNoteId)
+              return;
+
+            gCurrentGDriveNoteId = "";
+          }
+
+
+          sendBackgroundMessage(request);
       }
     });
   });
