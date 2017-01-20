@@ -92,10 +92,21 @@ $(window).on('load', function(){
 
 chrome.runtime.onInstalled.addListener(function(details){
     if(details.reason == "install"){
-        alert("Thanks for installing. Please reload the Gmail page (click address bar & press enter key) to start using the extension!");
+      alert("Thanks for installing. Please reload the Gmail page (click address bar & press enter key) to start using the extension!");
     } 
     else{
-//        alert("The exteions of \'Simple Gmail Notes\' was updated. Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\nIf you think the extension is helpful, please consider a donation. You might find the donation details inside the preferences page of the extension.");
+      chrome.tabs.query({}, function(tabs){
+          for(var i=0; i<tabs.length; i++){
+            var tab = tabs[i];
+
+            //send the alert only if the user is opening the Gmail page at the time
+            if(tab.url && tab.url.indexOf("https://mail.google.com") == 0){
+              alert("The exteions of \'Simple Gmail Notes\' was updated. Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\nIf you think the extension is helpful, please consider a donation. (You may find the donation details inside the extension preferences page.) Thank you!");
+              break;
+            }
+          }
+      });
+        
     }
 });
 
