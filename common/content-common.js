@@ -224,16 +224,19 @@ var setupNoteEditor = function(email, messageId){
     "text": note,
     "disabled":"disabled"
   }).on("blur", function(){
-    var isDisabled = $('textbox').prop('disabled');
-    var content = $(this).val();
-    if(!isDisabled && gPreviousContent != content){
-      delete gEmailIdNoteDict[messageId];//delete the prevoius note
-      sendBackgroundMessage({action:"post_note", email:email, messageId:messageId, 
-                   emailTitleSuffix: gCurrentEmailSubject,
-                   gdriveNoteId:gCurrentGDriveNoteId, 
-                   gdriveFolderId:gCurrentGDriveFolderId, content:content});
-    }
-	  return true;
+    var currentInput = $(".sgn_input:visible");
+    setTimeout(function(){
+      var isDisabled = currentInput.prop('disabled');
+      var content = currentInput.val();
+      if(!isDisabled && gPreviousContent != content){
+        delete gEmailIdNoteDict[messageId];//delete the prevoius note
+        sendBackgroundMessage({action:"post_note", email:email, messageId:messageId, 
+                     emailTitleSuffix: gCurrentEmailSubject,
+                     gdriveNoteId:gCurrentGDriveNoteId, 
+                     gdriveFolderId:gCurrentGDriveFolderId, content:content});
+      }
+      return true;
+    }, 200);  //save the note a bit later
   });
 
 
