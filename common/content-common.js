@@ -225,15 +225,20 @@ var setupNoteEditor = function(email, messageId){
     "disabled":"disabled"
   }).on("blur", function(){
     var currentInput = $(".sgn_input:visible");
+    var emailSubject = gCurrentEmailSubject;
+    var noteId = gCurrentGDriveNoteId;
+    var folderId = gCurrentGDriveFolderId;
+
     setTimeout(function(){
       var isDisabled = currentInput.prop('disabled');
       var content = currentInput.val();
+
       if(!isDisabled && gPreviousContent != content){
         delete gEmailIdNoteDict[messageId];//delete the prevoius note
         sendBackgroundMessage({action:"post_note", email:email, messageId:messageId, 
-                     emailTitleSuffix: gCurrentEmailSubject,
-                     gdriveNoteId:gCurrentGDriveNoteId, 
-                     gdriveFolderId:gCurrentGDriveFolderId, content:content});
+                     emailTitleSuffix: emailSubject,
+                     gdriveNoteId:noteId, 
+                     gdriveFolderId:folderId, content:content});
       }
       return true;
     }, 200);  //save the note a bit later
