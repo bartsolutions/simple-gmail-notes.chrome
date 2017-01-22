@@ -310,6 +310,7 @@ var setupNoteEditor = function(email, messageId){
               return;
 
             $(".sgn_input:visible").val("");  //remove the note in text area
+            gPreviousContent = "";
 
             //check if note exists
             if(!gCurrentGDriveNoteId)
