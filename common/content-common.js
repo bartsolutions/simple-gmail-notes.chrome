@@ -43,6 +43,7 @@ var gCurrentGDriveFolderId = "";
 var gPreviousContent = "";
 
 var gCurrentEmailSubject = "";
+var gCurrentMessageId = "";
 
 var gAbstractBackgroundColor = "";
 var gAbstractFontColor = "";
@@ -460,6 +461,7 @@ var setupListeners = function(){
 
     //for add to calendar use
     gCurrentEmailSubject = e.detail.subject;
+    gCurrentMessageId = messageId;
   });
 
 
@@ -531,16 +533,19 @@ var setupListeners = function(){
         $("div.sgn").remove();  //clean up all those outdated div
         break;
       case "update_content":
-        gPreviousContent = request.content;
 
-        var displayContent = request.content;
-        var warningMessage = SimpleGmailNotes.offlineMessage;
-        if(displayContent.indexOf(warningMessage) == 0){
-          displayContent = displayContent.substring(warningMessage.length); //truncate the warning message part
+        if(request.messageId == gCurrentMessageId){
+          gPreviousContent = request.content;
+          var displayContent = request.content;
+          var warningMessage = SimpleGmailNotes.offlineMessage;
+          if(displayContent.indexOf(warningMessage) == 0){
+            displayContent = displayContent.substring(warningMessage.length); //truncate the warning message part
+          }
+          $(".sgn_input").val(displayContent);
+          showLogoutPrompt(request.email);
         }
-        $(".sgn_input").val(displayContent);
 
-        showLogoutPrompt(request.email);
+
         break;
       case "update_gdrive_note_info":
         debugLog("Update google drive note info", 
