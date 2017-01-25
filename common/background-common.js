@@ -414,7 +414,7 @@ var logoutGoogleDrive = function(sender){
   sendContentMessage(sender, {action:"disable_edit"});
 }
 
-var loadMessage = function(sender, gdriveNoteId){
+var loadMessage = function(sender, gdriveNoteId, messageId){
   sendAjax({
     type:"GET",
     headers: {
@@ -426,7 +426,7 @@ var loadMessage = function(sender, gdriveNoteId){
       debugLog("Loaded message", data);
       if(data == gSgnEmtpy)
         data = "";
-      sendContentMessage(sender, {action:"update_content", content:data});
+      sendContentMessage(sender, {action:"update_content", content:data, messageId:messageId, gdriveNoteId:gdriveNoteId});
       sendContentMessage(sender, {action:"enable_edit", 
                            gdriveEmail:getStorage(sender, "gdrive_email")});  
     },
@@ -545,7 +545,7 @@ var searchNote = function(sender, messageId){
                              gdriveFolderId:gdriveFolderId});
 
         if(gdriveNoteId){
-          loadMessage(sender, gdriveNoteId);
+          loadMessage(sender, gdriveNoteId, messageId);
         }
         else{//ready for write new message
           sendContentMessage(sender, {
