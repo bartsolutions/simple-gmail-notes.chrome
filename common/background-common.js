@@ -228,10 +228,9 @@ var postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdr
       type:methodType,
       url:uploadUrl + "?uploadType=multipart",
       headers: {
-          "Authorization": "Bearer " + getStorage(sender, "access_token"),
-          "Content-Type": "multipart/related; boundary=\"" 
-                                                + boundary + "\""
+          "Authorization": "Bearer " + getStorage(sender, "access_token")
       },
+      contentType: "multipart/related; boundary=\"" + boundary + "\"",
       data: multipartRequestBody,
       success: function(data){
         debugLog("message posted successfully");
