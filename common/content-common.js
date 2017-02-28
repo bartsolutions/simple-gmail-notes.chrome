@@ -269,7 +269,7 @@ var setupNoteEditor = function(email, messageId){
   var revokeErrorPrompt = $("<div class='sgn_error sgn_revoke'><div>")
                       .html("Error connecting to Google Drive <span class='sgn_error_timestamp'></span>, " +
                           "please try to <a class='sgn_reconnect sgn_action'>connect</a> again. \n" +
-                          "If error persists after 5 attempts, you may try to manually " +
+                          "If error persists, you may try to manually " +
                           "<a href='https://accounts.google.com/b/" + getCurrentGoogleAccountId() + 
                           "/IssuedAuthSubTokens'>revoke</a> previous tokens.");
 

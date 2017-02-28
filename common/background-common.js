@@ -247,13 +247,17 @@ var postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdr
 }
 
 var showRefreshTokenError = function(sender, error){
-  debugLog("@169, refresh token error: ", error);
-  logoutGoogleDrive(sender);
-  errorMessage = "Error connecting to Google Drive. " +
-                    "Please try to connect again. \n" +
-                    "If error persists, you may manually " +
-                    "<a href='https://accounts.google.com/IssuedAuthSubTokens'>revoke</a> " +
-                    "previous tokens.\n"
+  if(error && typeof(error) === "object"){
+    if(error.responseText && error.responseText.indexOf("{") >= 0){ 
+      //got an explicit error from google
+      logoutGoogleDrive(sender);
+    }
+    error = JSON.stringify(error);
+  }
+
+  var preferences = getPreferences();
+  preferences['debugBackgroundInfo'] += " Refresh token error: " + error + ".";
+
   sendContentMessage(sender, {action:"show_error", type:"revoke"});
 }
 
@@ -270,7 +274,7 @@ var updateRefreshTokenFromCode = function(sender, messageId){
     },
     url: "https://www.googleapis.com/oauth2/v3/token",
     error: function(data){
-      showRefreshTokenError(sender, JSON.stringify(data));
+      showRefreshTokenError(sender, data);
     },
     success: function(data){
       if(!data.refresh_token){
@@ -306,7 +310,7 @@ var updateUserInfo = function(sender){
         sendContentMessage(sender, {action:"update_user", 
                              email:data.user.emailAddress})
       },
-      error:function(){
+      error:function(data){
         sendContentMessage(sender, {action:"show_error", type:"user"});
       }
     });
@@ -346,9 +350,8 @@ var executeIfValidToken = function(sender, command){
           setStorage(sender, "access_token", data.access_token);
           command(data);
         },
-        error:function(){
-          //the refresh token is not valid somehow
-          showRefreshTokenError(sender, JSON.stringify(data));
+        error:function(data){
+          showRefreshTokenError(sender, data);
         }
       });
     }
@@ -555,7 +558,7 @@ var searchNote = function(sender, messageId){
       }
     },
     function(data){ //error callback
-      showRefreshTokenError(sender, JSON.stringify(data));
+      showRefreshTokenError(sender, data);
     }
   );
 }
