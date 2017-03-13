@@ -612,7 +612,7 @@ SimpleGmailNotes.start = function(){
   }
 
   var main = function(){
-    gmail = new Gmail(localJQuery);
+    gmail = new SimpleGmailNotes_Gmail(localJQuery);
 
     gmail.observe.on('open_email', function(obj){
       debugLog("simple-gmail-notes: open email event", obj);
