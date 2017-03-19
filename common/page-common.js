@@ -290,8 +290,8 @@ SimpleGmailNotes.start = function(){
         return;
     }
 
-    sendEventMessage('SGN_setup_note_editor', {messageId:messageId});
     sendEventMessage('SGN_setup_email_info', {messageId:messageId, subject:subject});
+    sendEventMessage('SGN_setup_note_editor', {messageId:messageId});
 
     addErrorToLog("set up request sent");
     sendDebugInfo();

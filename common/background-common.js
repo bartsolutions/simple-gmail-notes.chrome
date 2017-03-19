@@ -204,7 +204,7 @@ var postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdr
       methodType = "PUT";
     }
 
-    var noteDescripton = content.substring(0,50);
+    var noteDescripton = content.substring(0,500);
 
     var metadata = { title:messageId + " - " + emailTitleSuffix , parents:[{"id":gdriveFolderId}], 
                      description: noteDescripton };
@@ -261,7 +261,7 @@ var showRefreshTokenError = function(sender, error){
   sendContentMessage(sender, {action:"show_error", type:"revoke"});
 }
 
-var updateRefreshTokenFromCode = function(sender, messageId){
+var updateRefreshTokenFromCode = function(sender, messageId, title){
   sendAjax({
     type: "POST",
     contentType: "application/x-www-form-urlencoded",
@@ -287,7 +287,7 @@ var updateRefreshTokenFromCode = function(sender, messageId){
         debugLog("Updated refresh token", data);
         setStorage(sender, "refresh_token", data.refresh_token);
         setStorage(sender, "access_token", data.access_token);
-        initialize(sender, messageId);
+        initialize(sender, messageId, title);
         updateUserInfo(sender);
       }
     }
@@ -358,7 +358,7 @@ var executeIfValidToken = function(sender, command){
   });
 }
 
-var loginGoogleDrive = function(sender, messageId){
+var loginGoogleDrive = function(sender, messageId, title){
   debugLog("Trying to login Google Drive.");
   launchAuthorizer(sender, function(code) {
       debugLog("Code collected", code);
@@ -375,7 +375,7 @@ var loginGoogleDrive = function(sender, messageId){
         code = code.replace(/[#]/g, "");
         debugLog("Collected code:" + code);
         setStorage(sender, "code", code);
-        updateRefreshTokenFromCode(sender, messageId);
+        updateRefreshTokenFromCode(sender, messageId, title);
       }
 
     }
@@ -502,6 +502,67 @@ var gdriveQuery = function(sender, query, success_cb, error_cb){
 
 }
 
+var searchNoteHistory = function(sender, messageId, title){
+  var originalTitle = title;
+
+  if(title.substring(0, 3).toLowerCase() == "re:")
+    title = title.substring(3);
+
+  title = title.trim();
+
+  if(title == "")
+    return null;
+
+  var query = "title='" + settings.NOTE_FOLDER_NAME + "' or fullText contains '" + title + "'";
+
+  gdriveQuery(sender, query, 
+    function(data){ //success callback
+      var gdriveFolderId = "";
+      var gdriveNoteId = "";
+
+      debugLog("@521", query, data);
+
+      //first pass, get folder id for gmail notes
+      for(var i=0; i<data.items.length; i++){
+        var currentItem = data.items[i];
+        if(currentItem.title == settings.NOTE_FOLDER_NAME
+            && currentItem.parents[0].isRoot){
+          //found the root folder
+          gdriveFolderId = currentItem.id;
+          break;
+        }
+      }
+
+      if(!gdriveFolderId)
+        return null;
+
+      //second pass find the document
+      debugLog("Searching message", title);
+      total_found = 0;
+      result = [];
+
+      var foundMessage = {};
+      for(var i=0; i<data.items.length; i++){
+        var currentItem = data.items[i];
+        var currentMessageId = currentItem.title.split(" ")[0];
+        if(currentItem.title.endsWith(title) && 
+            currentItem.parents[0].id == gdriveFolderId &&
+            currentMessageId != messageId &&
+            !foundMessage[currentMessageId]){
+
+          result.push({"id" : currentMessageId, 
+                       "description": currentItem.description});
+
+          foundMessage[currentMessageId] = true;
+        }
+      }
+  
+      if(result.length){
+        sendContentMessage(sender, {action: "update_note_history", data:result, messageId:messageId, title:originalTitle});
+      }
+  });
+}
+
 //list the files created by this app only (as restricted by permission)
 var searchNote = function(sender, messageId){
   var query = "title='" + settings.NOTE_FOLDER_NAME + "' or " +
@@ -564,7 +625,7 @@ var searchNote = function(sender, messageId){
 }
 
 //Do as much initilization as possible, while not trigger login page
-var initialize = function(sender, messageId){
+var initialize = function(sender, messageId, title){
   var preferences = getPreferences();
 
   preferences['debugBackgroundInfo'] = "Extension Version: " + getCurrentVersion();
@@ -579,6 +640,7 @@ var initialize = function(sender, messageId){
                 getStorage(sender, "access_token"))
     checkLogger(sender);
     searchNote(sender, messageId);
+    searchNoteHistory(sender, messageId, title); 
   }
   else{ //no refresh token
     if(getStorage(sender, "access_token")){
@@ -760,7 +822,7 @@ var setupListeners = function(sender, request){
       break;
     case "reconnect":
     case "login":
-      loginGoogleDrive(sender, request.messageId);
+      loginGoogleDrive(sender, request.messageId, request.title);
       break;
     case "post_note":
       content = request.content;
@@ -770,7 +832,7 @@ var setupListeners = function(sender, request){
                  request.gdriveFolderId, request.gdriveNoteId, content);
       break;
     case "initialize":
-      initialize(sender, request.messageId);
+      initialize(sender, request.messageId, request.title);
       
       break;
     case "pull_notes":

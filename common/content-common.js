@@ -333,7 +333,7 @@ var setupNoteEditor = function(email, messageId){
 
   //load initial message
   debugLog("Start to initailize");
-  sendBackgroundMessage({action:"initialize", email: email, messageId: messageId});
+  sendBackgroundMessage({action:"initialize", email: email, messageId: messageId, title: gCurrentEmailSubject });
 }
 
 
@@ -545,6 +545,13 @@ var setupListeners = function(){
           showLogoutPrompt(request.email);
         }
 
+        break;
+
+      case "update_note_history":
+
+        if(request.title == gCurrentEmailSubject){
+          alert(JSON.stringify(request.data));
+        }
 
         break;
       case "update_gdrive_note_info":
