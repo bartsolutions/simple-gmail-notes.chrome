@@ -23,7 +23,8 @@ var settings = {
 
 var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", 
                         "backgroundColor", "notePosition", 
-                        "showConnectionPrompt", "showAddCalendar", "showDelete",
+                        "showConnectionPrompt", "showAddCalendar", "showDelete", 
+                        "showNoteHistory", "firstLineAbstract",
                         "debugPageInfo", "debugContentInfo", "debugBackgroundInfo"];
 var gSgnEmtpy = "<SGN_EMPTY>";
 /* -- end -- */
@@ -149,6 +150,11 @@ var updateDefaultPreferences = function(preferences)
   if(isEmptyPrefernce(preferences["showDelete"]))
     preferences["showDelete"] = "true";
 
+  if(isEmptyPrefernce(preferences["showNoteHistory"]))
+    preferences["showNoteHistory"] = "true";
+
+  if(isEmptyPrefernce(preferences["firstLineAbstract"]))
+    preferences["firstLineAbstract"] = "false";
 
   return preferences;
 
@@ -673,6 +679,8 @@ var sendSummaryNotes = function(sender, pullList, resultList){
     var description = ""; //empty string for not found
     var shortDescription = "";
 
+    var preferences = getPreferences();
+
     if(itemDict[emailId] && itemDict[emailId] != gSgnEmtpy){
       description = itemDict[emailId];
 
@@ -683,7 +691,14 @@ var sendSummaryNotes = function(sender, pullList, resultList){
         if(!length)
           length = 20;  //default to 20
 
-        shortDescription = "[" + description.substring(0, length) + "]";
+        shortDescription = description.substring(0, length);
+
+        var preferences = getPreferences();
+        var firstLineAbstract = preferences["firstLineAbstract"];
+        if(firstLineAbstract !== "false")
+          shortDescription = shortDescription.split("\n")[0];
+
+        shortDescription = "[" + shortDescription + "]";
       }
 
     }

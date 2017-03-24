@@ -358,7 +358,7 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
 
     if(note && note.description && note.description != gSgnEmtpy){
       abstractNode = $('<div class="ar as sgn">' +
-                            '<div class="at" title="Simple Gmail Notes: ' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
+                            '<div class="at" title="' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
                             '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
                        '</div></div>');
 
@@ -550,7 +550,7 @@ var setupListeners = function(){
       case "update_note_history":
 
         if(request.title == gCurrentEmailSubject){
-          alert(JSON.stringify(request.data));
+          //alert(JSON.stringify(request.data));
         }
 
         break;
