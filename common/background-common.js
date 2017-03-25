@@ -548,23 +548,34 @@ var searchNoteHistory = function(sender, messageId, title){
       result = [];
 
       var foundMessage = {};
+      var needShow = false;
       for(var i=0; i<data.items.length; i++){
         var currentItem = data.items[i];
         var currentMessageId = currentItem.title.split(" ")[0];
         if(currentItem.title.endsWith(title) && 
             currentItem.parents[0].id == gdriveFolderId &&
-            currentMessageId != messageId &&
             !foundMessage[currentMessageId]){
 
           result.push({"id" : currentMessageId, 
-                       "description": currentItem.description});
+                       "description": currentItem.description,
+                       "modifiedDate": currentItem.modifiedDate,
+                       "createdDate": currentItem.createdDate});
 
           foundMessage[currentMessageId] = true;
+
+          if(currentMessageId != messageId){
+            needShow = true;
+          }
         }
       }
   
-      if(result.length){
-        sendContentMessage(sender, {action: "update_note_history", data:result, messageId:messageId, title:originalTitle});
+      if(needShow){
+        var preferences = getPreferences();
+        sendContentMessage(sender, {action: "update_note_history", 
+                                    data:result, 
+                                    messageId:messageId, 
+                                    title:originalTitle,
+                                    preferences:preferences});
       }
   });
 }

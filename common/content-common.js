@@ -190,6 +190,12 @@ var getSearchNoteURL = function(){
   return searchUrl;
 }
 
+var getHistoryNoteURL = function(messageId){
+  var userId = getCurrentGoogleAccountId();
+  var url = "http://mail.google.com/mail/u/" + userId + "/#all/" + messageId;
+  return url;
+}
+
 var getAddCalendarURL = function(){
   var userId = getCurrentGoogleAccountId();
   var details = window.location.href + "\n-----\n" + $(".sgn_input").val();
@@ -296,6 +302,11 @@ var setupNoteEditor = function(email, messageId){
   injectionNode.prepend(searchLogoutPrompt);
   injectionNode.prepend(emptyPrompt);
   $(".sgn_error").hide();
+
+  var historyInjectionNode = $(".nH.adC");
+  var historyNode = $("<div id='sgn_history'>SGN History</div>");
+  historyInjectionNode.append(historyNode);
+  //historyNode.hide();
 
 
   $(".sgn_action").click(function(){
@@ -550,7 +561,21 @@ var setupListeners = function(){
       case "update_note_history":
 
         if(request.title == gCurrentEmailSubject){
+          var history = request.data;
           //alert(JSON.stringify(request.data));
+          for(var i=0; i<history.length; i++){
+            var note = history[i];
+
+            var noteDate = new Date(note.createdDate);
+
+            $("#sgn_history").append("<div class='sgn_history_note'>" +
+                                      "<a target='_blank' href='" + getHistoryNoteURL(note.id) + "'>"  + 
+                                      noteDate.toString().substring(0, 24) + "</a><br/><br/>" + note.description + "</div>");
+
+            var preferences = request.preferences;
+            var backgroundColor = preferences["backgroundColor"];
+            $(".sgn_history_note").css("background-color", backgroundColor);
+          }
         }
 
         break;
@@ -595,8 +620,10 @@ var setupListeners = function(){
           $(".sgn_input").css("color", htmlEscape(fontColor));
 
         var backgroundColor = preferences["backgroundColor"];
-        if(backgroundColor)
+        if(backgroundColor){
           $(".sgn_input").css("background-color", backgroundColor);
+          $(".sgn_history_note").css("background-color", backgroundColor);
+        }
 
         var fontSize = preferences["fontSize"];
         if(fontSize != "default"){

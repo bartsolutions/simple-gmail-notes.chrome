@@ -46,6 +46,10 @@
   margin: 5px 0;
 }
 
+#sgn_history {
+  margin: 16px 0;
+}
+
 .sgn_search img {
   float: right;
 }
@@ -54,4 +58,10 @@
   float: right;
   height: 100%;
   margin-left: 5px;
+}
+
+.sgn_history_note {
+  margin: 10px 0;
+  padding: 5px;
+  border: 1px solid grey;
 }
