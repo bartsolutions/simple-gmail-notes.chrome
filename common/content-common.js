@@ -190,6 +190,8 @@ var getSearchNoteURL = function(){
   return searchUrl;
 }
 
+//I use http instead of https here, because otherwise a new window will not be popped up
+//in most cases, google would redirect http to https
 var getHistoryNoteURL = function(messageId){
   var userId = getCurrentGoogleAccountId();
   var url = "http://mail.google.com/mail/u/" + userId + "/#all/" + messageId;
@@ -303,10 +305,6 @@ var setupNoteEditor = function(email, messageId){
   injectionNode.prepend(emptyPrompt);
   $(".sgn_error").hide();
 
-  var historyInjectionNode = $(".nH.adC");
-  var historyNode = $("<div id='sgn_history'>SGN History</div>");
-  historyInjectionNode.append(historyNode);
-  //historyNode.hide();
 
 
   $(".sgn_action").click(function(){
@@ -558,23 +556,32 @@ var setupListeners = function(){
 
         break;
 
-      case "update_note_history":
+      case "update_history":
 
         if(request.title == gCurrentEmailSubject){
           var history = request.data;
           //alert(JSON.stringify(request.data));
+          $(".sgn_history").hide(); //hide all previous history
+          var historyInjectionNode = $(".nH.adC:visible");
+          //var historyInjectionNode = $(".Bu.y3:visible");
+          var historyNode = $("<div class='sgn_history'><b>SGN History</b></div>");
+          historyInjectionNode.append(historyNode);
+
           for(var i=0; i<history.length; i++){
             var note = history[i];
-
             var noteDate = new Date(note.createdDate);
 
-            $("#sgn_history").append("<div class='sgn_history_note'>" +
+
+            historyNode.append("<div class='sgn_history_note'>" +
                                       "<a target='_blank' href='" + getHistoryNoteURL(note.id) + "'>"  + 
                                       noteDate.toString().substring(0, 24) + "</a><br/><br/>" + note.description + "</div>");
 
             var preferences = request.preferences;
-            var backgroundColor = preferences["backgroundColor"];
-            $(".sgn_history_note").css("background-color", backgroundColor);
+            historyNode.find(".sgn_history_note").css("background-color", preferences["backgroundColor"])
+                                                 .css("color", preferences["fontColor"]);
+
+            if(i >= 20) //show a max of 20 note history
+              break;
           }
         }
 

@@ -508,13 +508,28 @@ var gdriveQuery = function(sender, query, success_cb, error_cb){
 
 }
 
+var extractTitle = function(orgTitle){
+  var title = orgTitle.toLowerCase().trim();
+
+  while(true){
+    if(title.startsWith("re:")){
+      title = title.substring(3).trim();
+    }
+    else if(title.startsWith("fwd:")){
+      title = title.substring(4).trim();
+    }
+    else{
+      break;
+    }
+  }
+
+  return title;
+}
+
 var searchNoteHistory = function(sender, messageId, title){
   var originalTitle = title;
 
-  if(title.substring(0, 3).toLowerCase() == "re:")
-    title = title.substring(3);
-
-  title = title.trim();
+  title = extractTitle(title);
 
   if(title == "")
     return null;
@@ -552,8 +567,9 @@ var searchNoteHistory = function(sender, messageId, title){
       for(var i=0; i<data.items.length; i++){
         var currentItem = data.items[i];
         var currentMessageId = currentItem.title.split(" ")[0];
-        if(currentItem.title.endsWith(title) && 
-            currentItem.parents[0].id == gdriveFolderId &&
+        var currentItemTitle = extractTitle(currentItem.title.substring(19));
+        if(currentItemTitle == title && 
+           currentItem.parents[0].id == gdriveFolderId &&
             !foundMessage[currentMessageId]){
 
           result.push({"id" : currentMessageId, 
@@ -571,7 +587,7 @@ var searchNoteHistory = function(sender, messageId, title){
   
       if(needShow){
         var preferences = getPreferences();
-        sendContentMessage(sender, {action: "update_note_history", 
+        sendContentMessage(sender, {action: "update_history", 
                                     data:result, 
                                     messageId:messageId, 
                                     title:originalTitle,
@@ -657,7 +673,10 @@ var initialize = function(sender, messageId, title){
                 getStorage(sender, "access_token"))
     checkLogger(sender);
     searchNote(sender, messageId);
-    searchNoteHistory(sender, messageId, title); 
+
+    if(preferences['showNoteHistory'] !== 'false'){
+      searchNoteHistory(sender, messageId, title); 
+    }
   }
   else{ //no refresh token
     if(getStorage(sender, "access_token")){

@@ -46,7 +46,7 @@
   margin: 5px 0;
 }
 
-#sgn_history {
+.sgn_history {
   margin: 16px 0;
 }
 
@@ -64,4 +64,9 @@
   margin: 10px 0;
   padding: 5px;
   border: 1px solid grey;
+  white-space: pre;
+}
+
+.sgn_history_note a{
+  color: #15c;
 }
