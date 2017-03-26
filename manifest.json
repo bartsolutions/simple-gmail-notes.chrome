@@ -22,6 +22,7 @@
   },
   "web_accessible_resources": [
     "lib/jquery-3.1.0.min.js",
+    "lib/jquery.popupoverlay.js",
     "lib/gmail.js",
     "common/shared-common.js",
     "common/page-common.js",
@@ -31,7 +32,8 @@
     "image/revoke.24.png",
     "image/calendar.24.png",
     "image/preferences.24.png",
-    "image/delete.24.png"
+    "image/delete.24.png",
+    "image/chat.24.png"
   ],
   "background": { 
       "scripts" : ["lib/jquery-3.1.0.min.js", "common/shared-common.js", "common/background-common.js", "background.js"],
@@ -39,7 +41,9 @@
   },
   "content_scripts":  [{
       "matches": [ "https://mail.google.com/*"],
-      "js": [ "lib/jquery-3.1.0.min.js", "common/shared-common.js", "common/content-common.js", "content.js"],
+      "js": [ "lib/jquery-3.1.0.min.js", "lib/jquery.popupoverlay.js", 
+              "common/shared-common.js", "common/content-common.js", 
+              "content.js"],
       "css": [ "css/style.css"],
       "run_at": "document_end"
   }],

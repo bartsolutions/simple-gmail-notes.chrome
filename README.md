@@ -20,6 +20,8 @@
 
 - [jQuery](https://jquery.com/)
 
+- [jQuery Popup Overlay](https://github.com/vast-engineering/jquery-popup-overlay)
+
 - [gmail.js](https://github.com/KartikTalwar/gmail.js/tree/master)
 
 - [ikooni icons](https://www.iconfinder.com/iconsets/ikooni-outline-free-basic)

@@ -61,12 +61,17 @@
 }
 
 .sgn_history_note {
-  margin: 10px 0;
+  margin-bottom: 10px;
   padding: 5px;
   border: 1px solid grey;
   white-space: pre;
 }
 
-.sgn_history_note a{
+.sgn_history a{
   color: #15c;
+}
+
+.sgn_history_header{
+  display: flex;
+  justify-content: space-between;
 }

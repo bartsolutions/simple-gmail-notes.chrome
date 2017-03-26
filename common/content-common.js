@@ -561,10 +561,11 @@ var setupListeners = function(){
         if(request.title == gCurrentEmailSubject){
           var history = request.data;
           //alert(JSON.stringify(request.data));
-          $(".sgn_history").hide(); //hide all previous history
+          $(".sgn_history").remove(); //hide all previous history
           var historyInjectionNode = $(".nH.adC:visible");
           //var historyInjectionNode = $(".Bu.y3:visible");
-          var historyNode = $("<div class='sgn_history'><b>SGN History</b></div>");
+          var historyNode = $("<div class='sgn_history'><div class='sgn_history_header'><b>SGN History</b>" +
+              "<a class='sgn_show_all'><img title='Show All' src='" + getIconBaseUrl() + "/chat.24.png'></a></div></div>");
           historyInjectionNode.append(historyNode);
 
           for(var i=0; i<history.length; i++){
@@ -583,6 +584,17 @@ var setupListeners = function(){
             if(i >= 20) //show a max of 20 note history
               break;
           }
+
+          var fullHistoryNode = historyNode.clone();
+          fullHistoryNode.find('.sgn_history_header').remove();
+
+          historyInjectionNode.append(fullHistoryNode);
+          fullHistoryNode.popup();
+
+          historyNode.find('.sgn_show_all').click(function(event){
+              fullHistoryNode.popup('show');
+          });
+
         }
 
         break;
