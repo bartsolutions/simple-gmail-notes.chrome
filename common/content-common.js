@@ -214,6 +214,10 @@ var getAddCalendarURL = function(){
   return addCalendarURL;
 }
 
+var getSidebarNode = function(){
+  return $(".Bs.nH .nH.bno:visible");
+}
+
 var setupNoteEditor = function(email, messageId){
   debugLog("Start to set up notes");
   debugLog("Email", email);
@@ -562,8 +566,8 @@ var setupListeners = function(){
           var history = request.data;
           //alert(JSON.stringify(request.data));
           $(".sgn_history").remove(); //hide all previous history
-          var historyInjectionNode = $(".nH.adC:visible");
-          //var historyInjectionNode = $(".Bu.y3:visible");
+          //var historyInjectionNode = $(".nH.adC:visible");
+          var historyInjectionNode = getSidebarNode();
           var historyNode = $("<div class='sgn_history'><div class='sgn_history_header'><b>SGN History</b>" +
               "<a class='sgn_show_all'><img title='Show All' src='" + getIconBaseUrl() + "/chat.24.png'></a></div></div>");
           historyInjectionNode.append(historyNode);
@@ -664,9 +668,11 @@ var setupListeners = function(){
           debugLog("@485, move to bottom");
           $(".nH.aHU").append(firstVisible);
         } else if(notePosition == "side-top") {
-          $(".nH.adC").prepend(firstVisible);
+          //$(".nH.adC").prepend(firstVisible);
+          getSidebarNode().prepend(firstVisible);
         } else if(notePosition == "side-bottom") {
-          $(".nH.adC .nH .u5").before(firstVisible);
+          //$(".nH.adC .nH .u5").before(firstVisible);
+          getSidebarNode().append(firstVisible);
         }
 
         //reset class attribute with current 'position' class
