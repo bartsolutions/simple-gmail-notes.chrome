@@ -64,7 +64,7 @@
   margin-bottom: 10px;
   padding: 5px;
   border: 1px solid grey;
-  white-space: pre;
+  white-space: pre-wrap;
 }
 
 .sgn_history a{
