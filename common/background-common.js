@@ -502,7 +502,10 @@ var gdriveQuery = function(sender, query, success_cb, error_cb){
 
         success_cb(data)
       },
-      error:function(data){error_cb(data)}
+      error:function(data){
+        if(error_cb)
+          error_cb(data);
+      }
     });
   })
 
