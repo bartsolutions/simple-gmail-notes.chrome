@@ -509,6 +509,9 @@ var gdriveQuery = function(sender, query, success_cb, error_cb){
 }
 
 var extractTitle = function(orgTitle){
+  if(!orgTitle)
+    return "";
+
   var title = orgTitle.toLowerCase().trim();
 
   while(true){

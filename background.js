@@ -102,12 +102,17 @@ chrome.runtime.onInstalled.addListener(function(details){
             //send the alert only if the user is opening the Gmail page at the time
             if(tab.url && tab.url.indexOf("https://mail.google.com") == 0){
               alert("The exteions of \'Simple Gmail Notes\' was updated. " +
+                    "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n");
+
+              /*
+              alert("The exteions of \'Simple Gmail Notes\' was updated. " +
                     "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n" +
                     "New in v0.8.0:\n" +
                     "- Show note history when there are multiple notes under same email title\n" +
                     "- Add option to show only first line as abstract\n" +
                     "- Tooltip for note abstract (displayed when mouse over) can show up to 500 characters for new notes\n\n" + 
                     "If you think the extension is helpful, please consider a donation via the preferences page. Thank you!");
+              */
               break;
             }
           }
