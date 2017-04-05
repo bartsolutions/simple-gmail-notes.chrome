@@ -96,15 +96,21 @@ chrome.runtime.onInstalled.addListener(function(details){
     } 
     else{
       chrome.tabs.query({}, function(tabs){
+
           for(var i=0; i<tabs.length; i++){
             var tab = tabs[i];
 
             //send the alert only if the user is opening the Gmail page at the time
             if(tab.url && tab.url.indexOf("https://mail.google.com") == 0){
               alert("The exteions of \'Simple Gmail Notes\' was updated. " +
-                    "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n");
+                    "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n" +
+                    "IMPORTANT: If you have problem of abstract display (the yellow label in the email list view), " + 
+                    "please log out and log in again. Sorry for the inconveniences caused.");
 
               /*
+              alert("The exteions of \'Simple Gmail Notes\' was updated. " +
+                    "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n");
+
               alert("The exteions of \'Simple Gmail Notes\' was updated. " +
                     "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n" +
                     "New in v0.8.0:\n" +
