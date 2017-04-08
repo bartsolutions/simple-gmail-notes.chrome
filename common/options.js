@@ -163,7 +163,7 @@ function initPreferences(){
     $("#abstract_style").append("<option value=" + i*5 + ">First " + i*5 + " Characters</option>");
   }
 
-  for(var i=1; i<=16; i++){
+  for(var i=1; i<=30; i++){
     $("#note_height").append("<option>" + i + "</option>");
   }
 
