@@ -163,6 +163,14 @@ var showLogoutPrompt = function(email, retryCount){
 
   $(".sgn_search").attr("href", getSearchNoteURL());
 
+  $(".sgn_color_picker_text").simpleColor();
+  $(".sgn_color_picker").click(function(event){
+//$(this).parents(".sgn_color_picker").find(".simpleColorDisplay").click();
+
+      $(this).parent().find(".simpleColorDisplay").click();
+      //$(this).next().find(".simpleColorChooser").show();
+  });
+
   $(".sgn_add_calendar").attr("href", getAddCalendarURL());
 
   if(!$(".sgn_prompt_logout").is(":visible")){  //keep trying until it's visible
@@ -266,11 +274,16 @@ var setupNoteEditor = function(email, messageId){
               "<a class='sgn_open_options sgn_action'>" +
               "<img title='Preferences' src='" + getIconBaseUrl() + "/preferences.24.png'></a>" +
               "<a class='sgn_action sgn_delete' target='_blank'>" +
-              "<img title='Delete' src='" + getIconBaseUrl() + "/delete.24.png'/></a> " +
+              "<img title='Delete' src='" + getIconBaseUrl() + "/delete.24.png'></a> " +
               "<a class='sgn_action sgn_add_calendar' target='_blank'>" +
-              "<img title='Add to Google Calendar' src='" + getIconBaseUrl() + "/calendar.24.png'/></a> " +
+              "<img title='Add to Google Calendar' src='" + getIconBaseUrl() + "/calendar.24.png'></a> " +
               "<a class='sgn_action sgn_search' target='_blank'>" +
-              "<img title='Search' src='" + getIconBaseUrl() + "/search.24.png'/></a> " +
+              "<img title='Search' src='" + getIconBaseUrl() + "/search.24.png'></a> " +
+              "<a class='sgn_action sgn_color_picker' target='_blank'>" +
+              "<img title='Search' src='" + getIconBaseUrl() + "/color-picker.24.png'></a> " +
+              "<input type='text' class='sgn_color_picker_text'>" +
+              //"<a class='sgn_action sgn_donation' target='_blank'>" +
+              //"<img title='Search' src='" + getIconBaseUrl() + "/donation.24.png'></a> " +
               "")
       .hide();
   var loginPrompt = $("<div class='sgn_prompt_login'/></div>" )
@@ -555,7 +568,7 @@ var setupListeners = function(){
             displayContent = displayContent.substring(warningMessage.length); //truncate the warning message part
           }
           $(".sgn_input").val(displayContent);
-          showLogoutPrompt(request.email);
+          //showLogoutPrompt(request.email);
         }
 
         break;

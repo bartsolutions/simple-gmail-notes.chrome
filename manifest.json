@@ -27,6 +27,8 @@
     "common/shared-common.js",
     "common/page-common.js",
     "page.js",
+    "image/donation.24.png",
+    "image/color-picker.24.png",
     "image/search.24.png",
     "image/logout.24.png",
     "image/revoke.24.png",
@@ -42,6 +44,7 @@
   "content_scripts":  [{
       "matches": [ "https://mail.google.com/*"],
       "js": [ "lib/jquery-3.1.0.min.js", "lib/jquery.popupoverlay.js", 
+              "lib/jquery.simple-color.js", 
               "common/shared-common.js", "common/content-common.js", 
               "content.js"],
       "css": [ "css/style.css"],

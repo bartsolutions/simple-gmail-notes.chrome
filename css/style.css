@@ -13,15 +13,15 @@
 }
 
 .sgn_container .sgn_action,
-.sgn_container .sgn_prompt_logout,
 .sgn_container .sgn_prompt_login {
   color: gray;
-  margin: 5px;
+  /*margin: 5px;*/
 }
 
 .sgn_container .sgn_action {
   cursor: pointer;
   text-decoration: underline;
+  display: inline-block;
 }
 
 .sgn_container .sgn_padding {
@@ -54,7 +54,7 @@
   float: right;
 }
 
-.sgn_action img {
+.sgn_action {
   float: right;
   height: 100%;
   margin-left: 5px;
@@ -74,4 +74,8 @@
 .sgn_history_header{
   display: flex;
   justify-content: space-between;
+}
+
+.simpleColorDisplay{
+  display: none;
 }
