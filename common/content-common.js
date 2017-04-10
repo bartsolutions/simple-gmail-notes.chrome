@@ -163,12 +163,36 @@ var showLogoutPrompt = function(email, retryCount){
 
   $(".sgn_search").attr("href", getSearchNoteURL());
 
-  $(".sgn_color_picker_text").simpleColor();
-  $(".sgn_color_picker").click(function(event){
-//$(this).parents(".sgn_color_picker").find(".simpleColorDisplay").click();
+  $(".sgn_color_picker_value").simpleColor({columns:12, 
+																			colors : [
+																					'000000', '993300', '333300', '000080', '333399', '333333', '800000', 'FF6600',
+																					'808000', '008000', '008080', '0000FF', '666699', '808080', 'FF0000', 'FF9900',
+																					'99CC00', '339966', '33CCCC', '3366FF', '800080', '999999', 'FF00FF', 'FFCC00',
+																					'FFFF00', '00FF00', '00FFFF', '00CCFF', '993366', 'C0C0C0', 'FF99CC', 'FFCC99',
+																					'FFFF99', 'CCFFFF', '99CCFF', 'FFFFFF'
+																			],
+                                 onSelect: function(hex, element){
+                                   var input = $(element).parents(".sgn_container").find(".sgn_input");
+                                   input.css("background-color", "#" + hex);
+                                   input.css("color", "#FFF");
+                                   input.css("text-shadow", "1px 1px 1px #000");
+                                 } 
+                              });
+  $(".sgn_color_picker_button").click(function(e){
+		  if(event.target != this){
+				return;
+			}
 
-      $(this).parent().find(".simpleColorDisplay").click();
-      //$(this).next().find(".simpleColorChooser").show();
+//$(this).parents(".sgn_color_picker").find(".simpleColorDisplay").click();
+      e.stopPropagation();
+
+      var picker = $(this).parents(".sgn_color_picker");
+      var container = picker.find(".simpleColorContainer");
+      var display = picker.find(".simpleColorDisplay");
+      var colorChooser = picker.find(".simpleColorChooser");
+      var input = picker.find(".sgn_color_picker_value");
+      display.trigger('click', {input:input, display: display, container: container });
+      container.find('.simpleColorChooser').css("margin-left", "-85px");	//align back
   });
 
   $(".sgn_add_calendar").attr("href", getAddCalendarURL());
@@ -269,19 +293,19 @@ var setupNoteEditor = function(email, messageId){
   var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
       .html("<span class='sgn_current_connection'>Simple Gmail Notes connected to Google Drive of " +
               "'<span class='sgn_user'></span>' </span>" +
-              "<a class='sgn_logout sgn_action' >" + 
+              "<a class='sgn_logout sgn_action sgn_button' >" + 
               "<img title='Log Out' src='" + getIconBaseUrl() + "/logout.24.png'></a>" + 
-              "<a class='sgn_open_options sgn_action'>" +
+              "<a class='sgn_open_options sgn_action sgn_button'>" +
               "<img title='Preferences' src='" + getIconBaseUrl() + "/preferences.24.png'></a>" +
-              "<a class='sgn_action sgn_delete' target='_blank'>" +
+              "<a class='sgn_action sgn_delete sgn_button' target='_blank'>" +
               "<img title='Delete' src='" + getIconBaseUrl() + "/delete.24.png'></a> " +
-              "<a class='sgn_action sgn_add_calendar' target='_blank'>" +
+              "<a class='sgn_action sgn_add_calendar sgn_button' target='_blank'>" +
               "<img title='Add to Google Calendar' src='" + getIconBaseUrl() + "/calendar.24.png'></a> " +
-              "<a class='sgn_action sgn_search' target='_blank'>" +
+              "<a class='sgn_action sgn_search sgn_button' target='_blank'>" +
               "<img title='Search' src='" + getIconBaseUrl() + "/search.24.png'></a> " +
-              "<a class='sgn_action sgn_color_picker' target='_blank'>" +
-              "<img title='Search' src='" + getIconBaseUrl() + "/color-picker.24.png'></a> " +
-              "<input type='text' class='sgn_color_picker_text'>" +
+              "<a class='sgn_action sgn_color_picker sgn_button'>" +
+              "<input type='hidden' class='sgn_color_picker_value'>" +
+              "<img title='Note Color' class='sgn_color_picker_button' src='" + getIconBaseUrl() + "/color-picker.24.png'></a> " +
               //"<a class='sgn_action sgn_donation' target='_blank'>" +
               //"<img title='Search' src='" + getIconBaseUrl() + "/donation.24.png'></a> " +
               "")

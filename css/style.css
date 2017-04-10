@@ -39,6 +39,7 @@
   color: gray;
   margin: 5px;
   box-sizing: border-box;
+
 }
 
 .sgn_container.sgn_position_side-top textarea.sgn_input,
@@ -54,7 +55,7 @@
   float: right;
 }
 
-.sgn_action {
+.sgn_button{
   float: right;
   height: 100%;
   margin-left: 5px;
@@ -79,3 +80,4 @@
 .simpleColorDisplay{
   display: none;
 }
+
