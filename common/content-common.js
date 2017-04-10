@@ -149,6 +149,13 @@ var showLoginPrompt = function(retryCount){
   }
 }
 
+var setCustomBackgroundColor = function(backgroundColor){
+  var input = $(".sgn_input:visible");
+  input.css('background-color', backgroundColor);
+  input.css("color", "#FFF");
+  input.css("text-shadow", "1px 1px 1px #000");
+}
+
 var showLogoutPrompt = function(email, retryCount){
   if(retryCount == undefined)
       retryCount = settings.MAX_RETRY_COUNT;
@@ -172,10 +179,7 @@ var showLogoutPrompt = function(email, retryCount){
 																					'FFFF99', 'CCFFFF', '99CCFF', 'FFFFFF'
 																			],
                                  onSelect: function(hex, element){
-                                   var input = $(element).parents(".sgn_container").find(".sgn_input");
-                                   input.css("background-color", "#" + hex);
-                                   input.css("color", "#FFF");
-                                   input.css("text-shadow", "1px 1px 1px #000");
+                                   setCustomBackgroundColor('#' + hex);
                                  } 
                               });
   $(".sgn_color_picker_button").click(function(e){
@@ -278,12 +282,19 @@ var setupNoteEditor = function(email, messageId){
       var isDisabled = currentInput.prop('disabled');
       var content = currentInput.val();
 
+      properties = [];
+      var backgroundColor = currentInput.parents(".sgn_container").find(".sgn_color_picker_value").val();
+      if(backgroundColor)
+        properties.push({"key":"sgn-background-color", "value":backgroundColor});
+
       if(!isDisabled && gPreviousContent != content){
         delete gEmailIdNoteDict[messageId];//delete the prevoius note
         sendBackgroundMessage({action:"post_note", email:email, messageId:messageId, 
                      emailTitleSuffix: emailSubject,
                      gdriveNoteId:noteId, 
-                     gdriveFolderId:folderId, content:content});
+                     gdriveFolderId:folderId, 
+                     content:content,
+                     properties:properties});
       }
       return true;
     }, 200);  //save the note a bit later
@@ -413,7 +424,7 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
                        '</div></div>');
 
       abstractNode.find(".at").css("background-color", gAbstractBackgroundColor)
-                           .css("border-color", gAbstractBackgroundColor);
+                                 .css("border-color", gAbstractBackgroundColor);
       abstractNode.find(".au").css("border-color", gAbstractBackgroundColor);
       abstractNode.find(".av").css("color", gAbstractFontColor);
 
@@ -587,11 +598,18 @@ var setupListeners = function(){
         if(request.messageId == gCurrentMessageId){
           gPreviousContent = request.content;
           var displayContent = request.content;
+          var properties = request.properties;
           var warningMessage = SimpleGmailNotes.offlineMessage;
           if(displayContent.indexOf(warningMessage) == 0){
             displayContent = displayContent.substring(warningMessage.length); //truncate the warning message part
           }
-          $(".sgn_input").val(displayContent);
+          $(".sgn_input:visible").val(displayContent);
+          for(var i=0; i<properties.length; i++){
+            var key = properties[i]["key"];
+            var value = properties[i]["value"];
+            if(key == "sgn-background-color")
+              setCustomBackgroundColor(value);
+          }
           //showLogoutPrompt(request.email);
         }
 

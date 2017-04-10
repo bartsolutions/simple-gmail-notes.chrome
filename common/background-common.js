@@ -197,7 +197,7 @@ var getPreferenceAbstractStyle = function() {
 
 //Post message to google drive via REST API
 //Reference: https://developers.google.com/drive/web/quickstart/quickstart-js
-var postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdriveNoteId, content){
+var postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdriveNoteId, content, properties){
   debugLog("Posting content", content);
   debugLog("Google Drive folder ID", gdriveFolderId);
 
@@ -213,7 +213,7 @@ var postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdr
     var noteDescripton = content.substring(0,500);
 
     var metadata = { title:messageId + " - " + emailTitleSuffix , parents:[{"id":gdriveFolderId}], 
-                     description: noteDescripton };
+                     description: noteDescripton, properties:properties};
     var boundary = "-------314159265358979323846";
     var contentType = "text/plain";
     var delimiter = "\r\n--" + boundary + "\r\n";
@@ -422,7 +422,7 @@ var logoutGoogleDrive = function(sender){
   sendContentMessage(sender, {action:"disable_edit"});
 }
 
-var loadMessage = function(sender, gdriveNoteId, messageId){
+var loadMessage = function(sender, gdriveNoteId, messageId, properties){
   sendAjax({
     type:"GET",
     headers: {
@@ -434,9 +434,11 @@ var loadMessage = function(sender, gdriveNoteId, messageId){
       debugLog("Loaded message", data);
       if(data == gSgnEmtpy)
         data = "";
-      sendContentMessage(sender, {action:"update_content", content:data, messageId:messageId, gdriveNoteId:gdriveNoteId});
+      sendContentMessage(sender, {action:"update_content", content:data, 
+                                  messageId:messageId, gdriveNoteId:gdriveNoteId, 
+                                  properties:properties});
       sendContentMessage(sender, {action:"enable_edit", 
-                           gdriveEmail:getStorage(sender, "gdrive_email")});  
+                                  gdriveEmail:getStorage(sender, "gdrive_email")});  
     },
     error: function(data){
       sendContentMessage(sender, {action:"show_error", 
@@ -610,6 +612,7 @@ var searchNote = function(sender, messageId){
     function(data){ //success callback
       var gdriveFolderId = "";
       var gdriveNoteId = "";
+      var properties = [];
 
       debugLog("@403", query, data);
 
@@ -636,6 +639,7 @@ var searchNote = function(sender, messageId){
               currentItem.title.indexOf(messageId) == 0 && 
               currentItem.parents[0].id == gdriveFolderId){
             gdriveNoteId = currentItem.id;
+            properties = currentItem.properties;
             break;
           }
         }
@@ -647,7 +651,7 @@ var searchNote = function(sender, messageId){
                              gdriveFolderId:gdriveFolderId});
 
         if(gdriveNoteId){
-          loadMessage(sender, gdriveNoteId, messageId);
+          loadMessage(sender, gdriveNoteId, messageId, properties);
         }
         else{//ready for write new message
           sendContentMessage(sender, {
@@ -880,7 +884,7 @@ var setupListeners = function(sender, request){
       if(content == "")
           content = gSgnEmtpy;
       postNote(sender, request.messageId, request.emailTitleSuffix,
-                 request.gdriveFolderId, request.gdriveNoteId, content);
+                 request.gdriveFolderId, request.gdriveNoteId, content, request.properties);
       break;
     case "initialize":
       initialize(sender, request.messageId, request.title);
