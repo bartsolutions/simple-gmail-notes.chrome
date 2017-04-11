@@ -159,6 +159,7 @@ SimpleGmailNotes.start = function(){
   }
 
   var isBackgroundDead = function(){
+      return false; //for debug
       var currentTime = Date.now();
       var lastHeartBeat = SimpleGmailNotes.lastHeartBeat; //copy out to avoid race condition
       var isDead = (currentTime - lastHeartBeat > 5000);
@@ -393,7 +394,7 @@ SimpleGmailNotes.start = function(){
   var updateEmailIdByDOM = function(dataString){
     var totalLength = dataString.length;
 
-    var startString = "var GM_TIMING_START_CHUNK2=new Date().getTime(); var VIEW_DATA=";
+    var startString = "var GM_TIMING_START_CHUNK2=new Date().getTime();var VIEW_DATA=";
     var endString = "; var GM_TIMING_END_CHUNK2=new Date().getTime();";
 
 

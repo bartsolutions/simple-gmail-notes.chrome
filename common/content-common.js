@@ -150,6 +150,11 @@ var showLoginPrompt = function(retryCount){
 }
 
 var getNoteProperty = function(properties, propertyName){
+  if(!properties){
+    console.log("Warning, no property found");
+    return "";
+  }
+
   for(var i=0; i<properties.length; i++){
     if(properties[i]["key"] == propertyName){
       return properties[i]["value"];
@@ -162,9 +167,7 @@ var getNoteProperty = function(properties, propertyName){
 
 var setCustomBackgroundColor = function(backgroundColor){
   var input = $(".sgn_input:visible");
-  input.css('background-color', backgroundColor)
-       .css("color", "#FFF")
-       .css("text-shadow", "1px 1px 1px #000");
+  input.css('background-color', backgroundColor);
 }
 
 var showLogoutPrompt = function(email, retryCount){
@@ -298,7 +301,7 @@ var setupNoteEditor = function(email, messageId){
     var isDisabled = getCurrentInput().prop('disabled');
     //var content = currentInput.val();
 
-    if(!isDisabled && (gPreviousContent != getCurrentContent()){
+    if(!isDisabled && (gPreviousContent != getCurrentContent())){
       delete gEmailIdNoteDict[messageId];//delete the prevoius note
 
       postNote(email, messageId);
@@ -308,6 +311,13 @@ var setupNoteEditor = function(email, messageId){
     return true;
   });
 
+
+  if(message && message.properties){
+    var backgroundColor = getNoteProperty(message.properties, 'sgn-background-color');
+    if(backgroundColor){
+      textAreaNode.css("background-color", backgroundColor);
+    }
+  }
 
   var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
       .html("<span class='sgn_current_connection'>Simple Gmail Notes connected to Google Drive of " +
@@ -401,13 +411,13 @@ var setupNoteEditor = function(email, messageId){
   $(".sgn_add_calendar").attr("href", getAddCalendarURL());
   
   //set up color picker
-  $(".sgn_color_picker_value").simpleColor({columns:12, 
+  $(".sgn_color_picker_value").simpleColor({columns:5, 
+                                      cellWidth: 15,
+                                      cellHeight: 15,
+                                      cellMargin: 3,
 																			colors : [
-																					'000000', '993300', '333300', '000080', '333399', '333333', '800000', 'FF6600',
-																					'808000', '008000', '008080', '0000FF', '666699', '808080', 'FF0000', 'FF9900',
-																					'99CC00', '339966', '33CCCC', '3366FF', '800080', '999999', 'FF00FF', 'FFCC00',
-																					'FFFF00', '00FF00', '00FFFF', '00CCFF', '993366', 'C0C0C0', 'FF99CC', 'FFCC99',
-																					'FFFF99', 'CCFFFF', '99CCFF', 'FFFFFF'
+                                        'C8FBFE', 'CBFEF1', 'D6FFD1', 'E8FFC1', 'FAFDBB',
+                                        'FFEDC1', 'FFE0C7', 'FFD9D0', 'D7D6FE', 'F1CDFE'
 																			],
                                  onSelect: function(hex, element){
                                    setCustomBackgroundColor('#' + hex); //set color of text area
@@ -475,14 +485,10 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
         backgroundColor = customNoteColor;
 
       abstractNode.find(".at").css("background-color", backgroundColor)
-                                 .css("border-color", backgroundColor);
+                              .css("border-color", backgroundColor);
       abstractNode.find(".au").css("border-color", backgroundColor);
 
-      if(customNoteColor)
-        abstractNode.find(".av").css("color", "#FFF")
-                                .css("text-shadow", "1px 1px 1px #000");
-     else
-        abstractNode.find(".av").css("color", gAbstractFontColor);
+      abstractNode.find(".av").css("color", gAbstractFontColor);
 
 
 
@@ -517,6 +523,7 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
       $(this).find(".sgn").remove();  //remove the element, so it would be filled later
       $(this).removeAttr("sgn_email_id");
     }
+
 
     if(!hasMarked($(this))){
       markAbstract($(this), emailNote, emailId);
@@ -665,7 +672,7 @@ var setupListeners = function(){
           if(displayContent.indexOf(warningMessage) == 0){
             displayContent = displayContent.substring(warningMessage.length); //truncate the warning message part
           }
-          $(".sgn_input:visible").val(displayContent);
+          getCurrentInput().val(displayContent);
           //showLogoutPrompt(request.email);
           if(customNoteColor)
             setCustomBackgroundColor(customNoteColor);
