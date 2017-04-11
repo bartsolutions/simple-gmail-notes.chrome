@@ -149,11 +149,22 @@ var showLoginPrompt = function(retryCount){
   }
 }
 
+var getNoteProperty = function(properties, propertyName){
+  for(var i=0; i<properties.length; i++){
+    if(properties[i]["key"] == propertyName){
+      return properties[i]["value"];
+      break;
+    }
+  }
+
+  return "";
+}
+
 var setCustomBackgroundColor = function(backgroundColor){
   var input = $(".sgn_input:visible");
-  input.css('background-color', backgroundColor);
-  input.css("color", "#FFF");
-  input.css("text-shadow", "1px 1px 1px #000");
+  input.css('background-color', backgroundColor)
+       .css("color", "#FFF")
+       .css("text-shadow", "1px 1px 1px #000");
 }
 
 var showLogoutPrompt = function(email, retryCount){
@@ -168,38 +179,6 @@ var showLogoutPrompt = function(email, retryCount){
   if(email)
     $(".sgn_prompt_logout").find(".sgn_user").text(email);
 
-  $(".sgn_search").attr("href", getSearchNoteURL());
-
-  $(".sgn_color_picker_value").simpleColor({columns:12, 
-																			colors : [
-																					'000000', '993300', '333300', '000080', '333399', '333333', '800000', 'FF6600',
-																					'808000', '008000', '008080', '0000FF', '666699', '808080', 'FF0000', 'FF9900',
-																					'99CC00', '339966', '33CCCC', '3366FF', '800080', '999999', 'FF00FF', 'FFCC00',
-																					'FFFF00', '00FF00', '00FFFF', '00CCFF', '993366', 'C0C0C0', 'FF99CC', 'FFCC99',
-																					'FFFF99', 'CCFFFF', '99CCFF', 'FFFFFF'
-																			],
-                                 onSelect: function(hex, element){
-                                   setCustomBackgroundColor('#' + hex);
-                                 } 
-                              });
-  $(".sgn_color_picker_button").click(function(e){
-		  if(event.target != this){
-				return;
-			}
-
-//$(this).parents(".sgn_color_picker").find(".simpleColorDisplay").click();
-      e.stopPropagation();
-
-      var picker = $(this).parents(".sgn_color_picker");
-      var container = picker.find(".simpleColorContainer");
-      var display = picker.find(".simpleColorDisplay");
-      var colorChooser = picker.find(".simpleColorChooser");
-      var input = picker.find(".sgn_color_picker_value");
-      display.trigger('click', {input:input, display: display, container: container });
-      container.find('.simpleColorChooser').css("margin-left", "-85px");	//align back
-  });
-
-  $(".sgn_add_calendar").attr("href", getAddCalendarURL());
 
   if(!$(".sgn_prompt_logout").is(":visible")){  //keep trying until it's visible
     debugLog("Retry to show prompt");
@@ -254,6 +233,44 @@ var getSidebarNode = function(){
   return $(".Bs.nH .nH.bno:visible");
 }
 
+var getCurrentInput = function(){
+  var currentInput = $(".sgn_input:visible");
+  return currentInput;
+}
+
+var getCurrentContent = function(){
+  var currentInput = getCurrentInput();  
+  var content = currentInput.val();
+
+  return content;
+}
+
+var getCurrentBackgroundColor = function(){
+  var currentInput = getCurrentInput();  
+  var backgroundColor = currentInput.parents(".sgn_container").find(".sgn_color_picker_value").val();
+
+  return backgroundColor;
+}
+
+var postNote = function(email, messageId){
+    var emailSubject = gCurrentEmailSubject;
+    var noteId = gCurrentGDriveNoteId;
+    var folderId = gCurrentGDriveFolderId;
+    var content = getCurrentContent();
+    var backgroundColor = getCurrentBackgroundColor();
+    var properties = [{"key" : "sgn-background-color", "value" : backgroundColor}];
+    
+
+    sendBackgroundMessage({action:"post_note", 
+                           email:email, 
+                           messageId:messageId, 
+                           emailTitleSuffix: emailSubject,
+                           gdriveNoteId:noteId, 
+                           gdriveFolderId:folderId, 
+                           content:content,
+                           properties:properties});
+}
+
 var setupNoteEditor = function(email, messageId){
   debugLog("Start to set up notes");
   debugLog("Email", email);
@@ -273,31 +290,22 @@ var setupNoteEditor = function(email, messageId){
     "text": note,
     "disabled":"disabled"
   }).on("blur", function(){
-    var currentInput = $(".sgn_input:visible");
-    var emailSubject = gCurrentEmailSubject;
-    var noteId = gCurrentGDriveNoteId;
-    var folderId = gCurrentGDriveFolderId;
+    //var currentInput = $(".sgn_input:visible");
+    //var emailSubject = gCurrentEmailSubject;
+    //var noteId = gCurrentGDriveNoteId;
+    //var folderId = gCurrentGDriveFolderId;
 
-    setTimeout(function(){
-      var isDisabled = currentInput.prop('disabled');
-      var content = currentInput.val();
+    var isDisabled = getCurrentInput().prop('disabled');
+    //var content = currentInput.val();
 
-      properties = [];
-      var backgroundColor = currentInput.parents(".sgn_container").find(".sgn_color_picker_value").val();
-      if(backgroundColor)
-        properties.push({"key":"sgn-background-color", "value":backgroundColor});
+    if(!isDisabled && (gPreviousContent != getCurrentContent()){
+      delete gEmailIdNoteDict[messageId];//delete the prevoius note
 
-      if(!isDisabled && gPreviousContent != content){
-        delete gEmailIdNoteDict[messageId];//delete the prevoius note
-        sendBackgroundMessage({action:"post_note", email:email, messageId:messageId, 
-                     emailTitleSuffix: emailSubject,
-                     gdriveNoteId:noteId, 
-                     gdriveFolderId:folderId, 
-                     content:content,
-                     properties:properties});
-      }
-      return true;
-    }, 200);  //save the note a bit later
+      postNote(email, messageId);
+
+    }
+
+    return true;
   });
 
 
@@ -389,6 +397,43 @@ var setupNoteEditor = function(email, messageId){
   });
 
 
+  $(".sgn_search").attr("href", getSearchNoteURL());
+  $(".sgn_add_calendar").attr("href", getAddCalendarURL());
+  
+  //set up color picker
+  $(".sgn_color_picker_value").simpleColor({columns:12, 
+																			colors : [
+																					'000000', '993300', '333300', '000080', '333399', '333333', '800000', 'FF6600',
+																					'808000', '008000', '008080', '0000FF', '666699', '808080', 'FF0000', 'FF9900',
+																					'99CC00', '339966', '33CCCC', '3366FF', '800080', '999999', 'FF00FF', 'FFCC00',
+																					'FFFF00', '00FF00', '00FFFF', '00CCFF', '993366', 'C0C0C0', 'FF99CC', 'FFCC99',
+																					'FFFF99', 'CCFFFF', '99CCFF', 'FFFFFF'
+																			],
+                                 onSelect: function(hex, element){
+                                   setCustomBackgroundColor('#' + hex); //set color of text area
+
+                                   //immediate post the note again
+                                   postNote(email, messageId);
+                                 } 
+                              });
+
+  $(".sgn_color_picker_button").click(function(e){
+		  if(event.target != this){
+				return;
+			}
+
+//$(this).parents(".sgn_color_picker").find(".simpleColorDisplay").click();
+      e.stopPropagation();
+
+      var picker = $(this).parents(".sgn_color_picker");
+      var container = picker.find(".simpleColorContainer");
+      var display = picker.find(".simpleColorDisplay");
+      var colorChooser = picker.find(".simpleColorChooser");
+      var input = picker.find(".sgn_color_picker_value");
+      display.trigger('click', {input:input, display: display, container: container });
+      container.find('.simpleColorChooser').css("margin-left", "-85px");	//align back
+  });
+
   //nothing to show now
   //sendBackgroundMessage({action:"update_debug_content_info", debugInfo: ""});
 
@@ -423,10 +468,23 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
                             '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
                        '</div></div>');
 
-      abstractNode.find(".at").css("background-color", gAbstractBackgroundColor)
-                                 .css("border-color", gAbstractBackgroundColor);
-      abstractNode.find(".au").css("border-color", gAbstractBackgroundColor);
-      abstractNode.find(".av").css("color", gAbstractFontColor);
+
+      var backgroundColor = gAbstractBackgroundColor;
+      var customNoteColor = getNoteProperty(note.properties, 'sgn-background-color');
+      if(customNoteColor)
+        backgroundColor = customNoteColor;
+
+      abstractNode.find(".at").css("background-color", backgroundColor)
+                                 .css("border-color", backgroundColor);
+      abstractNode.find(".au").css("border-color", backgroundColor);
+
+      if(customNoteColor)
+        abstractNode.find(".av").css("color", "#FFF")
+                                .css("text-shadow", "1px 1px 1px #000");
+     else
+        abstractNode.find(".av").css("color", gAbstractFontColor);
+
+
 
       if(gAbstractFontSize != "default")
           abstractNode.find(".av").css("font-size", gAbstractFontSize + "pt");
@@ -445,7 +503,8 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
 
     $.each(pulledNoteList, function(index, item){
       gEmailIdNoteDict[item.id] = {"description": item.description, 
-                                   "short_description": item.short_description};
+                                   "short_description": item.short_description,
+                                   "properties": item.properties};
     });
   }
 
@@ -596,21 +655,20 @@ var setupListeners = function(){
       case "update_content":
 
         if(request.messageId == gCurrentMessageId){
-          gPreviousContent = request.content;
           var displayContent = request.content;
           var properties = request.properties;
           var warningMessage = SimpleGmailNotes.offlineMessage;
+          var customNoteColor = getNoteProperty(properties, 'sgn-background-color');
+
+          gPreviousContent = request.content;
+
           if(displayContent.indexOf(warningMessage) == 0){
             displayContent = displayContent.substring(warningMessage.length); //truncate the warning message part
           }
           $(".sgn_input:visible").val(displayContent);
-          for(var i=0; i<properties.length; i++){
-            var key = properties[i]["key"];
-            var value = properties[i]["value"];
-            if(key == "sgn-background-color")
-              setCustomBackgroundColor(value);
-          }
           //showLogoutPrompt(request.email);
+          if(customNoteColor)
+            setCustomBackgroundColor(customNoteColor);
         }
 
         break;

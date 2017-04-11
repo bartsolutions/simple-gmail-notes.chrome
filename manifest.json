@@ -3,7 +3,7 @@
   "name": "Simple Gmail Notes",
   "short_name": "SGNotes",
   "description": "Add notes to email threads in Gmail.",
-  "version": "0.8.2.1",
+  "version": "0.9.0.1",
   "icons": { "16": "icon-16.png",
            "48": "icon-48.png",
           "128": "icon-128.png" },

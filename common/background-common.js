@@ -121,7 +121,7 @@ var updateDefaultPreferences = function(preferences)
 
   
   if(isEmptyPrefernce(preferences["fontColor"]))
-    preferences["fontColor"] = "#808080";
+    preferences["fontColor"] = "#525252";
 
   if(isEmptyPrefernce(preferences["backgroundColor"]))
     preferences["backgroundColor"] = "#FFFF99";
@@ -130,7 +130,7 @@ var updateDefaultPreferences = function(preferences)
     preferences["fontSize"] = "default";
 
   if(isEmptyPrefernce(preferences["abstractFontColor"]))
-    preferences["abstractFontColor"] = "#666666";
+    preferences["abstractFontColor"] = "#525252";
 
   if(isEmptyPrefernce(preferences["abstractBackgroundColor"]))
     preferences["abstractBackgroundColor"] = "#FFFF99";
@@ -434,6 +434,10 @@ var loadMessage = function(sender, gdriveNoteId, messageId, properties){
       debugLog("Loaded message", data);
       if(data == gSgnEmtpy)
         data = "";
+
+      if(!properties)
+        properties = []
+
       sendContentMessage(sender, {action:"update_content", content:data, 
                                   messageId:messageId, gdriveNoteId:gdriveNoteId, 
                                   properties:properties});
@@ -708,7 +712,7 @@ var sendSummaryNotes = function(sender, pullList, resultList){
 
     //we collect the first one
     if(emailItem.description && !itemDict[emailId]){
-      itemDict[emailId] = emailItem.description;
+      itemDict[emailId] = emailItem;
     }
   });
 
@@ -718,11 +722,15 @@ var sendSummaryNotes = function(sender, pullList, resultList){
     var emailId = pullList[i];
     var description = ""; //empty string for not found
     var shortDescription = "";
+    var properties = [];
 
     var preferences = getPreferences();
+    var item = itemDict[emailId];
+    if(item && item.description != gSgnEmtpy){
+      description = item.description;
 
-    if(itemDict[emailId] && itemDict[emailId] != gSgnEmtpy){
-      description = itemDict[emailId];
+      if(item.properties)
+        properties = item.properties;
 
       if(abstractStyle == "fixed_SGN")
         shortDescription = "SGN";
@@ -748,7 +756,7 @@ var sendSummaryNotes = function(sender, pullList, resultList){
       shortDescription = gSgnEmtpy;
     }
 
-    result.push({"id":emailId, "description":description, "short_description":shortDescription});
+    result.push({"id":emailId, "description":description, "short_description":shortDescription, "properties":properties});
   }
 
   sendContentMessage(sender, {email:getStorage(sender, "gdrive_email"), 
