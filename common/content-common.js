@@ -165,9 +165,10 @@ var getNoteProperty = function(properties, propertyName){
   return "";
 }
 
-var setCustomBackgroundColor = function(backgroundColor){
-  var input = $(".sgn_input:visible");
+var setCurrentBackgroundColor = function(backgroundColor){
+  var input = getCurrentInput();
   input.css('background-color', backgroundColor);
+  input.parents(".sgn_container").find(".sgn_color_picker_value").val(backgroundColor);
 }
 
 var showLogoutPrompt = function(email, retryCount){
@@ -312,8 +313,10 @@ var setupNoteEditor = function(email, messageId){
   });
 
 
+  var backgroundColor = "";
+
   if(message && message.properties){
-    var backgroundColor = getNoteProperty(message.properties, 'sgn-background-color');
+    backgroundColor = getNoteProperty(message.properties, 'sgn-background-color');
     if(backgroundColor){
       textAreaNode.css("background-color", backgroundColor);
     }
@@ -333,7 +336,7 @@ var setupNoteEditor = function(email, messageId){
               "<a class='sgn_action sgn_search sgn_button' target='_blank'>" +
               "<img title='Search' src='" + getIconBaseUrl() + "/search.24.png'></a> " +
               "<a class='sgn_action sgn_color_picker sgn_button'>" +
-              "<input type='hidden' class='sgn_color_picker_value'>" +
+              "<input type='hidden' class='sgn_color_picker_value' value='" + backgroundColor + "'>" +
               "<img title='Note Color' class='sgn_color_picker_button' src='" + getIconBaseUrl() + "/color-picker.24.png'></a> " +
               //"<a class='sgn_action sgn_donation' target='_blank'>" +
               //"<img title='Search' src='" + getIconBaseUrl() + "/donation.24.png'></a> " +
@@ -415,17 +418,18 @@ var setupNoteEditor = function(email, messageId){
                                       cellWidth: 15,
                                       cellHeight: 15,
                                       cellMargin: 3,
-																			colors : [
+                                      colors : [
                                         'C8FBFE', 'CBFEF1', 'D6FFD1', 'E8FFC1', 'FAFDBB',
                                         'FFEDC1', 'FFE0C7', 'FFD9D0', 'D7D6FE', 'F1CDFE'
 																			],
                                  onSelect: function(hex, element){
-                                   setCustomBackgroundColor('#' + hex); //set color of text area
+                                   setCurrentBackgroundColor('#' + hex); //set color of text area
 
                                    //immediate post the note again
                                    postNote(email, messageId);
                                  } 
                               });
+
 
   $(".sgn_color_picker_button").click(function(e){
 		  if(event.target != this){
@@ -674,8 +678,11 @@ var setupListeners = function(){
           }
           getCurrentInput().val(displayContent);
           //showLogoutPrompt(request.email);
-          if(customNoteColor)
-            setCustomBackgroundColor(customNoteColor);
+          if(customNoteColor){
+            setCurrentBackgroundColor(customNoteColor);
+
+          }
+
         }
 
         break;
@@ -764,7 +771,10 @@ var setupListeners = function(){
 
         var backgroundColor = preferences["backgroundColor"];
         if(backgroundColor){
-          $(".sgn_input").css("background-color", backgroundColor);
+          if(!getCurrentBackgroundColor()){
+            $(".sgn_input").css("background-color", backgroundColor);
+          }
+
           $(".sgn_history_note").css("background-color", backgroundColor);
         }
 
