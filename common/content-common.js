@@ -9,29 +9,29 @@
 
 var settings = {
   MAX_RETRY_COUNT : 20
-}
+};
 
 /* callback declarations */
 var sendBackgroundMessage = function(messge) {
   throw "sendBackgroundMessage not implemented";
-}
+};
 
 var setupBackgroundEventsListener = function(callback) {
   throw "setupBackgroundEventsListener not implemented";
-}
+};
 
 var getIconBaseUrl = function(){
   throw "getIconBaseUrl not implemented";
-}
+};
 
 var addScript = function(scriptPath){
   throw "addScript is not implemented";
-}
+};
 
 var isDebug = function(callback) {
   //return true;  //turn on this only if u want to check initilization part
   return false;
-}
+};
 
 /* -- end -- */
 
@@ -60,7 +60,7 @@ var htmlEscape = function(str) {
             .replace(/'/g, '&#39;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
-}
+};
 
 //http://stackoverflow.com/questions/4434076/best-way-to-alphanumeric-check-in-javascript#25352300
 var isAlphaNumeric = function(str) {
@@ -81,15 +81,15 @@ var isAlphaNumeric = function(str) {
 var isValidEmail = function(email) {
   var re = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i; 
   return re.test(email);
-}
+};
   
 var sendEventMessage = function(eventName, eventDetail){
-  if(eventDetail == undefined){
-    eventDetail = {}
+  if(eventDetail === undefined){
+    eventDetail = {};
   }
 
   document.dispatchEvent(new CustomEvent(eventName,  {detail: eventDetail}));
-}
+};
 
 var debugLog = function()
 {
@@ -97,11 +97,11 @@ var debugLog = function()
   if (debugStatus) {
       console.log.apply(console, arguments);
   }
-}
+};
 
 var disableEdit = function(retryCount)
 {
-  if(retryCount == undefined)
+  if(retryCount === undefined)
     retryCount = settings.MAX_RETRY_COUNT;
 
   $(".sgn_input").prop("disabled", true);
@@ -117,11 +117,11 @@ var disableEdit = function(retryCount)
     if(retryCount > 0 )
       setTimeout(disableEdit, 100, retryCount);
   }
-}
+};
 
 var enableEdit = function(retryCount)
 {
-  if(retryCount == undefined)
+  if(retryCount === undefined)
       retryCount = settings.MAX_RETRY_COUNT;
 
   $(".sgn_input").prop("disabled", false);
@@ -131,10 +131,10 @@ var enableEdit = function(retryCount)
     if(retryCount > 0 )
         setTimeout(enableEdit, 100, retryCount);
   }
-}
+};
 
 var showLoginPrompt = function(retryCount){
-  if(retryCount == undefined)
+  if(retryCount === undefined)
       retryCount = settings.MAX_RETRY_COUNT;
 
   $(".sgn_prompt_login").show();
@@ -147,7 +147,7 @@ var showLoginPrompt = function(retryCount){
     if(retryCount > 0 )
       setTimeout(showLoginPrompt, 100, retryCount);
   }
-}
+};
 
 var getNoteProperty = function(properties, propertyName){
   if(!properties){
@@ -158,21 +158,20 @@ var getNoteProperty = function(properties, propertyName){
   for(var i=0; i<properties.length; i++){
     if(properties[i]["key"] == propertyName){
       return properties[i]["value"];
-      break;
     }
   }
 
   return "";
-}
+};
 
 var setCurrentBackgroundColor = function(backgroundColor){
   var input = getCurrentInput();
   input.css('background-color', backgroundColor);
   input.parents(".sgn_container").find(".sgn_color_picker_value").val(backgroundColor);
-}
+};
 
 var showLogoutPrompt = function(email, retryCount){
-  if(retryCount == undefined)
+  if(retryCount === undefined)
       retryCount = settings.MAX_RETRY_COUNT;
 
   $(".sgn_prompt_logout").show();
@@ -190,7 +189,7 @@ var showLogoutPrompt = function(email, retryCount){
     if(retryCount > 0 )
         setTimeout(showLogoutPrompt, 100, email, retryCount);
   }
-}
+};
 
 var getCurrentGoogleAccountId = function(){
   var re = /mail\/u\/(\d+)/;
@@ -200,14 +199,14 @@ var getCurrentGoogleAccountId = function(){
     userId = match[1];
 
   return userId;
-}
+};
 
 var getSearchNoteURL = function(){
   var userId = getCurrentGoogleAccountId();
   var searchUrl = "https://drive.google.com/drive/u/" + userId + "/folders/" + gCurrentGDriveFolderId;
 
   return searchUrl;
-}
+};
 
 //I use http instead of https here, because otherwise a new window will not be popped up
 //in most cases, google would redirect http to https
@@ -215,7 +214,7 @@ var getHistoryNoteURL = function(messageId){
   var userId = getCurrentGoogleAccountId();
   var url = "http://mail.google.com/mail/u/" + userId + "/#all/" + messageId;
   return url;
-}
+};
 
 var getAddCalendarURL = function(){
   var userId = getCurrentGoogleAccountId();
@@ -231,30 +230,30 @@ var getAddCalendarURL = function(){
                             "&details=" + encodeURIComponent(details);
 
   return addCalendarURL;
-}
+};
 
 var getSidebarNode = function(){
   return $(".Bs.nH .nH.bno:visible");
-}
+};
 
 var getCurrentInput = function(){
   var currentInput = $(".sgn_input:visible");
   return currentInput;
-}
+};
 
 var getCurrentContent = function(){
   var currentInput = getCurrentInput();  
   var content = currentInput.val();
 
   return content;
-}
+};
 
 var getCurrentBackgroundColor = function(){
   var currentInput = getCurrentInput();  
   var backgroundColor = currentInput.parents(".sgn_container").find(".sgn_color_picker_value").val();
 
   return backgroundColor;
-}
+};
 
 var postNote = function(email, messageId){
     var emailSubject = gCurrentEmailSubject;
@@ -273,7 +272,7 @@ var postNote = function(email, messageId){
                            gdriveFolderId:folderId, 
                            content:content,
                            properties:properties});
-}
+};
 
 var setupNoteEditor = function(email, messageId){
   debugLog("Start to set up notes");
@@ -284,7 +283,7 @@ var setupNoteEditor = function(email, messageId){
   var injectionNode = $(".sgn_container");
   var message = gEmailIdNoteDict[messageId];
 
-  var note = ""
+  var note = "";
   if(message && message.description)
     note = message.description;
 
@@ -454,7 +453,7 @@ var setupNoteEditor = function(email, messageId){
   //load initial message
   debugLog("Start to initailize");
   sendBackgroundMessage({action:"initialize", email: email, messageId: messageId, title: gCurrentEmailSubject });
-}
+};
 
 
 var updateNotesOnSummary = function(userEmail, pulledNoteList){
@@ -467,11 +466,11 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
 
     if(!hook.find(".sgn").length)
       hook.prepend(abstractNode);
-  }
+  };
 
   var hasMarked = function(mailNode){
     return mailNode.find(".sgn").length > 0;
-  }
+  };
 
   var markAbstract = function(mailNode, note, emailKey){
     var abstractNode;
@@ -505,7 +504,7 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
     }
 
     addAbstractNode(mailNode, abstractNode);
-  }
+  };
 
   if(pulledNoteList && pulledNoteList.length){
     debugLog("updated summary from pulled note, total count:", 
@@ -520,7 +519,7 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
 
   //loop for each email tr
   $("tr.zA[sgn_email_id]").each(function(){
-    var emailId = $(this).attr("sgn_email_id")
+    var emailId = $(this).attr("sgn_email_id");
     var emailNote = gEmailIdNoteDict[emailId];
 
     if(emailNote && emailNote.description && $(this).find(".sgn").css("display") == "none"){
@@ -534,7 +533,7 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
     }
 
   });
-}
+};
 
 var pullNotes = function(userEmail, requestList){
   var pendingPullList = [];
@@ -548,9 +547,9 @@ var pullNotes = function(userEmail, requestList){
   }
   else{
     debugLog("no pending item, skipped the pull");
-    updateNotesOnSummary(userEmail, [])
+    updateNotesOnSummary(userEmail, []);
   }
-}
+};
 
 
 var setupListeners = function(){
@@ -627,13 +626,14 @@ var setupListeners = function(){
   /* handle events from background script */
   setupBackgroundEventsListener(function(request){
     debugLog("Handle request", request);
+    var preferences = request.preferences;
     switch(request.action){
       case "disable_edit":
         disableEdit();
           break;
       case "enable_edit":
           enableEdit();
-          showLogoutPrompt(request.gdriveEmail)
+          showLogoutPrompt(request.gdriveEmail);
           break;
       case "show_log_out_prompt":
         showLogoutPrompt();
@@ -673,7 +673,7 @@ var setupListeners = function(){
 
           gPreviousContent = request.content;
 
-          if(displayContent.indexOf(warningMessage) == 0){
+          if(displayContent.indexOf(warningMessage) === 0){
             displayContent = displayContent.substring(warningMessage.length); //truncate the warning message part
           }
           getCurrentInput().val(displayContent);
@@ -708,7 +708,6 @@ var setupListeners = function(){
                                       "<a target='_blank' href='" + getHistoryNoteURL(note.id) + "'>"  + 
                                       noteDate.toString().substring(0, 24) + "</a><br/><br/>" + note.description + "</div>");
 
-            var preferences = request.preferences;
             historyNode.find(".sgn_history_note").css("background-color", preferences["backgroundColor"])
                                                  .css("color", preferences["fontColor"]);
 
@@ -759,8 +758,6 @@ var setupListeners = function(){
         break;
 
       case "update_preferences":
-        var preferences = request.preferences;
-
         var noteHeight = preferences["noteHeight"];
         if(noteHeight)
           $(".sgn_input").css("height", parseInt(noteHeight) * 18 +"px");
@@ -840,18 +837,18 @@ var setupListeners = function(){
         debugLog("unknown background request", request);
     }
   });
-}
+};
 
 var gDebugInfo = "";
 var appendDebugInfo = function(message){
   if(gDebugInfo.indexOf(message) < 0){
     if(gDebugInfo)
-      gDebugInfo += ", "
+      gDebugInfo += ", ";
 
     gDebugInfo += message ;
     sendBackgroundMessage({action:"update_debug_content_info", debugInfo: gDebugInfo});
   }
-}
+};
 
 
 //use for page script set up

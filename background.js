@@ -7,45 +7,45 @@
 //disable logging for production
 
 /*** interface implementation for background-common.js ***/
-var isDebugCache = null
+var isDebugCache = null;
 isDebug = function(callback){
   if(isDebugCache === null)
     isDebugCache = chrome.runtime.getManifest().version == "0.0.1";
 
   return isDebugCache;
-}
+};
 
 var extensionID = chrome.runtime.id;
 openTab = function(page){
   chrome.tabs.create({"url": "chrome-extension://" + extensionID + "/" + page});
-}
+};
 
 getRawStorageObject = function(){
   return localStorage;
-}
+};
 
 getRawPreferences = function(){
   storage = getRawStorageObject();
   return storage; //preferences are put into local storage as well
-}
+};
 
 sendContentMessage = function(sender, message) {
   chrome.tabs.sendMessage(sender.worker.tab.id, message, function(response) {
     debugLog("Message response:", response);
   });
-}
+};
 
 sendAjax = function(config) {
   $.ajax(config);
-}
+};
 
 iterateArray = function(arr, callback){
   $.each(arr, callback);
-}
+};
 
 getRedirectUri = function() {
   return "https://jfjkcbkgjohminidbpendlodpfacgmlm.chromiumapp.org/provider_cb";
-}
+};
 
 launchAuthorizer = function(sender, callback) {
   debugLog("Trying to login Google Drive.");
@@ -64,19 +64,19 @@ launchAuthorizer = function(sender, callback) {
     },
     callback
   );
-}
+};
 
 removeCachedToken = function(tokenValue){
   chrome.identity.removeCachedAuthToken({'token':tokenValue}, function(){});
-}
+};
 
 checkLogger = function(sender){
   //no need to implement this for chrome
-}
+};
 
 getCurrentVersion = function(){
     return chrome.runtime.getManifest().version;
-}
+};
 
 /*** end of callback implementation ***/
 
@@ -102,7 +102,7 @@ chrome.runtime.onInstalled.addListener(function(details){
             var tab = tabs[i];
 
             //send the alert only if the user is opening the Gmail page at the time
-            if(tab.url && tab.url.indexOf("https://mail.google.com") == 0){
+            if(tab.url && tab.url.indexOf("https://mail.google.com") === 0){
               alert("The exteions of \'Simple Gmail Notes\' was updated. " +
                     "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n");
 

@@ -9,28 +9,28 @@ sendBackgroundMessage = function(message) {
   chrome.runtime.sendMessage(message, function(response){
     debugLog("Message response", response);
   });
-}
+};
 
 setupBackgroundEventsListener = function(callback) {
   chrome.runtime.onMessage.addListener(
       function(request, sender, sendResponse) {
         callback(request);
       }
-  )
-}
+  );
+};
 
-var isDebugCache = null
+var isDebugCache = null;
 isDebug = function(callback){
   if(isDebugCache === null)
     isDebugCache = chrome.runtime.getManifest().version == "0.0.1";
 
   return isDebugCache;
-}
+};
 
 var extensionID = chrome.runtime.id;
 getIconBaseUrl = function(){
   return "chrome-extension://" + extensionID + "/image";
-}
+};
 
 
 function addScript(scriptPath){
@@ -56,4 +56,4 @@ document.addEventListener('DOMContentLoaded',
 $(document).ready(function(){
     appendDebugInfo("documentReady");
     fireContentLoadedEvent();
-})
+});

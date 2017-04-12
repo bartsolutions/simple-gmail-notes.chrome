@@ -1,3 +1,4 @@
+
 var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", 
                         "backgroundColor", "fontSize", "abstractFontColor", 
                         "abstractBackgroundColor", "abstractFontSize", 
@@ -7,7 +8,7 @@ var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor",
                         "debugPageInfo", "debugContentInfo", "debugBackgroundInfo"];
 
 function isChrome(){
-   return /chrom(e|ium)/.test(navigator.userAgent.toLowerCase());
+   return (/chrom(e|ium)/).test(navigator.userAgent.toLowerCase());
 }
 
 function pushPreferences(preferences){
@@ -49,7 +50,7 @@ if(!isChrome()){
       default:
         //ignore it
         break;
-    };
+    }
   });
 }
 
@@ -65,7 +66,7 @@ function savePreferences() {
   //var hideListingNotes = $("#hide_listing_notes").is(":checked");
   //localStorage["hideListingNotes"] = hideListingNotes;
 
-  var preferences = {}
+  var preferences = {};
 
   preferences["abstractStyle"] = $("#abstract_style").val();
   preferences["noteHeight"] = $("#note_height").val();
@@ -148,7 +149,7 @@ function updateControls(preferences){
   var showNoteHistory = (preferences["showNoteHistory"] !== "false");
   $("#show_note_history").prop("checked", showNoteHistory);
 
-  var firstLineAbstract = (preferences["firstLineAbstract"] != "false");
+  var firstLineAbstract = (preferences["firstLineAbstract"] !== "false");
   $("#first_line_abstract").prop("checked", firstLineAbstract);
 
 
@@ -159,20 +160,22 @@ function updateControls(preferences){
 
 
 function initPreferences(){
-  for(var i=2; i<=10; i++){
+  var i;
+
+  for(i=2; i<=10; i++){
     $("#abstract_style").append("<option value=" + i + ">First " + i + " Characters</option>");
   }
 
-  for(var i=3; i<=10; i++){
+  for(i=3; i<=10; i++){
     $("#abstract_style").append("<option value=" + i*5 + ">First " + i*5 + " Characters</option>");
   }
 
-  for(var i=1; i<=30; i++){
+  for(i=1; i<=30; i++){
     $("#note_height").append("<option>" + i + "</option>");
   }
 
 
-  for(var i=8; i<=20; i++){
+  for(i=8; i<=20; i++){
     $("#font_size").append("<option>" + i + "</option>");
     $("#abstract_font_size").append("<option>" + i + "</option>");
   }

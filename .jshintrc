@@ -1,0 +1,9 @@
+{
+    "browser" : true,
+    "predef" : [
+        "$", "self"
+    ],
+    "sub" : true,
+    "loopfunc" : true
+}
+

@@ -8,8 +8,8 @@
 (function(SimpleGmailNotes){
   SimpleGmailNotes.isDebug = function(callback){
     return false;
-    return true; //no debugging for page script
-  }
+    //return true; //no debugging for page script
+  };
 }(window.SimpleGmailNotes = window.SimpleGmailNotes || {}));
 
 //alert("@15@page.js");
