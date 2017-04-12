@@ -23,7 +23,8 @@ var settings = {
 
 var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", 
                         "backgroundColor", "notePosition", 
-                        "showConnectionPrompt", "showAddCalendar", "showDelete", 
+                        "showConnectionPrompt", "showAddCalendar", 
+                        "showDelete", "showNoteColorPicker",
                         "showNoteHistory", "firstLineAbstract",
                         "debugPageInfo", "debugContentInfo", "debugBackgroundInfo"];
 var gSgnEmtpy = "<SGN_EMPTY>";
@@ -149,6 +150,9 @@ var updateDefaultPreferences = function(preferences)
 
   if(isEmptyPrefernce(preferences["showDelete"]))
     preferences["showDelete"] = "true";
+
+  if(isEmptyPrefernce(preferences["showNoteColorPicker"]))
+    preferences["showNoteColorPicker"] = "true";
 
   if(isEmptyPrefernce(preferences["showNoteHistory"]))
     preferences["showNoteHistory"] = "true";

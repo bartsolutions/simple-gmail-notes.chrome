@@ -2,7 +2,7 @@ var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor",
                         "backgroundColor", "fontSize", "abstractFontColor", 
                         "abstractBackgroundColor", "abstractFontSize", 
                         "notePosition", "showConnectionPrompt", 
-                        "showAddCalendar", "showDelete", 
+                        "showAddCalendar", "showDelete", "showNoteColorPicker",
                         "showNoteHistory", "firstLineAbstract",
                         "debugPageInfo", "debugContentInfo", "debugBackgroundInfo"];
 
@@ -79,6 +79,7 @@ function savePreferences() {
   preferences["showConnectionPrompt"] = String($("#show_connection_prompt").is(":checked"));
   preferences["showAddCalendar"] = String($("#show_add_calendar").is(":checked"));
   preferences["showDelete"] = String($("#show_delete").is(":checked"));
+  preferences["showNoteColorPicker"] = String($("#show_note_color_picker").is(":checked"));
   preferences["showNoteHistory"] = String($("#show_note_history").is(":checked"));
   preferences["firstLineAbstract"] = String($("#first_line_abstract").is(":checked"));
 
@@ -140,6 +141,9 @@ function updateControls(preferences){
 
   var showDelete = (preferences["showDelete"] !== "false");
   $("#show_delete").prop("checked", showDelete);
+
+  var showNoteColorPicker = (preferences["showNoteColorPicker"] !== "false");
+  $("#show_note_color_picker").prop("checked", showNoteColorPicker);
 
   var showNoteHistory = (preferences["showNoteHistory"] !== "false");
   $("#show_note_history").prop("checked", showNoteHistory);

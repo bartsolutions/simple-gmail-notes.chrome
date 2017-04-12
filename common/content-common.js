@@ -823,6 +823,11 @@ var setupListeners = function(){
           $(".sgn_delete").hide();
         }
 
+        var showNoteColorPicker = (preferences["showNoteColorPicker"] !== "false");
+        if(!showNoteColorPicker){
+          $(".sgn_color_picker").hide();
+        }
+
 
 
         debugLog("@470", preferences);
