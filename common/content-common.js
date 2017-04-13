@@ -418,13 +418,17 @@ var setupNoteEditor = function(email, messageId){
   
   //set up color picker
   $(".sgn_color_picker_value").simpleColor({columns:5, 
-                                      cellWidth: 15,
-                                      cellHeight: 15,
-                                      cellMargin: 3,
-                                      colors : [
+                                      cellWidth: 30,
+                                      cellHeight: 30,
+                                      cellMargin: 5,
+                                      colors: [
                                         'C8FBFE', 'CBFEF1', 'D6FFD1', 'E8FFC1', 'FAFDBB',
                                         'FFEDC1', 'FFE0C7', 'FFD9D0', 'D7D6FE', 'F1CDFE'
-																			],
+                                       ],
+                                      //colors : [
+                                        //'34C8D0', '1ED6A8', '52C843', '87C31F', 'BEC42A',
+                                        //'D39C16', 'D47325', 'D65234', '5C58E6', 'BD4CE7'
+										//									],
                                  onSelect: function(hex, element){
                                    setCurrentBackgroundColor('#' + hex); //set color of text area
 

@@ -179,7 +179,7 @@ SimpleGmailNotes.start = function(){
       var currentTime = Date.now();
       //copy out to avoid race condition
       var lastHeartBeat = SimpleGmailNotes.lastHeartBeat; 
-      if(isDebug)
+      if(SimpleGmailNotes.isDebug())
         thresholdTime = 300;
 
       var isDead = (currentTime - lastHeartBeat > thresholdTime * 1000);
@@ -417,23 +417,24 @@ SimpleGmailNotes.start = function(){
 
   var updateEmailIdByDOM = function(dataString){
     var totalLength = dataString.length;
+    var signatureString = "var GM_TIMING_START_CHUNK2=";
 
-    var startString = "var GM_TIMING_START_CHUNK2=new Date().getTime();var VIEW_DATA=";
-    var endString = "; var GM_TIMING_END_CHUNK2=new Date().getTime();";
-
-
-    if(dataString.substring(0, startString.length) != startString){
-      //not a valid view data string
+    //for better performance
+    if(!dataString.startsWith(signatureString)){
       return;
     }
 
-    if(dataString.substring(totalLength - endString.length, totalLength) != endString){
-      //not a valid view data string
+    if(dataString.indexOf("var VIEW_DATA=") < 0){
       return;
     }
 
-    var strippedString = dataString.substring(startString.length, 
-                                              totalLength-endString.length);
+    var startIndex = dataString.indexOf("[");
+    var endIndex = dataString.lastIndexOf("]");
+
+    if(startIndex < 0 || endIndex < 0 )
+      return;
+
+    var strippedString = dataString.substring(startIndex, endIndex+1);
 
     var viewData = $.parseJSON(strippedString);
 
@@ -445,7 +446,6 @@ SimpleGmailNotes.start = function(){
       gEmailIdDict[emailKey] = email;
     }
 
-    var temp = 0;
   };
 
 
