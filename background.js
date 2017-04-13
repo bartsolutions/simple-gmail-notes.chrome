@@ -102,6 +102,7 @@ chrome.runtime.onInstalled.addListener(function(details){
 
             //send the alert only if the user is opening the Gmail page at the time
             if(tab.url && tab.url.indexOf("https://mail.google.com") == 0){
+              //no alert for this version (0.8.1.1), as it seems a bit annoying
               /*
               alert("The exteions of \'Simple Gmail Notes\' was updated. " +
                     "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n" +
@@ -114,11 +115,13 @@ chrome.runtime.onInstalled.addListener(function(details){
                     "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n");
               */
 
+              /*
               alert("The exteions of \'Simple Gmail Notes\' was updated. " +
                     "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n" +
                     "New in v0.8.1.1:\n" +
                     "Ad-hoc fix due to change of Google side API\n\n" +
                     "If you think the extension is helpful, please consider a donation via the preferences page. Thank you!");
+              */
               break;
             }
           }
