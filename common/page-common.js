@@ -82,19 +82,24 @@ SimpleGmailNotes.start = function(){
     }
 
     //avoid crazy pulling in case of multiple network requests
-    if(timestamp - gLastPullTimestamp < 3 * 1000)  //pull again in 3 seconds, for whatever reasons
+    //pull again in 3 seconds, for whatever reasons
+    if(timestamp - gLastPullTimestamp < 3 * 1000)  
       gConsecutiveRequests += 1;
     else{
       resetCounter = true;
     }
 
     if(gConsecutiveRequests >= 20){
-        gNextPullTimestamp = timestamp + 60 * 1000; //penalty timeout for 60 seconds
+      //penalty timeout for 60 seconds
+        gNextPullTimestamp = timestamp + 60 * 1000; 
 
-        var message = "20 consecutive network requests detected from Simple Gmail Notes, the extension would be self-disabled for 60 seconds.\n\n" +
-											"Please try to close and reopen the browser to clear the cache of extension. " + 
-                      "If the problem persists, please consider to disable/uninstall this extension to avoid locking of your Gmail account. " +
-                      "This warning message is raised by the extension developer (not Google), just to ensure your account safety.\n\n" +
+        var message = "20 consecutive network requests detected from Simple Gmail Notes, " +
+                      "the extension would be self-disabled for 60 seconds.\n\n" +
+                      "Please try to close and reopen the browser to clear the cache of extension. " + 
+                      "If the problem persists, please consider to disable/uninstall this extension " +
+                      "to avoid locking of your Gmail account. " +
+                      "This warning message is raised by the extension developer (not Google), " +
+                      "just to ensure your account safety.\n\n" +
                       "If possible, please kindly send the following information to the extension bug report page, " +
                       "it would be helpful for the developer to diagnose the problem. Thank you!\n\n";
         message += "oec:" + g_oec;
@@ -102,7 +107,9 @@ SimpleGmailNotes.start = function(){
         message += "; pnc:" + g_pnc;
         message += "; tt:" + Math.round(timestamp - gConsecutiveStartTime);
 
-        alert(message); //very intrusive, but it's still better then have the account locked up by Gmail
+        //very intrusive, but it's still better then 
+        //have the account locked up by Gmail!!!
+        alert(message); 
 
         resetCounter = true;
     }
@@ -122,7 +129,8 @@ SimpleGmailNotes.start = function(){
 
   var sendDebugInfo = function(){
     var debugInfo = "Browser Version: " + navigator.userAgent + "\n" + 
-                    gDebugInfoSummary + "\n" + gDebugInfoDetail + "\nPE:" + gDebugInfoErrorTrace;
+                    gDebugInfoSummary + "\n" + gDebugInfoDetail + 
+                    "\nPE:" + gDebugInfoErrorTrace;
     sendEventMessage('SGN_update_debug_page_info', {debugInfo:debugInfo});
   };
 
@@ -138,19 +146,26 @@ SimpleGmailNotes.start = function(){
           $(".sgn_input").prop("disabled", true);
           var previousVal = $(".sgn_input").val();
           if(previousVal.indexOf(warningMessage)< 0){
-            $(".sgn_input").css("background-color", "").css("font-size", "").css("color", "red");
-            $(".sgn_input").val(warningMessage + "\n\n--\n\n" + previousVal); //just in case the user has put some note at that moment
+            $(".sgn_input").css("background-color", "")
+                           .css("font-size", "")
+                           .css("color", "red");
+            //just in case the user has put some note at that moment
+            $(".sgn_input").val(warningMessage + "\n\n--\n\n" + previousVal); 
           }
       }
       else {
         if(!heartBeatAlertSent && isLoggedIn()){
-          //alert(warningMessage);    //may be do it later, the checking of current page is still a bit tricky
-          heartBeatAlertSent = true;  //the alert is quite annoying, only do it once
+          //alert(warningMessage);    
+          //may be do it later, the checking of current page 
+          //is still a bit tricky
+          //the alert is quite annoying, only do it once
+          heartBeatAlertSent = true;  
         }
       }
     }
     else {  //back ground is alive
-      if($(".sgn_input").is(":visible") && $(".sgn_input").val().indexOf(warningMessage) === 0){
+      if($(".sgn_input").is(":visible") && 
+           $(".sgn_input").val().indexOf(warningMessage) === 0){
         //network is just recovered
         $(".sgn_container:visible").remove();
         setupNoteEditorCatchingError();
@@ -160,9 +175,14 @@ SimpleGmailNotes.start = function(){
   };
 
   var isBackgroundDead = function(){
+      var thresholdTime = 5;
       var currentTime = Date.now();
-      var lastHeartBeat = SimpleGmailNotes.lastHeartBeat; //copy out to avoid race condition
-      var isDead = (currentTime - lastHeartBeat > 5000);
+      //copy out to avoid race condition
+      var lastHeartBeat = SimpleGmailNotes.lastHeartBeat; 
+      if(isDebug)
+        thresholdTime = 300;
+
+      var isDead = (currentTime - lastHeartBeat > thresholdTime * 1000);
       if(isDead){
         debugLog("background died");
       }
@@ -279,7 +299,8 @@ SimpleGmailNotes.start = function(){
     $(".nH.if").prepend(injenctionNode);  //hopefully this one is stable
     injenctionNode.show();
 
-    if(!$(".sgn_container:visible").length)  //text area failed to create, may cause dead loop
+    //text area failed to create, may cause dead loop
+    if(!$(".sgn_container:visible").length)  
     {
         addErrorToLog("Injection node failed to be found");
         return;
@@ -321,7 +342,8 @@ SimpleGmailNotes.start = function(){
         }
 
         var emailData;
-        if(strippedString.indexOf('["tb"') > 0){ //new email arrived for priority inbox view
+        //new email arrived for priority inbox view
+        if(strippedString.indexOf('["tb"') > 0){ 
           emailData = $.parseJSON(strippedString);
           email_list = gmail.tools.parse_view_data(emailData[0]);
         }
@@ -331,7 +353,8 @@ SimpleGmailNotes.start = function(){
           emailData = emailData[0];
 
           if(emailData[7] && emailData[7].length >= 3 && 
-             emailData[7][0] == "stu" && emailData[7][2] && emailData[7][2].length){
+             emailData[7][0] == "stu" && 
+             emailData[7][2] && emailData[7][2].length){
              var tempData = emailData[7][2];
              //to wrap up into a format that could be parsed by parse_view_data
              for(i=0; i<tempData.length; i++){
@@ -409,7 +432,8 @@ SimpleGmailNotes.start = function(){
       return;
     }
 
-    var strippedString = dataString.substring(startString.length, totalLength-endString.length);
+    var strippedString = dataString.substring(startString.length, 
+                                              totalLength-endString.length);
 
     var viewData = $.parseJSON(strippedString);
 
@@ -471,7 +495,8 @@ SimpleGmailNotes.start = function(){
 
     debugLog("@104", visibleRows.length, unmarkedRows.length, thisPullDiff);
 
-    var thisAbstractSignature = thisPullDiff + "|" + thisPullHash + "|" + thisPullItemRange + "|" + thisPendingCount;
+    var thisAbstractSignature = thisPullDiff + "|" + thisPullHash + "|" + 
+                                thisPullItemRange + "|" + thisPendingCount;
 
     /*
     if(thisPullDiff == lastPullDiff 
@@ -582,8 +607,8 @@ SimpleGmailNotes.start = function(){
       gDebugInfoErrorTrace += result;
   };
 
-  //I have to use try/catch instead of window.onerror because of restriction of
-  //of same origin policy: http://stackoverflow.com/questions/28348008/chrome-extension-how-to-trap-handle-content-script-errors-globally
+  //I have to use try/catch instead of window.onerror because of restriction of same origin policy: 
+  //http://stackoverflow.com/questions/28348008/chrome-extension-how-to-trap-handle-content-script-errors-globally
   var pullNotesCatchingError = function(){
     try{
       pullNotes();
@@ -646,7 +671,8 @@ SimpleGmailNotes.start = function(){
 
     setTimeout(pullNotesCatchingError, 0);
     setInterval(pullNotesCatchingError, 2000);
-    setInterval(setupNoteEditorCatchingError, 1770); //better not to overlapp to much with the above one
+    //better not to overlapp to much with the above one
+    setInterval(setupNoteEditorCatchingError, 1770); 
     setInterval(sendHeartBeatCatchingError, 1400);
 
 
@@ -658,7 +684,8 @@ SimpleGmailNotes.start = function(){
 
   main();
 
-}(window.SimpleGmailNotes = window.SimpleGmailNotes || {}, jQuery.noConflict(true)));
+}(window.SimpleGmailNotes = window.SimpleGmailNotes || 
+                            {}, jQuery.noConflict(true)));
 
 }; //end of SimpleGmailNotes.start
 

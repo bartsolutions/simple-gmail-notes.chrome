@@ -322,8 +322,11 @@ var setupNoteEditor = function(email, messageId){
   }
 
   var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
-      .html("<span class='sgn_current_connection'>Simple Gmail Notes connected to Google Drive of " +
-              "'<span class='sgn_user'></span>' </span>" +
+      .html("" + 
+              "<a target='_blank' class='sgn_bart_logo' href='https://www.bart.com.hk/?from=sgn-chrome'>" + 
+              "<img title='Powered By Bart Soluions' src='" + getIconBaseUrl() + "/bart-logo.24.png'></a>" + 
+              "<a class='sgn_action sgn_current_connection'>Connecting to Google Drive of " +
+              "<span class='sgn_user'></span></a> " +
               "<a class='sgn_logout sgn_action sgn_button' >" + 
               "<img title='Log Out' src='" + getIconBaseUrl() + "/logout.24.png'></a>" + 
               "<a class='sgn_open_options sgn_action sgn_button'>" +
@@ -336,7 +339,8 @@ var setupNoteEditor = function(email, messageId){
               "<img title='Search' src='" + getIconBaseUrl() + "/search.24.png'></a> " +
               "<a class='sgn_action sgn_color_picker sgn_button'>" +
               "<input type='hidden' class='sgn_color_picker_value' value='" + backgroundColor + "'>" +
-              "<img title='Note Color' class='sgn_color_picker_button' src='" + getIconBaseUrl() + "/color-picker.24.png'></a> " +
+              "<img title='Note Color' class='sgn_color_picker_button' src='" + getIconBaseUrl() + 
+                "/color-picker.24.png'></a> " +
               //"<a class='sgn_action sgn_donation' target='_blank'>" +
               //"<img title='Search' src='" + getIconBaseUrl() + "/donation.24.png'></a> " +
               "")
@@ -402,13 +406,13 @@ var setupNoteEditor = function(email, messageId){
             gCurrentGDriveNoteId = "";
           }
 
-
           sendBackgroundMessage(request);
       }
     });
   });
 
 
+  $(".sgn_current_connection").attr("href", getSearchNoteURL());
   $(".sgn_search").attr("href", getSearchNoteURL());
   $(".sgn_add_calendar").attr("href", getAddCalendarURL());
   
@@ -477,8 +481,10 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
 
     if(note && note.description && note.description != gSgnEmtpy){
       abstractNode = $('<div class="ar as sgn">' +
-                            '<div class="at" title="' + htmlEscape(note.description) + '" style="background-color: #ddd; border-color: #ddd;">' + 
-                            '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + htmlEscape(note.short_description) + '</div></div>' + 
+                            '<div class="at" title="' + htmlEscape(note.description) + 
+                            '" style="background-color: #ddd; border-color: #ddd;">' + 
+                            '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + 
+                            htmlEscape(note.short_description) + '</div></div>' + 
                        '</div></div>');
 
 
@@ -572,7 +578,8 @@ var setupListeners = function(){
   });
 
   document.addEventListener('SGN_heart_beat_request', function(e){
-    sendBackgroundMessage({action:"heart_beat_request", email:e.detail.email});    //if background script died, exception raise from here
+    //if background script died, exception raise from here
+    sendBackgroundMessage({action:"heart_beat_request", email:e.detail.email});    
   });
 
   document.addEventListener('SGN_setup_email_info', function(e) {
@@ -696,7 +703,8 @@ var setupListeners = function(){
           //var historyInjectionNode = $(".nH.adC:visible");
           var historyInjectionNode = getSidebarNode();
           var historyNode = $("<div class='sgn_history'><div class='sgn_history_header'><b>SGN History</b>" +
-              "<a class='sgn_show_all'><img title='Show All' src='" + getIconBaseUrl() + "/chat.24.png'></a></div></div>");
+                                  "<a class='sgn_show_all'><img title='Show All' src='" + getIconBaseUrl() + 
+                                  "/chat.24.png'></a></div></div>");
           historyInjectionNode.append(historyNode);
 
           for(var i=0; i<history.length; i++){
@@ -706,7 +714,8 @@ var setupListeners = function(){
 
             historyNode.append("<div class='sgn_history_note'>" +
                                       "<a target='_blank' href='" + getHistoryNoteURL(note.id) + "'>"  + 
-                                      noteDate.toString().substring(0, 24) + "</a><br/><br/>" + note.description + "</div>");
+                                      noteDate.toString().substring(0, 24) + "</a><br/><br/>" + 
+                                      note.description + "</div>");
 
             historyNode.find(".sgn_history_note").css("background-color", preferences["backgroundColor"])
                                                  .css("color", preferences["fontColor"]);
@@ -733,6 +742,10 @@ var setupListeners = function(){
                       request.gdriveFolderId, request.gdriveFolderId);
         gCurrentGDriveFolderId = request.gdriveFolderId;
         gCurrentGDriveNoteId = request.gdriveNoteId;
+
+        //the search note URL depends on gCurrentGDriveFolderId
+        $(".sgn_current_connection").attr("href", getSearchNoteURL());
+        $(".sgn_search").attr("href", getSearchNoteURL());
         break;
       case "set_debug":
         debugLog("Trying to set debug: " + request.value);

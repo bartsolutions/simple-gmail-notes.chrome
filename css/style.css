@@ -72,3 +72,22 @@
   display: none;
 }
 
+.sgn_container .sgn_current_connection{
+  color: #999;
+  display: inline-block;
+  text-decoration: none; 
+}
+
+.sgn_bart_logo{
+  display: inline-block;
+  padding-right: 10px;
+}
+
+.sgn_prompt_logout{
+    vertical-align: middle;
+}
+
+.sgn_prompt_logout a{
+    line-height: normal;
+    vertical-align: middle;
+}
