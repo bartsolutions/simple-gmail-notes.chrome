@@ -393,7 +393,7 @@ SimpleGmailNotes.start = function(){
   var updateEmailIdByDOM = function(dataString){
     var totalLength = dataString.length;
 
-    var startString = "var GM_TIMING_START_CHUNK2=new Date().getTime(); var VIEW_DATA=";
+    var startString = "var GM_TIMING_START_CHUNK2=new Date().getTime();var VIEW_DATA=";
     var endString = "; var GM_TIMING_END_CHUNK2=new Date().getTime();";
 
 
