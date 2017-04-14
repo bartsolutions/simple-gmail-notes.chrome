@@ -261,7 +261,8 @@ var postNote = function(email, messageId){
     var folderId = gCurrentGDriveFolderId;
     var content = getCurrentContent();
     var backgroundColor = getCurrentBackgroundColor();
-    var properties = [{"key" : "sgn-background-color", "value" : backgroundColor}];
+    var properties = [{"key" : "sgn-background-color", "value" : backgroundColor},
+                      {"key" : "sgn-author", "value" : email}];
     
 
     sendBackgroundMessage({action:"post_note", 
@@ -280,7 +281,7 @@ var setupNoteEditor = function(email, messageId){
 
   appendDebugInfo("startSetupNote");
 
-  var injectionNode = $(".sgn_container");
+  var injectionNode = $(".sgn_container:visible");
   var message = gEmailIdNoteDict[messageId];
 
   var note = "";
@@ -325,7 +326,7 @@ var setupNoteEditor = function(email, messageId){
       .html("" + 
               "<a target='_blank' class='sgn_bart_logo' href='https://www.bart.com.hk/?from=sgn-chrome'>" + 
               "<img title='Powered By Bart Soluions' src='" + getIconBaseUrl() + "/bart-logo.24.png'></a>" + 
-              "<a class='sgn_action sgn_current_connection'>Connecting to Google Drive of " +
+              "<a class='sgn_action sgn_current_connection'>SGN: " +
               "<span class='sgn_user'></span></a> " +
               "<a class='sgn_logout sgn_action sgn_button' >" + 
               "<img title='Log Out' src='" + getIconBaseUrl() + "/logout.24.png'></a>" + 
@@ -417,14 +418,18 @@ var setupNoteEditor = function(email, messageId){
   $(".sgn_add_calendar").attr("href", getAddCalendarURL());
   
   //set up color picker
-  $(".sgn_color_picker_value").simpleColor({columns:5, 
+  $(".sgn_color_picker_value").simpleColor({columns:4, 
                                       cellWidth: 30,
                                       cellHeight: 30,
                                       cellMargin: 5,
                                       colors: [
-                                        'C8FBFE', 'CBFEF1', 'D6FFD1', 'E8FFC1', 'FAFDBB',
-                                        'FFEDC1', 'FFE0C7', 'FFD9D0', 'D7D6FE', 'F1CDFE'
-                                       ],
+                                          'D8EAFF', 'C7F6F5', 'FFFF99',
+                                          'ACFDC1', 'E1E1E1', 'FED0C4', 'DAD3FE', 'F1CDEF'
+                                      ],
+                                      //colors: [
+                                       // 'C8FBFE', 'CBFEF1', 'D6FFD1', 'E8FFC1', 'FAFDBB',
+                                        //'FFEDC1', 'FFE0C7', 'FFD9D0', 'D7D6FE', 'F1CDFE'
+                                       //],
                                       //colors : [
                                         //'34C8D0', '1ED6A8', '52C843', '87C31F', 'BEC42A',
                                         //'D39C16', 'D47325', 'D65234', '5C58E6', 'BD4CE7'
@@ -559,6 +564,13 @@ var pullNotes = function(userEmail, requestList){
     debugLog("no pending item, skipped the pull");
     updateNotesOnSummary(userEmail, []);
   }
+};
+
+var setupSidebarLayout = function(containerNode){
+  var logo = containerNode.find(".sgn_bart_logo");
+
+  containerNode.append(logo);
+
 };
 
 
@@ -813,9 +825,11 @@ var setupListeners = function(){
           $(".nH.aHU").append(firstVisible);
         } else if(notePosition == "side-top") {
           //$(".nH.adC").prepend(firstVisible);
+          setupSidebarLayout(firstVisible);
           getSidebarNode().prepend(firstVisible);
         } else if(notePosition == "side-bottom") {
           //$(".nH.adC .nH .u5").before(firstVisible);
+          setupSidebarLayout(firstVisible);
           getSidebarNode().append(firstVisible);
         }
 
