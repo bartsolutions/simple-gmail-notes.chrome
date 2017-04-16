@@ -55,7 +55,9 @@ if(!isChrome()){
 }
 
 function showSavedPrompt(){
-  $("#status").html("Preferences saved.<br/><br/>Please refresh browser to make the changes effective.<br/><br/>");
+  $("#status").html("Preferences saved.<br/><br/>" +
+                      "Please refresh browser to make the changes effective." +
+                      "<br/><br/>");
   //clean up the text after 0.75 seconds
   setTimeout(function() { 
     $("#status").text("");
