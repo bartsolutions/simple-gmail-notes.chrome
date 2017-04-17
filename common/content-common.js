@@ -778,7 +778,13 @@ var setupListeners = function(){
         var emailId = request.messageId;
 
         //remove the note in cache, so the new notes would be collected next time
-        $("tr[sgn_email_id='" + emailId + "'] .sgn").remove();
+        var trNode = $("tr[sgn_email_id='" + emailId + "']");
+
+
+        if(trNode.is(".apv"))  //vertical split
+            trNode.next().next().find(".sgn").remove();
+        else
+            trNode.find(".sgn").remove();
 
         debugLog("@447", emailId);
         debugLog("Requesting force reload");

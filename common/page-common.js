@@ -486,7 +486,17 @@ SimpleGmailNotes.start = function(){
     var visibleRows = $("tr.zA[id]:visible");
     var unmarkedRows = visibleRows.filter(":not([sgn_email_id])");
     //rows that has been marked, but has no notes
-    var pendingRows = visibleRows.filter("[sgn_email_id]:not(:has(div.sgn))");
+
+    var pendingRows = $([]);
+    
+    if(gmail.check.is_preview_pane()){
+      visibleRows.each(function(){
+        if($(this).next().next().is(":not(:has(div.sgn))"))
+          pendingRows = pendingRows.add($(this));
+      });
+    }
+    else
+      pendingRows = visibleRows.filter("[sgn_email_id]:not(:has(div.sgn))");
 
     var thisPullDiff = visibleRows.length - unmarkedRows.length;
     var thisPullHash = window.location.hash;
@@ -544,7 +554,8 @@ SimpleGmailNotes.start = function(){
       }
       else{
         var email_id = $(this).attr("sgn_email_id");
-        requestList.push(email_id);
+        if(email_id)
+          requestList.push(email_id);
       }
     });
 
