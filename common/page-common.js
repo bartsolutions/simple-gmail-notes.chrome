@@ -203,15 +203,17 @@ SimpleGmailNotes.start = function(){
     return value.replace(/<(?:.|\n)*?>/gm, '');
   };
 
-  var getEmailKey = function(title, sender, time){
-    var emailKey = sender + "|" + time + "|" + stripHtml(title);
+  var getEmailKey = function(title, sender, time, excerpt){
+    var emailKey = sender + "|" + time + "|" + stripHtml(title) + "|" + excerpt.substring(0, 16);
+
+    debugLog("@209, generalted email key:" + emailKey);
 
     //in case already escaped
     emailKey = htmlEscape(emailKey);
     return emailKey;
   };
 
-  var getTitle = function(mailNode){
+  var getNodeTitle = function(mailNode){
     var hook = $(mailNode).find(".xT .y6");
 
     if(!hook.length)  //vertical split view
@@ -220,7 +222,7 @@ SimpleGmailNotes.start = function(){
     return hook.find("span").first().text();
   };
 
-  var getTime = function(mailNode) {
+  var getNodeTime = function(mailNode) {
     var hook = $(mailNode).find(".xW");
 
     if(!hook.length)  //vertical split view
@@ -229,15 +231,32 @@ SimpleGmailNotes.start = function(){
     return hook.find("span").last().attr("title");
   };
 
-  var getSender = function(mailNode) {
+  var getNodeSender = function(mailNode) {
     return mailNode.find(".yW .yP, .yW .zF").last().attr("email");
   };
 
+  var getNodeExcerpt = function(mailNode){
+    var hook = $(mailNode).find(".xT .y2");
+    var excerpt = "";
+
+    if(hook.length){
+      excerpt = hook.text().substring(3);  //remove " - "
+    }
+    if(!hook.length){  //vertical
+      hook = $(mailNode).next().next().find(".xY .y2");
+      excerpt = hook.text();
+    }
+
+
+    return excerpt;
+  };
+
   var getEmailKeyFromNode = function(mailNode){
-    var title = getTitle(mailNode);
-    var sender = getSender(mailNode);
-    var time = getTime(mailNode);
-    var emailKey = getEmailKey(title, sender, time);
+    var title = getNodeTitle(mailNode);
+    var sender = getNodeSender(mailNode);
+    var time = getNodeTime(mailNode);
+    var excerpt = getNodeExcerpt(mailNode);
+    var emailKey = getEmailKey(title, sender, time, excerpt);
 
     debugLog("@249, email key:" + emailKey);
 
@@ -412,7 +431,7 @@ SimpleGmailNotes.start = function(){
 
     for(i=0; i < email_list.length; i++){
       var email = email_list[i];
-      var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time);
+      var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time, email.excerpt);
       gEmailIdDict[emailKey] = email;
     }
   };
@@ -444,7 +463,7 @@ SimpleGmailNotes.start = function(){
 
     for(var i=0; i< email_list.length; i++){
       var email = email_list[i];
-      var emailKey = getEmailKey(email.title, email.sender, email.time);
+      var emailKey = getEmailKey(email.title, email.sender, email.time, email.excerpt);
       gEmailIdDict[emailKey] = email;
     }
 
