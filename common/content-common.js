@@ -612,6 +612,15 @@ var setupListeners = function(){
       return;
     }
 
+    if(messageId == "PREVIEW"){
+      return;
+    }
+
+    //if(gCurrentMessageId.length > 0 && gCurrentMessageId.length < 5 &&
+         //messageId.length > 5){  //for first time message loading after login, inside split view
+      //sendBackgroundMessage({action:"initialize", email: email, messageId: messageId, title: e.detail.subject });
+    //}
+
     //for add to calendar use
     gCurrentEmailSubject = e.detail.subject;
     gCurrentMessageId = messageId;

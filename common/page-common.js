@@ -282,6 +282,8 @@ SimpleGmailNotes.start = function(){
         var idNode = $("tr.zA.aps:visible[sgn_email_id]").first();
         if(idNode.length)
             messageId = idNode.attr("sgn_email_id");
+        else
+            messageId = "PREVIEW";
     }
 
     if(!messageId)
@@ -477,11 +479,6 @@ SimpleGmailNotes.start = function(){
       return; //no need to pull
     }
 
-    if(!isLoggedIn()){
-      addErrorToLog("not logged in.");
-      SimpleGmailNotes.duplicateRequestCount = 0;
-      return;
-    }
 
     var visibleRows = $("tr.zA[id]:visible");
     var unmarkedRows = visibleRows.filter(":not([sgn_email_id])");
@@ -544,6 +541,12 @@ SimpleGmailNotes.start = function(){
         $(this).attr("sgn_email_id", email.id);
       }
     });
+
+    if(!isLoggedIn()){
+      addErrorToLog("not logged in, skipped pull requests");
+      SimpleGmailNotes.duplicateRequestCount = 0;
+      return;
+    }
 
     var requestList = [];
     pendingRows.each(function(){
