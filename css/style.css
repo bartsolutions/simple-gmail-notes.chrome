@@ -99,3 +99,7 @@
     line-height: normal;
     vertical-align: middle;
 }
+
+.sgn_container .sgn_prompt_login .sgn_login{
+  color: #F09928;
+}

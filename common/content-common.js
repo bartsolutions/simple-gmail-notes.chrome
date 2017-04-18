@@ -347,7 +347,7 @@ var setupNoteEditor = function(email, messageId){
               "")
       .hide();
   var loginPrompt = $("<div class='sgn_prompt_login'/></div>" )
-      .html("Please <a class='sgn_login sgn_action'>connect</a> to " +
+      .html("Please <a class='sgn_login sgn_action'>log in</a> to " +
               "your Google Drive account to start using Simple Gmail Notes" )
       .hide();
   var emptyPrompt = $("<div class='sgn_padding'>&nbsp;<div>");
