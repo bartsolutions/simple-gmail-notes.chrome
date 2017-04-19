@@ -444,7 +444,7 @@ var setupNoteEditor = function(email, messageId){
 
 
   $(".sgn_color_picker_button").click(function(e){
-		  if(event.target != this){
+		  if(e.target != this){
 				return;
 			}
 
