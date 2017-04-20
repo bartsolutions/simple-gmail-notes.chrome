@@ -204,7 +204,7 @@ SimpleGmailNotes.start = function(){
   };
 
   var getEmailKey = function(title, sender, time, excerpt){
-    var emailKey = sender + "|" + time + "|" + stripHtml(title) + "|" + htmlUnescape(excerpt).substring(0, 16);
+    var emailKey = sender + "|" + time + "|" + stripHtml(title) + "|" + excerpt;
 
     debugLog("@209, generalted email key:" + emailKey);
 
@@ -236,17 +236,14 @@ SimpleGmailNotes.start = function(){
   };
 
   var getNodeExcerpt = function(mailNode){
-    var hook = $(mailNode).find(".xT .y2");
     var excerpt = "";
 
-    if(hook.length){
-      excerpt = hook.text().substring(3);  //remove " - "
+    if($(mailNode).find(".xW").length){ //normal view
+      excerpt = $(mailNode).find(".xT .y2").text().substring(3);  //remove " - "
     }
-    if(!hook.length){  //vertical
-      hook = $(mailNode).next().next().find(".xY .y2");
-      excerpt = hook.text();
+    else{ //vertical view
+      excerpt = $(mailNode).next().next().find(".xY .y2").text();
     }
-
 
     return excerpt;
   };
@@ -463,7 +460,7 @@ SimpleGmailNotes.start = function(){
 
     for(var i=0; i< email_list.length; i++){
       var email = email_list[i];
-      var emailKey = getEmailKey(email.title, email.sender, email.time, email.excerpt);
+      var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time, htmlUnescape(email.excerpt));
       gEmailIdDict[emailKey] = email;
     }
 
