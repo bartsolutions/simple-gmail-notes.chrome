@@ -431,7 +431,7 @@ SimpleGmailNotes.start = function(){
 
     for(i=0; i < email_list.length; i++){
       var email = email_list[i];
-      var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time, email.excerpt);
+      var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time, htmlUnescape(email.excerpt));
       gEmailIdDict[emailKey] = email;
     }
   };
