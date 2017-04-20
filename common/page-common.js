@@ -204,7 +204,7 @@ SimpleGmailNotes.start = function(){
   };
 
   var getEmailKey = function(title, sender, time, excerpt){
-    var emailKey = sender + "|" + time + "|" + stripHtml(title) + "|" + excerpt.substring(0, 16);
+    var emailKey = sender + "|" + time + "|" + stripHtml(title) + "|" + htmlUnescape(excerpt).substring(0, 16);
 
     debugLog("@209, generalted email key:" + emailKey);
 
