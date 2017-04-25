@@ -7,12 +7,12 @@ var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor",
                         "showNoteHistory", "firstLineAbstract",
                         "debugPageInfo", "debugContentInfo", "debugBackgroundInfo"];
 
-function isChrome(){
-   return (/chrom(e|ium)/).test(navigator.userAgent.toLowerCase());
+function isWebextension(){
+  return true;
 }
 
 function pushPreferences(preferences){
-  if(isChrome()){
+  if(isWebextension()){
     $.each(gPreferenceTypes, function(index, key){
         localStorage[key] = preferences[key];
     });
@@ -25,7 +25,7 @@ function pushPreferences(preferences){
 function pullPreferences(){
   var preferences = {};
 
-  if(isChrome()){
+  if(isWebextension()){
     updateDefaultPreferences(localStorage);
     $.each(gPreferenceTypes, function(index, key){
       preferences[key] = localStorage[key];
@@ -41,7 +41,7 @@ function pullPreferences(){
 }
 
 //for firefox only
-if(!isChrome()){
+if(!isWebextension()){
   self.port.on("SGN_options", function(request){
     switch(request.action){
       case "update_preferences":
