@@ -504,7 +504,7 @@ SimpleGmailNotes.start = function(){
 
     var pendingRows = $([]);
     
-    if(gmail.check.is_preview_pane()){
+    if(sgnGmailDom.isPreviewPane()){
       visibleRows.each(function(){
         if($(this).next().next().is(":not(:has(div.sgn))"))
           pendingRows = pendingRows.add($(this));

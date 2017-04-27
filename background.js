@@ -107,7 +107,7 @@ chrome.runtime.onInstalled.addListener(function(details){
 
               alert("The exteions of \'Simple Gmail Notes\' was updated. " +
                     "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n" +
-                    "New in v0.9.0.4:\n" +
+                    "New in v0.9.1:\n" +
                     "- Bug fix for abstract display for emails with special characters\n" +
                     "\n\nIf you think the extension is helpful, please consider a donation via the preferences page. Thank you!");
 
