@@ -3,7 +3,7 @@
   "name": "Simple Gmail Notes",
   "short_name": "SGNotes",
   "description": "Add notes to email threads in Gmail.",
-  "version": "0.9.0.5",
+  "version": "0.9.1",
   "icons": { "16": "icon-16.png",
            "48": "icon-48.png",
           "128": "icon-128.png" },
@@ -23,7 +23,8 @@
   "web_accessible_resources": [
     "lib/jquery-3.1.0.min.js",
     "lib/jquery.popupoverlay.js",
-    "lib/gmail.js",
+    "lib/gmail-sgn-dom.js",
+    "lib/gmail-sgn-page.js",
     "common/shared-common.js",
     "common/page-common.js",
     "page.js",

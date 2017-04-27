@@ -1,7 +1,8 @@
 /*
  * Simple Gmail Notes
  * https://github.com/walty8
- * Copyright (C) 2015 Walty Yeung <walty8@gmail.com>
+ * Copyright (C) 2017 Walty Yeung <walty8@gmail.com>
+ * License: GPLv3
  *
  * This script is going to be shared for both Firefox and Chrome extensions.
  */
@@ -33,7 +34,8 @@ SimpleGmailNotes.start = function(){
   /* -- end -- */
 
   /* global variables (inside the closure)*/
-  var gmailSgn;
+  var sgnGmailDom;
+  var sgnGmailPage;
   var gEmailIdDict = {};
   var gDebugInfoDetail = "";
   var gDebugInfoSummary = "";
@@ -63,7 +65,7 @@ SimpleGmailNotes.start = function(){
       eventDetail = {};
     }
 
-    eventDetail.email = gmailSgn.get.user_email();
+    eventDetail.email = sgnGmailPage.userEmail();
     document.dispatchEvent(new CustomEvent(eventName,  {detail: eventDetail}));
   };
 
@@ -294,7 +296,7 @@ SimpleGmailNotes.start = function(){
     var subject = $(".ha h2.hP:visible").text();
     var messageId = "";
 
-    if(gmailSgn.check.is_preview_pane()){
+    if(sgnGmailDom.isPreviewPane()){
         var idNode = $("tr.zA.aps:visible[sgn_email_id]").first();
         if(idNode.length)
             messageId = idNode.attr("sgn_email_id");
@@ -303,14 +305,14 @@ SimpleGmailNotes.start = function(){
     }
 
     if(!messageId)
-        messageId = gmailSgn.get.email_id();
+        messageId = sgnGmailDom.emailId();
 
     if(!messageId){  //do nothing
         addErrorToLog("message not found");
         return;
     }
 
-    gDebugInfoDetail = "Is Conversation View: " + gmailSgn.check.is_conversation_view();
+    gDebugInfoDetail = "Is Conversation View: " + sgnGmailPage.isConversationView();
     sendDebugInfo();
 
     var injenctionNode = $("<div></div>", { "class" : "sgn_container" }); 
@@ -363,7 +365,7 @@ SimpleGmailNotes.start = function(){
         //new email arrived for priority inbox view
         if(strippedString.indexOf('["tb"') > 0){ 
           emailData = $.parseJSON(strippedString);
-          email_list = gmailSgn.tools.parse_view_data(emailData[0]);
+          email_list = sgnGmailPage.parseViewData(emailData[0]);
         }
         else if(strippedString.indexOf('["stu"') > 0){
           var newData = [];
@@ -374,13 +376,13 @@ SimpleGmailNotes.start = function(){
              emailData[7][0] == "stu" && 
              emailData[7][2] && emailData[7][2].length){
              var tempData = emailData[7][2];
-             //to wrap up into a format that could be parsed by parse_view_data
+             //to wrap up into a format that could be parsed by parseViewData
              for(i=0; i<tempData.length; i++){
                 newData.push(["tb", "", [tempData[i][1]]]);
              }
           }
 
-          email_list = gmailSgn.tools.parse_view_data(newData);
+          email_list = sgnGmailPage.parseViewData(newData);
         }
     }
     else if(lineList.length > 3){ //JSON data mingled with byte size
@@ -423,7 +425,7 @@ SimpleGmailNotes.start = function(){
         //resultList.push(tempList[0]);
       }
 
-      email_list = gmailSgn.tools.parse_view_data(resultList);
+      email_list = sgnGmailPage.parseViewData(resultList);
     }
 
     for(i=0; i < email_list.length; i++){
@@ -456,7 +458,7 @@ SimpleGmailNotes.start = function(){
 
     var viewData = $.parseJSON(strippedString);
 
-    var email_list = gmailSgn.tools.parse_view_data(viewData);
+    var email_list = sgnGmailPage.parseViewData(viewData);
 
     for(var i=0; i< email_list.length; i++){
       var email = email_list[i];
@@ -477,17 +479,17 @@ SimpleGmailNotes.start = function(){
 
   var pullNotes = function(){
     if(!$("tr.zA").length ||
-       (gmailSgn.check.is_inside_email() && !gmailSgn.check.is_preview_pane())){
+       (sgnGmailDom.isInsideEmail() && !sgnGmailDom.isPreviewPane())){
       addErrorToLog("pull skipped");
       debugLog("Skipped pulling because no tr to check with");
       return;  
     }
 
     gDebugInfoSummary = "Last Summary Page URL: " + window.location.href;
-    gDebugInfoSummary += "\nIs Vertical Split: " + gmailSgn.check.is_vertical_split();
-    gDebugInfoSummary += "\nIs Horizontal Split: " + gmailSgn.check.is_horizontal_split();
-    gDebugInfoSummary += "\nIs Preview Pane: " + gmailSgn.check.is_preview_pane();
-    gDebugInfoSummary += "\nIs Multiple Inbox: " + gmailSgn.check.is_multiple_inbox();
+    gDebugInfoSummary += "\nIs Vertical Split: " + sgnGmailDom.isVerticalSplit();
+    gDebugInfoSummary += "\nIs Horizontal Split: " + sgnGmailDom.isHorizontalSplit();
+    gDebugInfoSummary += "\nIs Preview Pane: " + sgnGmailDom.isPreviewPane();
+    gDebugInfoSummary += "\nIs Multiple Inbox: " + sgnGmailDom.isMultipleInbox();
     sendDebugInfo();
 
     if(isBackgroundDead()){
@@ -566,7 +568,7 @@ SimpleGmailNotes.start = function(){
 
     var requestList = [];
     pendingRows.each(function(){
-      if(gmailSgn.check.is_preview_pane() &&
+      if(sgnGmailDom.isPreviewPane() &&
         $(this).next().next().find(".apB .apu .sgn").length){
           //marked in preview pane
           var dummy = 1;
@@ -607,7 +609,7 @@ SimpleGmailNotes.start = function(){
     }
 
     sendEventMessage("SGN_pull_notes",
-                     {email: gmailSgn.get.user_email(), requestList:requestList});
+                     {email: sgnGmailPage.userEmail(), requestList:requestList});
 
 
     addErrorToLog("pull request sent");
@@ -669,26 +671,48 @@ SimpleGmailNotes.start = function(){
   };
 
   var main = function(){
-    gmailSgn = new SimpleGmailNotes_Gmail(localJQuery);
+    //sgnGmailDom = new SimpleGmailNotes_Gmail(localJQuery);
+    sgnGmailDom = new SGNGmailDOM(localJQuery);
 
-    gmailSgn.observe.on('open_email', function(obj){
+    var sgnGmailPageOptions = {
+      openEmailCallback: function(){
+        debugLog("simple-gmail-notes: open email event", obj);
+        g_oec += 1;
+        setupNoteEditorCatchingError();
+      },
+      httpEventCallback: function(params, responseText, readyState) {
+        //debugLog("xhr:", xhr);
+        updateEmailIdByJSON(responseText);
+      },
+      onloadCallback: function(){
+        debugLog("simple-gmail-notes: load event");
+        g_lc += 1;
+        setupNoteEditorCatchingError();
+      }
+    };
+
+    sgnGmailPage = new SGNGmailPage(localJQuery, sgnGmailPageOptions);
+
+    /*
+    sgnGmailDom.observe.on('open_email', function(obj){
       debugLog("simple-gmail-notes: open email event", obj);
       g_oec += 1;
       setupNoteEditorCatchingError();
     });
 
-    gmailSgn.observe.on('load', function(obj){
+    sgnGmailDom.observe.on('load', function(obj){
       debugLog("simple-gmail-notes: load event");
       g_lc += 1;
       setupNoteEditorCatchingError();
     });
 
     //id is always undefined
-    gmailSgn.observe.after('http_event', function(params, id, xhr) {
+    sgnGmailDom.observe.after('http_event', function(params, id, xhr) {
       debugLog("xhr:", xhr);
       updateEmailIdByJSON(xhr.responseText);
     });
 
+    */
     document.addEventListener('SGN_PAGE_heart_beat_response', function(e) {
       SimpleGmailNotes.lastHeartBeat = Date.now();
       SimpleGmailNotes.gdriveEmail = e.detail;
@@ -709,7 +733,8 @@ SimpleGmailNotes.start = function(){
     setInterval(sendDebugInfo, 3000); //update debug info to back side
 
     //mainly for debug purpose
-    SimpleGmailNotes.gmail = gmail;
+    SimpleGmailNotes.sgnGmailDom = sgnGmailDom;
+    SimpleGmailNotes.sgnGmailPage = sgnGmailPage;
   };
 
   main();

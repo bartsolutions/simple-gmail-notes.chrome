@@ -1,7 +1,7 @@
 /*
  * Simple Gmail Notes 
  * https://github.com/walty8
- * Copyright (C) 2015 Walty Yeung <walty8@gmail.com>
+ * Copyright (C) 2017 Walty Yeung <walty8@gmail.com>
  * License: GPLv3
  *
  * This script is going to be shared for both Firefox and Chrome extensions.
@@ -903,7 +903,8 @@ var contentLoadDone = false;
 
 function setupPage(){
     addScript('lib/jquery-3.1.0.min.js');
-    addScript('lib/gmail.js');
+    addScript('lib/gmail-sgn-page.js');
+    addScript('lib/gmail-sgn-dom.js');
     addScript('common/shared-common.js');
     addScript('common/page-common.js');
     addScript('page.js');
