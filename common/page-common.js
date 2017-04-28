@@ -201,12 +201,14 @@ SimpleGmailNotes.start = function(){
               .replace(/>/g, '&gt;');
   };
 
+  var specialCharRe = new RegExp(String.fromCharCode(160), 'g');
   var stripHtml = function(value){
-    return value.replace(/<(?:.|\n)*?>/gm, '');
+    return value.replace(/<(?:.|\n)*?>/gm, '')
+                .replace(specialCharRe, ' ');
   };
 
   var getEmailKey = function(title, sender, time, excerpt){
-    var emailKey = sender + "|" + time + "|" + stripHtml(title) + "|" + excerpt;
+    var emailKey = sender + "|" + time + "|" + stripHtml(title) + "|" + stripHtml(excerpt);
 
     debugLog("@209, generalted email key:" + emailKey);
 
@@ -265,6 +267,7 @@ SimpleGmailNotes.start = function(){
   // I needed the opposite function today, so adding here too:
   var htmlUnescape = function(value){
       return String(value)
+          .replace(/&nbsp;/g, ' ')
           .replace(/&quot;/g, '"')
           .replace(/&#39;/g, "'")
           .replace(/&lt;/g, '<')
