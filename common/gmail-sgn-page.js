@@ -40,9 +40,20 @@ var SGNGmailPage = function(localJQuery, options){
 
   api.globals = window.GLOBALS;
 
+  var _userEmail;
   //page specific data checking
   api.userEmail = function() {
-    return api.globals[10];
+    if(_userEmail)
+      return _userEmail;
+
+    if(SimpleGmailNotes.isInbox()){
+      var hook = $("#gb .gb_b.gb_eb.gb_R");
+      _userEmail = hook.attr("title").split("(")[1].split(")")[0];
+    }
+    else
+      _userEmail = api.globals[10];
+
+    return _userEmail;
   };
 
   api.isConversationView = function() {
@@ -107,7 +118,8 @@ var SGNGmailPage = function(localJQuery, options){
       params[match[1]] = match[2];
     }
 
-    options.httpEventCallback(params, responseText, readyState);
+    if(options.httpEventCallback)
+      options.httpEventCallback(params, responseText, readyState);
 
     if(params.url && 
         (params.url.view == 'cv' || params.url.view == 'ad') && 
@@ -120,19 +132,21 @@ var SGNGmailPage = function(localJQuery, options){
   };
 
   //http://stackoverflow.com/questions/25335648/how-to-intercept-all-ajax-requests-made-by-different-js-libraries
-  var win = top.document.getElementById("js_frame").contentDocument.defaultView;
-
-  (function(open) {
-    win.XMLHttpRequest.prototype.open = function(method, url, async, user, pass) {
-        this.addEventListener("readystatechange", function() {
-          if (this.readyState === this.DONE) {
-            console.log(this.readyState); // this one I changed
-            _ajaxCallback(this.responseText, this.readyState, this.responseURL);
-          }
-        }, false);
-        open.call(this, method, url, async, user, pass);
-    };
-  })(win.XMLHttpRequest.prototype.open);
+	
+	if(!SimpleGmailNotes.isInbox()){
+    var win = top.document.getElementById("js_frame").contentDocument.defaultView;
+		(function(open) {
+			win.XMLHttpRequest.prototype.open = function(method, url, async, user, pass) {
+					this.addEventListener("readystatechange", function() {
+						if (this.readyState === this.DONE) {
+							//console.log(this.readyState); // this one I changed
+							_ajaxCallback(this.responseText, this.readyState, this.responseURL);
+						}
+					}, false);
+					open.call(this, method, url, async, user, pass);
+			};
+		})(win.XMLHttpRequest.prototype.open);
+	}
 
   /*
   (function(orgSend) {

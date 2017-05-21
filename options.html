@@ -3,8 +3,9 @@
 <head><title>Simple Gmail Notes Options</title>
 <script src="lib/jquery-3.1.0.min.js"></script>
 <script src="lib/jquery.simple-color.js"></script>
-<script src="common/background-common.js"></script>
-<script src="common/options.js"></script>
+<script src="common/shared-common.js"></script>
+<script src="background.js"></script>
+<script src="options.js"></script>
 <style>
   * {
    font-size: 16px;
@@ -21,6 +22,11 @@
     letter-spacing: 1px;
   }
 
+  .logo{
+    text-align:center;
+      margin-top:15px;
+  }
+
 </style>
 </head>
 <body>
@@ -29,7 +35,15 @@
   <div style='border:solid 1px red;padding:5px'>
     <h2 style='color:red'>About the Donation</h2>
     <ul>
-      <li><b>If you do like this extension, <a style='color:blue' target='_blank' href='http://www.simplegmailnotes.com/donation'>please support the development via donation</a>.</b>
+      <li><b>If you do like this extension, <a id='donation' style='color:blue' target='_blank' href='#'>please support the development via donation</a>.</b>
+    </ul>
+  </div>
+
+  <div style='border:solid 1px red;padding:5px;margin-top:10px'>
+    <h2 style='color:red'>Hire Us</h2>
+    <ul>
+      <li><b>We also build <i>fantastic</i> mobile app (iOS and Android), website, and private extension. 
+          <a id='contact_us' style='color:blue' target='_blank' href='#'>Contact us</a> for more details.</b>
     </ul>
   </div>
 
@@ -44,7 +58,7 @@
       <td>
           <select id="abstract_style">
               <option value="none">(No Abstract)</option>
-              <option value="fixed_SGN">(Fixed) [SGN]</option>
+              <option value="fixed_SGN">(Fixed) (SGN)</option>
           </select>
       </td>
     </tr>
@@ -58,7 +72,8 @@
     </tr>
     <tr>
       <td>
-        Note height (number of rows)
+        Note height, in number of rows
+  <br/>(No effect for Inbox)
       </td>
       <td>
         <select id="note_height">
@@ -68,6 +83,7 @@
     <tr>
       <td>
         Note position
+  <br/>(No effect for Inbox)
       </td>
       <td>
         <select id="note_position">
@@ -175,6 +191,7 @@
       <td>
         <label for="show_note_history">
         Show Note History
+  <br/>(No effect for Inbox)
       </label>
       </td>
       <td>
@@ -198,7 +215,7 @@
   <h2>FAQ</h2>
   <ul>
     <li><b>May I get more information about the extension?</b></li>
-    <li>Please visit the <a target="_blank" href='http://www.simplegmailnotes.com'>http://www.simplegmailnotes.com</a> for the detailed instructions and policies.</li></ul>
+    <li>Please visit the <a style='color: blue' target="_blank" href='http://www.simplegmailnotes.com'>http://www.simplegmailnotes.com</a> for the detailed instructions and policies.</li></ul>
   <ul>
       <li><b>How do I refresh the Gmail page?</b></li>
       <li>Please left click the address bar and press 'Enter' key to do a full refresh.</li>
@@ -213,13 +230,18 @@
   </ul>
   <ul>
       <li><b>How do I report a bug?</b></li>
-      <li><div>Please report your bug in the <a target='_blank' href='https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm/support?hl=en'>Chrome extension site</a>.</div> 
+      <li><div>Please report your bug in the <a id='support' style='color: blue' target='_blank' href='#'>supporting site</a>.</div> 
           <div>And, if possible, please also include the following information in the bug report: (Please remove any information that you think is sensitive)</div>
           <pre id='debug_page_info'> </pre>
           <pre id='debug_content_info'> </pre>
           <pre id='debug_background_info'> </pre>
       </li>
   </ul>
+  <div class="logo">
+    <a target="_blank" id="bart_logo" href="#">
+      <img src="">
+    </a>
+  </div>
 </div>
 </body>
 </html>

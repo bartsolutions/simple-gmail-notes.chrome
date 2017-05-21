@@ -4,6 +4,10 @@
   margin: 16px 24px 16px 24px;
 }
 
+.sgn_container.sgn_inbox{
+  margin: 5px 15px 5px 15px;
+}
+
 .sgn_container.sgn_position_side-top,
 .sgn_container.sgn_position_side-bottom {
   margin-left: 0;
@@ -37,6 +41,7 @@
   height: 72px;
   margin: 5px;
   width: 100%;
+  line-height: 1.2;
 }
 
 .sgn_container.sgn_position_side-top textarea.sgn_input,
@@ -102,4 +107,41 @@
 
 .sgn_container .sgn_prompt_login .sgn_login{
   color: #4D9ED0;
+}
+
+.sgn_inactive_warning {
+  text-align: center;
+}
+
+.sgn_inactive_warning div{
+  color: red;
+  border: solid 1px red;
+  display: inline-block;
+}
+
+.sgn_message {
+  width: 500px;
+  color: white;
+  line-height: 130%;
+  background-color: #4D9ED0;
+  padding: 10px;
+  
+}
+
+.sgn_message .item{
+  line-height: 200%;
+}
+
+.sgn_message a, .sgn_message a:visited {
+  color: white;
+}
+
+.sgn_message .strong{
+  font-weight: bold;
+  font-style: italic;
+}
+
+.sgn_message .title{
+  text-align: center;
+  font-weight: bold;
 }

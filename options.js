@@ -1,59 +1,3 @@
-
-var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", 
-                        "backgroundColor", "fontSize", "abstractFontColor", 
-                        "abstractBackgroundColor", "abstractFontSize", 
-                        "notePosition", "showConnectionPrompt", 
-                        "showAddCalendar", "showDelete", "showNoteColorPicker",
-                        "showNoteHistory", "firstLineAbstract",
-                        "debugPageInfo", "debugContentInfo", "debugBackgroundInfo"];
-
-function isWebextension(){
-  return true;
-}
-
-function pushPreferences(preferences){
-  if(isWebextension()){
-    $.each(gPreferenceTypes, function(index, key){
-        localStorage[key] = preferences[key];
-    });
-  }
-  else {  //firefox
-    self.port.emit("SGN_options", {"action": "push_preferences", "preferences":preferences});
-  }
-}
-
-function pullPreferences(){
-  var preferences = {};
-
-  if(isWebextension()){
-    updateDefaultPreferences(localStorage);
-    $.each(gPreferenceTypes, function(index, key){
-      preferences[key] = localStorage[key];
-    });
-
-    updateControls(preferences);
-  }
-  else {  //firefox
-    //ask background script to post the preferences
-    self.port.emit("SGN_options", {action:"pull_preferences"});
-    //result would be posted as update_preferences
-  }
-}
-
-//for firefox only
-if(!isWebextension()){
-  self.port.on("SGN_options", function(request){
-    switch(request.action){
-      case "update_preferences":
-        updateControls(request.preferences);
-        break;
-      default:
-        //ignore it
-        break;
-    }
-  });
-}
-
 function showSavedPrompt(){
   $("#status").html("Preferences saved.<br/><br/>" +
                       "Please refresh browser to make the changes effective." +
@@ -190,6 +134,7 @@ function revokeToken(){
 
 $(document).ready(function(){
   initPreferences();
+  var SGNO = SimpleGmailNotes;
 
   $("#save").click(savePreferences);
   $("#reset").click(resetPreferences);
@@ -198,6 +143,12 @@ $(document).ready(function(){
   $("#background_color").simpleColor({ displayColorCode: true });
   $("#abstract_font_color").simpleColor({ displayColorCode: true });
   $("#abstract_background_color").simpleColor({ displayColorCode: true });
+  $("#donation").attr("href", SGNO.getDonationUrl("pr"));
+  $("#contact_us").attr("href", SGNO.getOfficalSiteUrl("pr"));
+
+  $("#bart_logo").attr("href", SGNO.getOfficalSiteUrl("pr"));
+  $("#bart_logo img").attr("src", SGNO.getLogoImageSrc("pr"));
+  $("#support").attr("href", SGNO.getSupportUrl());
 
   pullPreferences();
 });

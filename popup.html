@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Gmail Notes Popup</title>
+  <script src="lib/jquery-3.1.0.min.js"></script>
+  <script src="common/shared-common.js"></script>
+  <script src="background.js"></script>
+  <script src="popup.js"> </script>
+  <style>
+    body {
+      width:250px;
+    }
+    div.row {
+      margin: 10px;
+    }
+
+    .strong{
+      font-weight: bold;
+      font-style: italic;
+      font-size: 120%;
+    }
+
+    .sgn-menu-table a, .sgn-menu-table a:visited{
+      color:#2e90ce;
+      text-decoration: none;
+      vertical-align: middle;
+      clear: left;
+    }
+
+    .sgn-menu-table img{
+      height:14px;
+      margin:5px;
+
+      vertical-align: middle;
+    }
+    div.logo {
+      text-align: right;
+    }
+    .helper{
+      display: inline-block;
+      height: 100%;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <table class='sgn-menu-table'>
+    <tr>
+      <td>
+        <img src="image/popup/donation.png">
+      </td>
+      <td>
+        <a class="strong" id="donation" href="#">Donation</a>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="image/popup/hire-us.png">
+      </td>
+      <td>
+        <a class="strong" id="hire_us" href="#">Hire Us (App / Website / Extension)</a>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="image/popup/how-to-use.png">
+      </td>
+      <td>
+        <a href="https://www.bart.com.hk/how-to-use-simple-gmail-notes/">How to Use</a>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="image/popup/preferences.png">
+      </td>
+      <td>
+        <a id="open_options" href="#">Preferences</a>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="image/popup/report-a-bug.png">
+      </td>
+      <td>
+        <a id="support" href="#">Report a Bug / Suggest a New Feature</a>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="image/popup/logout-all-machines.png">
+      </td>
+      <td>
+        <a id="revoke" target="_blank" href="https://accounts.google.com/IssuedAuthSubTokens">Logout All Machines</a></div>
+      </td>
+    </tr>
+  </table>
+  <hr/>
+  <div class="row"><b>Recent Updates:</b></div>
+  <div class="row">
+    v1.0.0:<br/>
+    - SUPPORT GOOGLE INBOX!<br/>
+    - Removed all other permissions, except access to Google servers<br/>
+    - Shortcut access from toolbar button<br/>
+    <br/>
+    v0.9.0:<br/>
+    - Able to set color to individual notes<br/>
+    - User could select the Google Drive to connect during each login<br/>
+  </div>
+  <div class="row logo">
+    <a target="_blank" id="bart_logo" href="#">
+      <img src="">
+    </a>
+  </div>
+</body>
+</html>
