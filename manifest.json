@@ -2,8 +2,9 @@
   "manifest_version": 2,
   "name": "Simple Gmail Notes",
   "short_name": "SGNotes",
-  "description": "Add notes to email threads in Gmail and Inbox.",
-  "version": "1.0.0.7",
+  "description": "__MSG_extDescription__",
+  "version": "1.1.2.0",
+  "default_locale": "en",
   "icons": { "16": "image/icon.16.png",
            "48": "image/icon.48.png",
           "128": "image/icon.128.png" },
@@ -45,6 +46,7 @@
       "js": [ "lib/jquery-3.1.0.min.js", "lib/jquery.popupoverlay.js", 
               "lib/jquery.simple-color.js", 
               "common/shared-common.js",
+              "common/gmail-sgn-dom.js",
               "content.js"],
       "css": [ "css/style.css"],
       "run_at": "document_end"
@@ -54,7 +56,12 @@
     "default_popup": "popup.html"
   },
   "options_page": "options.html",
-  "options_ui": {"page": "options.html"},
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgyUBS53d5P2ograP4JKK656jrrauipHsAdgcTZyL1j5MKBMD4yBmHl9BcmS+sfhmOE5fS38ng7XRZIErp8SrWbJwwstMWx+FTDKlrFS3J5so85CgOpRNge+Ge8UyhxAkPB7zui1AU3wD/XieaGN2L9pmT4MN1u6pPs2Lf/8i96Vp8YjUKaKIWmevKeqsGr1HNHZt41/dcBBIr6vW6OoWlViI1bae+p4Cv6VertdadkuW4hc7z8jVrlC0Lyu43oETmXWflUhw/hCctktI+KwJNk47Pm9vX2Bgw7EdovukrYPV+iNzzE49jirbQkZvMGuNV3fA+NbUwmo7c9dypCAweQIDAQAB"
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgyUBS53d5P2ograP4JKK656jrrauipHsAdgcTZyL1j5MKBMD4yBmHl9BcmS+sfhmOE5fS38ng7XRZIErp8SrWbJwwstMWx+FTDKlrFS3J5so85CgOpRNge+Ge8UyhxAkPB7zui1AU3wD/XieaGN2L9pmT4MN1u6pPs2Lf/8i96Vp8YjUKaKIWmevKeqsGr1HNHZt41/dcBBIr6vW6OoWlViI1bae+p4Cv6VertdadkuW4hc7z8jVrlC0Lyu43oETmXWflUhw/hCctktI+KwJNk47Pm9vX2Bgw7EdovukrYPV+iNzzE49jirbQkZvMGuNV3fA+NbUwmo7c9dypCAweQIDAQAB",
+  "applications": {
+    "gecko": {
+      "id": "@simple-gmail-notes",
+      "strict_min_version": "53.0"
+    }
+  }
 }
 

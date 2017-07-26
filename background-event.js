@@ -1,3 +1,12 @@
+/*
+ * Simple Gmail Notes 
+ * https://github.com/walty8
+ * Copyright (C) 2017 Walty Yeung <walty@bart.com.hk>
+ * License: GPLv3
+ *
+ * This script is going to be used by background only
+ */
+
 //For messaging between background and content script
 $(window).on('load', function(){
   SGNB.getBrowser().runtime.onMessage.addListener(
@@ -7,17 +16,23 @@ $(window).on('load', function(){
 
       setupListeners(sender, request);
   });
+
+  var preferences = getPreferences();
+  preferences['debugBackgroundInfo'] = "Extension Version: " + SGNB.getExtensionVersion();
 });
 
 SGNB.getBrowser().runtime.onInstalled.addListener(function(details){
     var preferences = getPreferences();
     if(details.reason == "install"){
-      alert("Thanks for installing. Please reload the Gmail page (click address bar & press enter key) to start using the extension!");
+      if(SGNB.isChrome()){
+        alert("Thanks for installing. Please reload the Gmail page (click address bar & press enter key) to start using the extension!");
+      }
       preferences["upgrade_notification_done"] = true;
     } 
     else{
       SGNB.getBrowser().browserAction.setBadgeText({"text": gBadgeText});
       preferences["upgrade_notification_done"] = "";
+      preferences["install_notification_done"] = true;
       /*
       alert("The exteions of \'Simple Gmail Notes\' was updated. " +
             "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n");

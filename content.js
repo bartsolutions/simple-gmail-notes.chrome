@@ -1,10 +1,9 @@
 /*
  * Simple Gmail Notes 
  * https://github.com/walty8
- * Copyright (C) 2017 Walty Yeung <walty8@gmail.com>
+ * Copyright (C) 2017 Walty Yeung <walty@bart.com.hk>
  * License: GPLv3
  *
- * This script is going to be shared for both Firefox and Chrome extensions.
  */
 
 //use a shorter name as we won't have name conflict here
@@ -13,8 +12,96 @@ var settings = {
   MAX_RETRY_COUNT : 20
 };
 
+var sgnGmailDom = new SGNGmailDOM(jQuery);
 
-var sendBackgroundMessage = function(message) {
+var gLastPullTimestamp = null;
+var gNextPullTimestamp = null;
+var gConsecutiveRequests = 0;
+var gConsecutiveStartTime = 0;
+var g_oec = 0;    //open email trigger count
+var g_lc = 0;     //local trigger count
+var g_pnc = 0;    //pulled network trigger count
+//network locking safe guard -- avoid disaster by over requests
+var acquireNetworkLock = function() {
+  var timestamp = Date.now(); 
+  var resetCounter = false;
+
+  if(gNextPullTimestamp){//if gNextPullTimestamp is set
+      if(gNextPullTimestamp > timestamp) //skip the request
+          return false;
+      else {
+          gNextPullTimestamp = null;
+          return true;
+      }
+  }
+
+  //avoid crazy pulling in case of multiple network requests
+  //pull again in 3 seconds, for whatever reasons
+  if(timestamp - gLastPullTimestamp < 3 * 1000)  
+    gConsecutiveRequests += 1;
+  else{
+    resetCounter = true;
+  }
+
+  if(gConsecutiveRequests >= 20){
+    //penalty timeout for 60 seconds
+      gNextPullTimestamp = timestamp + 60 * 1000; 
+
+      var message = "20 consecutive network requests detected from Simple Gmail Notes, " +
+                    "the extension would be self-disabled for 60 seconds.\n\n" +
+                    "Please try to close and reopen the browser to clear the cache of extension. " + 
+                    "If the problem persists, please consider to disable/uninstall this extension " +
+                    "to avoid locking of your Gmail account. " +
+                    "This warning message is raised by the extension developer (not Google), " +
+                    "just to ensure your account safety.\n\n" +
+                    "If possible, please kindly send the following information to the extension bug report page, " +
+                    "it would be helpful for the developer to diagnose the problem. Thank you!\n\n";
+      message += "oec:" + g_oec;
+      message += "; lc:" + g_lc;
+      message += "; pnc:" + g_pnc;
+      message += "; tt:" + Math.round(timestamp - gConsecutiveStartTime);
+
+      //very intrusive, but it's still better then 
+      //have the account locked up by Gmail!!!
+      alert(message); 
+
+      resetCounter = true;
+  }
+
+  if(resetCounter){
+      gConsecutiveRequests = 0;
+      gConsecutiveStartTime = timestamp;
+      g_oec = 0;
+      g_lc = 0;
+      g_pnc = 0;
+  }
+
+  gLastPullTimestamp = timestamp;
+
+  return true;
+};
+
+var sendBackgroundMessage = function(message){
+  var networkActions = ["post_note", "initialize", "pull_notes", "delete"];
+  var action = message.action;
+
+  if(networkActions.includes(action) && !acquireNetworkLock()){
+    var error = "Failed to get network lock: " + action;
+    SGNC.appendLog(error);
+    debugLog(error);
+    if(action == "pull_notes"){
+      g_pnc += 1;
+    }
+    else if(action == "initailize"){
+      g_lc += 1;
+    }
+    else if(action == "post_note"){
+      g_oec += 1;
+    }
+
+    return;
+  }
+
   SGNC.getBrowser().runtime.sendMessage(message, function(response){
     debugLog("Message response", response);
   });
@@ -55,6 +142,8 @@ var gAbstractFontSize = "";
 var gCurrentPreferences = {};
 
 var gLastHeartBeat = Date.now();
+var gLastPreferenceString = "";
+
 var gSgnEmtpy = "<SGN_EMPTY>";
 
 /* -- end -- */
@@ -273,18 +362,163 @@ var deleteMessage = function(messageId){
     gCurrentGDriveNoteId = '';
 };
 
+var setupSidebarLayout = function(containerNode){
+  var logo = containerNode.find(".sgn_bart_logo");
+
+  containerNode.append(logo);
+};
+
+var updateGmailNotePosition = function(injectionNode, notePosition){
+  if(notePosition == "bottom"){
+    debugLog("@485, move to bottom");
+    $(".nH.aHU:visible").append(injectionNode);
+  } else if(notePosition == "side-top") {
+    //$(".nH.adC").prepend(firstVisible);
+    setupSidebarLayout(injectionNode);
+    SimpleGmailNotes.getSidebarNode().prepend(injectionNode);
+  } else if(notePosition == "side-bottom") {
+    //$(".nH.adC .nH .u5").before(firstVisible);
+    setupSidebarLayout(injectionNode);
+    SimpleGmailNotes.getSidebarNode().append(injectionNode);
+  } else {  //top
+    $(".nH.if:visible").prepend(injectionNode);  //hopefully this one is stable
+  }
+};
+
+var updateUIByPreferences = function(){
+  var preferences = SimpleGmailNotes.preferences;
+  if(!preferences)  //ui not ready
+    return;
+  
+  var fontColor = preferences["fontColor"];
+  if(fontColor)
+    $(".sgn_input").css("color", htmlEscape(fontColor));
+
+  var backgroundColor = preferences["backgroundColor"];
+  if(backgroundColor){
+    if(!SimpleGmailNotes.getCurrentBackgroundColor()){
+      $(".sgn_input").css("background-color", backgroundColor);
+    }
+
+    $(".sgn_history_note").css("background-color", backgroundColor);
+  }
+
+  var fontSize = preferences["fontSize"];
+  if(fontSize != "default"){
+    $(".sgn_input").css("font-size", fontSize + "pt");
+  }
+  fontSize = parseInt($(".sgn_input").css("font-size"));
+
+  var noteHeight = parseInt(preferences["noteHeight"]);
+  if(noteHeight && SimpleGmailNotes.isInbox() && noteHeight > 4)
+    noteHeight = 4;
+
+  //noteHeight = parseInt(noteHeight);
+  if(noteHeight){
+    $(".sgn_input").css("height", noteHeight * fontSize * 1.2 + 6 + "px");
+  }
+
+
+  var firstVisible = $(".sgn_container:visible").first();
+  $(".sgn_container:visible:not(:first)").hide();
+  //avoid duplicates
+  //$(".sgn_container").hide();
+  //firstVisible.show();
+
+  var notePosition = preferences["notePosition"];
+
+  if(!SimpleGmailNotes.isInbox())
+    updateGmailNotePosition(firstVisible, notePosition);
+
+  //reset class attribute with current 'position' class
+  firstVisible.removeClass('sgn_position_top');
+  firstVisible.removeClass('sgn_position_bottom');
+  firstVisible.removeClass('sgn_position_side-top');
+  firstVisible.removeClass('sgn_position_side-bottom');
+  firstVisible.addClass('sgn_position_' + notePosition);
+
+  var showConnectionPrompt = (preferences["showConnectionPrompt"] !== "false");
+  if(!showConnectionPrompt){
+    $(".sgn_current_connection").hide();
+  }
+
+  var showAddCalendar = (preferences["showAddCalendar"] !== "false");
+  if(!showAddCalendar){
+    $(".sgn_add_calendar").hide();
+  }
+
+  var showDeleteButton = (preferences["showDelete"] !== "false");
+  if(!showDeleteButton){
+    $(".sgn_delete").hide();
+  }
+
+  var showNoteColorPicker = (preferences["showNoteColorPicker"] !== "false");
+  if(!showNoteColorPicker){
+    $(".sgn_color_picker").hide();
+  }
+
+  debugLog("@470", preferences);
+};
+
 var setupNoteEditor = function(email, messageId){
   debugLog("Start to set up notes");
   debugLog("Email", email);
 
+  var injectionNode = $("<div class='sgn_container'></div>");
+
+
+  if(SimpleGmailNotes.isInbox()){
+    var dataNode = sgnGmailDom.inboxDataNode();
+    injectionNode.addClass("sgn_inbox");
+    subject = dataNode.parent().text();
+
+    debugLog("@317: " + messageId);
+
+    injectionNode.on("click", function(event){
+      //click of texarea would close the email 
+      event.stopPropagation();
+    });
+
+    var hookNode = sgnGmailDom.inboxHookNode();
+    //put the node inside the content
+    hookNode.prepend(injectionNode);
+
+    //hookNode.before(injectionNode);  //hopefully this one is stable
+  }
+  else{
+    subject = $(".ha h2.hP:visible").text();
+    var notePosition = "top";
+    if(SimpleGmailNotes.preferences){
+      notePosition = SimpleGmailNotes.preferences["notePosition"];
+    }
+    updateGmailNotePosition(injectionNode, notePosition);
+  }
+
+  injectionNode.hide();
+
+  //hide all others
+  $(".sgn_container:visible").remove();
+  injectionNode.show();
+
+  setupCalendarInfo(email, messageId, subject);
+
+  //text area failed to create, may cause dead loop
+  if(!$(".sgn_container:visible").length)  
+  {
+      SGNC.appendLog("Injection node failed to be found");
+      return;
+  }
+
+
   appendDebugInfo("startSetupNote");
 
-  var injectionNode = getNoteEditorInjectionNode();
-  var message = gEmailIdNoteDict[messageId];
+  //var injectionNode = getNoteEditorInjectionNode();
+  //try to get the cached message
+  var cachedMessage = gEmailIdNoteDict[messageId];
 
   var note = "";
-  if(message && message.description)
-    note = message.description;
+  if(cachedMessage && cachedMessage.description)
+    note = cachedMessage.description;
 
 
   var textAreaNode = $("<textarea></textarea>", {
@@ -307,24 +541,17 @@ var setupNoteEditor = function(email, messageId){
     }
 
     return true;
-  }).on("click", function(event){
   });
 
 
   var backgroundColor = "";
 
-  if(message && message.properties){
-    backgroundColor = getNoteProperty(message.properties, 'sgn-background-color');
+  if(cachedMessage && cachedMessage.properties){
+    backgroundColor = getNoteProperty(cachedMessage.properties, 'sgn-background-color');
     if(backgroundColor){
       textAreaNode.css("background-color", backgroundColor);
     }
   }
-
-  var logo_type = "";
-  if(SGNC.isChrome())
-    logo_type += "chrome-sgn";
-  else
-    logo_type += "firefox-sgn";
 
   var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
       .html("" + 
@@ -354,16 +581,16 @@ var setupNoteEditor = function(email, messageId){
               "")
       .hide();
   var loginPrompt = $("<div class='sgn_prompt_login'/></div>" )
-      .html("Please <a class='sgn_login sgn_action'>log in</a> to " +
+      .html("Please <a class='sgn_login sgn_action'>log in</a> " +
               "your Google Drive account to start using Simple Gmail Notes" )
       .hide();
   var emptyPrompt = $("<div class='sgn_padding'>&nbsp;<div>");
   var revokeErrorPrompt = $("<div class='sgn_error sgn_revoke'><div>")
-                      .html("Error connecting to Google Drive <span class='sgn_error_timestamp'></span>, " +
-                          "please try to <a class='sgn_reconnect sgn_action'>connect</a> again. \n" +
+                      .html("Error found with the existing token. " +
+                          "Please try to <a class='sgn_reconnect sgn_action'>connect</a> again. \n" +
                           "If error persists, you may try to manually " +
                           "<a href='https://accounts.google.com/b/" + getCurrentGoogleAccountId() + 
-                          "/IssuedAuthSubTokens'>revoke</a> previous tokens.");
+                          "/IssuedAuthSubTokens'>revoke</a> previous tokens first.");
 
   var userErrorPrompt = $("<div class='sgn_error sgn_user'></div>")
                             .html("Failed to get Google Driver User");
@@ -388,8 +615,6 @@ var setupNoteEditor = function(email, messageId){
   injectionNode.prepend(searchLogoutPrompt);
   injectionNode.prepend(emptyPrompt);
   $(".sgn_error").hide();
-
-
 
   $(".sgn_action").click(function(){
     var classList =$(this).attr('class').split(/\s+/);
@@ -454,6 +679,7 @@ var setupNoteEditor = function(email, messageId){
       var display = picker.find(".simpleColorDisplay");
       var colorChooser = picker.find(".simpleColorChooser");
       var input = picker.find(".sgn_color_picker_value");
+
       display.trigger('click', {input:input, display: display, container: container });
       container.find('.simpleColorChooser').css("margin-left", "-85px");	//align back
   });
@@ -465,6 +691,9 @@ var setupNoteEditor = function(email, messageId){
   debugLog("Start to initailize");
   sendBackgroundMessage({action:"initialize", email: email, 
                          messageId: messageId, title: gCurrentEmailSubject });
+
+  updateUIByPreferences();
+  //updateNoteByPreference();
 };
 
 var revokeSummaryNote = function(messageId){
@@ -538,16 +767,17 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
                                        .css("background-color", backgroundColor)
                                        .css("border-color", backgroundColor)
                                        .css("color", gAbstractFontColor);
+        if(gAbstractFontSize != "default")
+          abstractNode.css("font-size", gAbstractFontSize + "pt");
       }
       else{
         abstractNode.find(".at").css("background-color", backgroundColor)
                                 .css("border-color", backgroundColor);
         abstractNode.find(".au").css("border-color", backgroundColor);
         abstractNode.find(".av").css("color", gAbstractFontColor);
+        if(gAbstractFontSize != "default")
+          abstractNode.find(".av").css("font-size", gAbstractFontSize + "pt");
       }
-                          
-      if(gAbstractFontSize != "default")
-        abstractNode.find(".sgn").css("font-size", gAbstractFontSize + "pt");
     }
     else {
       abstractNode = $('<div style="display:none" class="sgn"></div>');
@@ -601,12 +831,40 @@ var pullNotes = function(userEmail, requestList){
   }
 };
 
+var setupCalendarInfo = function(email, messageId, subject){
+ // var email = e.detail.email;
+ // var messageId = e.detail.messageId;
+
+  if(!isAlphaNumeric(messageId)){
+    debugLog("invalid message ID (setup email info): " + messageId);
+    return;
+  }
+
+  if(!isValidEmail(email)){
+    debugLog("invalid email (setup email info): " + email);
+    return;
+  }
+
+  if(messageId == "PREVIEW"){
+    return;
+  }
+
+    //if(gCurrentMessageId.length > 0 && gCurrentMessageId.length < 5 &&
+         //messageId.length > 5){  //for first time message loading after login, inside split view
+      //sendBackgroundMessage({action:"initialize", email: email, messageId: messageId, title: e.detail.subject });
+    //}
+
+    //for add to calendar use
+  gCurrentEmailSubject = subject;
+  gCurrentMessageId = messageId;
+};
 
 var setupListeners = function(){
   /* Event listener for page */
   document.addEventListener('SGN_setup_note_editor', function(e) {
     var email = e.detail.email;
     var messageId = e.detail.messageId;
+    var message = e.detail.message;
 
     if(!isAlphaNumeric(messageId)){
       debugLog("invalid message ID (setup note editor): " + messageId);
@@ -626,33 +884,6 @@ var setupListeners = function(){
     sendBackgroundMessage({action:"heart_beat_request", email:e.detail.email});    
   });
 
-  document.addEventListener('SGN_setup_email_info', function(e) {
-    var email = e.detail.email;
-    var messageId = e.detail.messageId;
-
-    if(!isAlphaNumeric(messageId)){
-      debugLog("invalid message ID (setup email info): " + messageId);
-      return;
-    }
-
-    if(!isValidEmail(email)){
-      debugLog("invalid email (setup email info): " + email);
-      return;
-    }
-
-    if(messageId == "PREVIEW"){
-      return;
-    }
-
-    //if(gCurrentMessageId.length > 0 && gCurrentMessageId.length < 5 &&
-         //messageId.length > 5){  //for first time message loading after login, inside split view
-      //sendBackgroundMessage({action:"initialize", email: email, messageId: messageId, title: e.detail.subject });
-    //}
-
-    //for add to calendar use
-    gCurrentEmailSubject = e.detail.subject;
-    gCurrentMessageId = messageId;
-  });
 
 
   document.addEventListener('SGN_pull_notes', function(e) {
@@ -705,7 +936,7 @@ var setupListeners = function(){
   /* handle events from background script */
   setupBackgroundEventsListener(function(request){
     debugLog("Handle request", request);
-    var preferences = request.preferences;
+    var preferences = {};
     switch(request.action){
       case "disable_edit":
         disableEdit();
@@ -764,9 +995,11 @@ var setupListeners = function(){
 
         }
 
+        updateUIByPreferences();
         break;
 
       case "update_history":
+        preferences = request.preferences;
         if(SGNC.isInbox())  //no history for inbox
           break;
 
@@ -810,6 +1043,7 @@ var setupListeners = function(){
 
         }
 
+        updateUIByPreferences();
         break;
       case "update_gdrive_note_info":
         debugLog("Update google drive note info", 
@@ -825,23 +1059,45 @@ var setupListeners = function(){
         debugLog("update summary from background call", request.email);
         var noteList = request.noteList;
         updateNotesOnSummary(request.email, noteList);
+        updateUIByPreferences();
         break;
       case "revoke_summary_note":
         revokeSummaryNote(request.messageId);
         debugLog("Trying to revoke summary note", request);
         break;
 
-      case "update_preferences":
-        sendEventMessage('SGN_PAGE_update_preferences', preferences);  
+      //case "update_preferences":    //not to be used
+       // sendEventMessage('SGN_PAGE_update_preferences', preferences);  
+        //gAbstractBackgroundColor = preferences["abstractBackgroundColor"];
+        //gAbstractFontColor = preferences["abstractFontColor"];
+        //gAbstractFontSize = preferences["abstractFontSize"];
+        //break;
 
-        gAbstractBackgroundColor = preferences["abstractBackgroundColor"];
-        gAbstractFontColor = preferences["abstractFontColor"];
-        gAbstractFontSize = preferences["abstractFontSize"];
-
-        break;
       case "heart_beat_response":
+        preferences = request.preferences;
         gLastHeartBeat = Date.now();
+        preferences["debugPageInfo"] = "";
+        preferences["debugContentInfo"] = "";
+        preferences["debugBackgroundInfo"] = "";
+
+        preferenceNames = Object.keys(preferences).sort();
+	var preferenceString = '';
+        for (var index=0; index<preferenceNames.length; index++) {
+          preferenceName = preferenceNames[index];
+          preferenceString += preferences[preferenceName];
+        }
+
+        if(preferenceString != gLastPreferenceString){
+          SimpleGmailNotes.preferences = preferences;
+          gAbstractBackgroundColor = preferences["abstractBackgroundColor"];
+          gAbstractFontColor = preferences["abstractFontColor"];
+          gAbstractFontSize = preferences["abstractFontSize"];
+          updateUIByPreferences();
+          gLastPreferenceString = preferenceString;
+        }
+
         sendEventMessage('SGN_PAGE_heart_beat_response', request.gdriveEmail);  
+
         break;
       case "alert_message":
 
@@ -852,6 +1108,7 @@ var setupListeners = function(){
         break;
       default:
         debugLog("unknown background request", request);
+        break;
     }
   });
 };

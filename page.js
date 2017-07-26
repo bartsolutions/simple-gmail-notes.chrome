@@ -7,19 +7,12 @@
  * This script is going to be shared for both Firefox and Chrome extensions.
  */
 
-SimpleGmailNotes.gdriveEmail = "";
-SimpleGmailNotes.preferences = {};
-
-SimpleGmailNotes.refresh = function(f){
-    if( (/in/.test(document.readyState)) || (undefined === window.Gmail) || 
-        (undefined === window.jQuery) ) {
-      setTimeout(SimpleGmailNotes.refresh, 10, f);
-    }
-    else {
-      f();
-    }
-};
-
+var gIsWindowFocused;
+$(window).focus(function() {
+  gIsWindowFocused = true;
+}).blur(function() {
+  gIsWindowFocused = false;
+});
 
 SimpleGmailNotes.start = function(){
 
@@ -32,28 +25,18 @@ SimpleGmailNotes.start = function(){
   var gEmailIdDict = {};
   var gDebugInfoDetail = "";
   var gDebugInfoSummary = "";
-  var gDebugInfoErrorTrace = "";
+  //var gDebugInfoErrorTrace = "";
   //followings are for network request locking control
-  var gLastPullTimestamp = null;
-  var gNextPullTimestamp = null;
-  var gConsecutiveRequests = 0;
-  var gConsecutiveStartTime = 0;
-  var g_oec = 0;    //open email trigger count
-  var g_lc = 0;     //local trigger count
-  var g_pnc = 0;    //pulled network trigger count
+  var sgn = SimpleGmailNotes;
 
-  SimpleGmailNotes.startHeartBeat = Date.now();
-  SimpleGmailNotes.lastHeartBeat = SimpleGmailNotes.startHeartBeat;
+  sgn.gdriveEmail = "";
+  sgn.preferences = {};
+  sgn.startHeartBeat = Date.now();
+  sgn.lastHeartBeat = sgn.startHeartBeat;
   /* -- end -- */
  
-  var debugLog = function()
-  {
-    if (SimpleGmailNotes.isDebug()) {
-        console.log.apply(console, arguments);
-    }
-  };
-
-  var sendEventMessage = function(eventName, eventDetail){
+  //send message to content script
+  var sendContentMessage = function(eventName, eventDetail){
     if(eventDetail === undefined){
       eventDetail = {};
     }
@@ -62,120 +45,131 @@ SimpleGmailNotes.start = function(){
     document.dispatchEvent(new CustomEvent(eventName,  {detail: eventDetail}));
   };
 
-
-  var acquireNetworkLock = function() {
-    var timestamp = Date.now(); 
-    var resetCounter = false;
-
-    if(gNextPullTimestamp){//if gNextPullTimestamp is set
-        if(gNextPullTimestamp > timestamp) //skip the request
-            return false;
-        else {
-            gNextPullTimestamp = null;
-            return true;
-        }
+  //utils
+  var debugLog = function()
+  {
+    if (sgn.isDebug()) {
+        console.log.apply(console, arguments);
     }
-
-    //avoid crazy pulling in case of multiple network requests
-    //pull again in 3 seconds, for whatever reasons
-    if(timestamp - gLastPullTimestamp < 3 * 1000)  
-      gConsecutiveRequests += 1;
-    else{
-      resetCounter = true;
-    }
-
-    if(gConsecutiveRequests >= 20){
-      //penalty timeout for 60 seconds
-        gNextPullTimestamp = timestamp + 60 * 1000; 
-
-        var message = "20 consecutive network requests detected from Simple Gmail Notes, " +
-                      "the extension would be self-disabled for 60 seconds.\n\n" +
-                      "Please try to close and reopen the browser to clear the cache of extension. " + 
-                      "If the problem persists, please consider to disable/uninstall this extension " +
-                      "to avoid locking of your Gmail account. " +
-                      "This warning message is raised by the extension developer (not Google), " +
-                      "just to ensure your account safety.\n\n" +
-                      "If possible, please kindly send the following information to the extension bug report page, " +
-                      "it would be helpful for the developer to diagnose the problem. Thank you!\n\n";
-        message += "oec:" + g_oec;
-        message += "; lc:" + g_lc;
-        message += "; pnc:" + g_pnc;
-        message += "; tt:" + Math.round(timestamp - gConsecutiveStartTime);
-
-        //very intrusive, but it's still better then 
-        //have the account locked up by Gmail!!!
-        alert(message); 
-
-        resetCounter = true;
-    }
-
-    if(resetCounter){
-        gConsecutiveRequests = 0;
-        gConsecutiveStartTime = timestamp;
-        g_oec = 0;
-        g_lc = 0;
-        g_pnc = 0;
-    }
-
-    gLastPullTimestamp = timestamp;
-
-    return true;
   };
 
-  var getMessageId = function(){
-    var messageId = '';
-    if(sgnGmailDom.isPreviewPane()){
-      var idNode = $("tr.zA.aps:visible[sgn_email_id]").first();
-
-      if(idNode.length){
-        messageId = idNode.attr("sgn_email_id");
-      }else{
-        messageId = "PREVIEW";
-      }
-    }
-
-      if(!messageId){
-          messageId = sgnGmailDom.emailId();
-      }
-      if(!messageId){
-          addErrorToLog("message not found");
-          return;
-      }
-      return messageId;
+  var debugDeleteNote = function(){
+      sendContentMessage('delete', {messageId: getCurrentMessageId()});
   };
 
-  var deleteNote = function(){
-      sendEventMessage('delete', {messageId: getMessageId()});
+  var debugResetPreferences = function(){
+      sendContentMessage('reset_preferences');
   };
 
-  var resetPreferences = function(){
-      sendEventMessage('reset_preferences');
-  };
-
-  var sendPreference = function(preferenceType, preferenceValue){
-      sendEventMessage('send_preference',
+  var debugSendPreference = function(preferenceType, preferenceValue){
+      sendContentMessage('send_preference',
         {preferenceType: preferenceType, preferenceValue: preferenceValue});
   };
 
   var sendDebugInfo = function(){
     var debugInfo = "Browser Version: " + navigator.userAgent + "\n" + 
                     gDebugInfoSummary + "\n" + gDebugInfoDetail + 
-                    "\nPE:" + gDebugInfoErrorTrace;
-    sendEventMessage('SGN_update_debug_page_info', {debugInfo:debugInfo});
+                    "\nPE:" + sgn.debugLog;
+    sendContentMessage('SGN_update_debug_page_info', {debugInfo:debugInfo});
+  };
+
+
+  var htmlEscape = function(str) {
+      return String(str)
+              .replace(/&/g, '&amp;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;');
+  };
+
+  // I needed the opposite function today, so adding here too:
+  var htmlUnescape = function(value){
+      return String(value)
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&amp;/g, '&');
+  };
+
+
+  var isNumeric = function(str){
+    var code, i, len;
+
+    for (i = 0, len = str.length; i < len; i++) {
+      code = str.charCodeAt(i);
+      if (!(code > 47 && code < 58)){ // numeric (0-9)
+        return false;
+      }
+    }
+    return true;
+  };
+
+
+  var specialCharRe = new RegExp(String.fromCharCode(160), 'g');
+  var stripHtml = function(value){
+    return value.replace(/<(?:.|\n)*?>/gm, '')
+                .replace(specialCharRe, ' ');
+  };
+
+  var _dec2hexCached = {};
+  //http://stackoverflow.com/questions/18626844/convert-a-large-integer-to-a-hex-string-in-javascript
+  var dec2hex = function(str){ // .toString(16) only works up to 2^53
+    if(_dec2hexCached[str])
+      return _dec2hexCached[str];
+
+    var dec = str.toString().split(''), sum = [], hex = [], i, s;
+    while(dec.length){
+        s = 1 * dec.shift();
+        for(i = 0; s || i < sum.length; i++){
+            s += (sum[i] || 0) * 10;
+            sum[i] = s % 16;
+            s = (s - sum[i]) / 16;
+        }
+    }
+    while(sum.length){
+        hex.push(sum.pop().toString(16));
+    }
+
+    var result = hex.join('');
+    _dec2hexCached[str] = result;
+
+    return result;
+  }; 
+
+
+	
+  //heartbeat checking, background script will die after long idle / upgrade
+  var isBackgroundDead = function(){
+      var thresholdTime = 8;
+      var currentTime = Date.now();
+      //copy out to avoid race condition
+      var lastHeartBeat = sgn.lastHeartBeat; 
+      if(sgn.isDebug())
+        thresholdTime = 300;
+
+      var isDead = (currentTime - lastHeartBeat > thresholdTime * 1000);
+      if(isDead){
+        debugLog("background died");
+      }
+
+      return isDead;
   };
 
   var heartBeatAlertSent = false;
-
   var sendHeartBeat = function(){
-    sendEventMessage("SGN_heart_beat_request");
-    var warningMessage = SimpleGmailNotes.offlineMessage;
+  sgn.executeCatchingError(function(){
+    sendContentMessage("SGN_heart_beat_request");
+    var warningMessage = sgn.offlineMessage;
 
-    if(isBackgroundDead()){
+    if(isBackgroundDead() && gIsWindowFocused){
       var warningNode = $("<div class='sgn_inactive_warning'><div>" + 
                             warningMessage + "</div></div>");
       var warningNodeCount = $(".sgn_inactive_warning:visible");
 
-      if(SimpleGmailNotes.isInbox()){
+      if(sgn.isInbox()){
         var containerNode = $(".sgn_container:visible");
         if(containerNode.find("> .sgn_inactive_warning").length === 0){
           containerNode.prepend(warningNode);
@@ -218,51 +212,22 @@ SimpleGmailNotes.start = function(){
         }
       }
     }
-    else {  
-      //back ground is alive
+
+
+    if(!isBackgroundDead()){  
       if($(".sgn_inactive_warning").length){
+        //background is back to alive
         $(".sgn_inactive_warning").remove();
         if($(".sgn_input").is(":visible")){
-          setupNoteEditorCatchingError();
+          setupNoteEditor();
         }
-
       }
-
     }
 
+  });
   };
 
-  var isBackgroundDead = function(){
-      var thresholdTime = 5;
-      var currentTime = Date.now();
-      //copy out to avoid race condition
-      var lastHeartBeat = SimpleGmailNotes.lastHeartBeat; 
-      if(SimpleGmailNotes.isDebug())
-        thresholdTime = 300;
-
-      var isDead = (currentTime - lastHeartBeat > thresholdTime * 1000);
-      if(isDead){
-        debugLog("background died");
-      }
-
-      return isDead;
-  };
-
-  var htmlEscape = function(str) {
-      return String(str)
-              .replace(/&/g, '&amp;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#39;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;');
-  };
-
-  var specialCharRe = new RegExp(String.fromCharCode(160), 'g');
-  var stripHtml = function(value){
-    return value.replace(/<(?:.|\n)*?>/gm, '')
-                .replace(specialCharRe, ' ');
-  };
-
+  // === GMAIL ONLY FUNCTION START ===
   var getEmailKey = function(title, sender, time, excerpt){
     var emailKey = sender + "|" + time + "|" + stripHtml(title) + "|" + stripHtml(excerpt);
 
@@ -273,7 +238,6 @@ SimpleGmailNotes.start = function(){
     return emailKey;
   };
 
-  // === GMAIL ONLY FUNCTION START ===
   var getGmailNodeTitle = function(mailNode){
     var hook = $(mailNode).find(".xT .y6");
 
@@ -322,56 +286,12 @@ SimpleGmailNotes.start = function(){
   };
   // === GMAIL ONLY FUNCTIONS END ===
 
-  // I needed the opposite function today, so adding here too:
-  var htmlUnescape = function(value){
-      return String(value)
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&amp;/g, '&');
-  };
-
-
-  var isNumeric = function(str){
-    var code, i, len;
-
-    for (i = 0, len = str.length; i < len; i++) {
-      code = str.charCodeAt(i);
-      if (!(code > 47 && code < 58)){ // numeric (0-9)
-        return false;
-      }
-    }
-    return true;
-  };
-
-  var _dec2hexCached = {};
-  //http://stackoverflow.com/questions/18626844/convert-a-large-integer-to-a-hex-string-in-javascript
-  var dec2hex = function(str){ // .toString(16) only works up to 2^53
-    if(_dec2hexCached[str])
-      return _dec2hexCached[str];
-
-    var dec = str.toString().split(''), sum = [], hex = [], i, s;
-    while(dec.length){
-        s = 1 * dec.shift();
-        for(i = 0; s || i < sum.length; i++){
-            s += (sum[i] || 0) * 10;
-            sum[i] = s % 16;
-            s = (s - sum[i]) / 16;
-        }
-    }
-    while(sum.length){
-        hex.push(sum.pop().toString(16));
-    }
-
-    var result = hex.join('');
-    _dec2hexCached[str] = result;
-
-    return result;
-  }; 
-
+  // === INBOX ONLY FUNCTIONS START ====
   var getInboxEmailId = function(actionData){
+    if(!actionData){
+      return "";
+    }
+
     var messageId = $.parseJSON(actionData)[0][1][0];
     messageId = messageId.split(":")[1];
     //http://stackoverflow.com/questions/57803/how-to-convert-decimal-to-hex-in-javascript
@@ -379,101 +299,73 @@ SimpleGmailNotes.start = function(){
 
     return messageId;
   };
+  // === INBOX ONLY FUNCTIONS END ===
 
-  var setupSidebarLayout = function(containerNode){
-    var logo = containerNode.find(".sgn_bart_logo");
-
-    containerNode.append(logo);
-  };
-
-  var updateGmailNotePosition = function(injectionNode, notePosition){
-    if(notePosition == "bottom"){
-      debugLog("@485, move to bottom");
-      $(".nH.aHU").append(injectionNode);
-    } else if(notePosition == "side-top") {
-      //$(".nH.adC").prepend(firstVisible);
-      setupSidebarLayout(injectionNode);
-      SimpleGmailNotes.getSidebarNode().prepend(injectionNode);
-    } else if(notePosition == "side-bottom") {
-      //$(".nH.adC .nH .u5").before(firstVisible);
-      setupSidebarLayout(injectionNode);
-      SimpleGmailNotes.getSidebarNode().append(injectionNode);
-    } else {  //top
-      $(".nH.if").prepend(injectionNode);  //hopefully this one is stable
+  // mail gmail related logic
+  var getCurrentMessageId = function(){
+    var messageId = '';
+    if(sgn.isInbox()){
+      var actionData = sgnGmailDom.inboxDataNode().parent().attr("data-action-data");
+      messageId = getInboxEmailId(actionData);
     }
-  };
+    else{
+      if(sgnGmailDom.isPreviewPane()){
+        var idNode = $("tr.zA.aps:visible[sgn_email_id]").first();
 
+        if(idNode.length){
+          messageId = idNode.attr("sgn_email_id");
+        }else{
+          messageId = "PREVIEW";
+        }
+      }
+    }
+    if(!messageId){
+      messageId = sgnGmailDom.emailId();
+    }
+    if(!messageId){
+      sgn.appendLog("message not found");
+      return;
+    }
+    return messageId;
+  };
 
   //set up note editor in the email detail page
   var setupNoteEditor = function(){
-    if($(".sgn_container:visible").length)  //text area already exist
-    {
-      addErrorToLog("textarea already exists");
+  sgn.executeCatchingError(function(){
+    //No email selected, happened when page up or page down
+    if(!sgn.isInbox() && !$(".nH.aHU:visible").length && sgnGmailDom.isPreviewPane()){
+      sgn.appendLog("No email selected");
       return;
     }
 
-    var injectionNode = $("<div class='sgn_container'></div>");
-    var subject, messageId;
-
-    if(SimpleGmailNotes.isInbox()){
-      var hookNode = $(".gT.s2:visible");
-      
-      if(!hookNode.length)
-        return;
-
-      injectionNode.addClass("sgn_inbox");
-
-      var actionData = hookNode.parent().attr("data-action-data");
-      subject = hookNode.parent().text();
-      messageId = getInboxEmailId(actionData);
-
-      debugLog("@317: " + messageId);
-
-      injectionNode.on("click", function(event){
-        //click of texarea would close the email 
-        event.stopPropagation();
-      });
-
-      hookNode.before(injectionNode);  //hopefully this one is stable
-    }
-    else{
-      subject = $(".ha h2.hP:visible").text();
-      messageId = getMessageId();
-
-      var notePosition = "top";
-      if(SimpleGmailNotes.preferences){
-        notePosition = SimpleGmailNotes.preferences["notePosition"];
-      }
-      updateGmailNotePosition(injectionNode, notePosition);
-
-      gDebugInfoDetail = "Is Conversation View: " + sgnGmailPage.isConversationView();
-    }
-
-    injectionNode.show();
-    sendDebugInfo();
-
-    //text area failed to create, may cause dead loop
-    if(!$(".sgn_container:visible").length)  
+    var visible_container = $(".sgn_container:visible");
+    if(visible_container.length && visible_container.height())  
     {
-        addErrorToLog("Injection node failed to be found");
-        return;
+      sgn.appendLog("textarea already exists");
+      return;
     }
 
-    if(!acquireNetworkLock()){
-        addErrorToLog("Network lock failed");
-        debugLog("setupNoteEditor failed to get network lock");
-        return;
+    var messageId = getCurrentMessageId();
+    if(!messageId){
+      sgn.appendLog("message not found");
+      return;
     }
 
-    sendEventMessage('SGN_setup_email_info', {messageId:messageId, subject:subject});
-    sendEventMessage('SGN_setup_note_editor', {messageId:messageId});
+    //if(!acquireNetworkLock()){
+        //sgn.appendLog("Network lock failed");
+        //debugLog("setupNoteEditor failed to get network lock");
+        //return;
+    //}
 
-    addErrorToLog("set up request sent");
+    sendContentMessage('SGN_setup_note_editor', {messageId:messageId});
+
+    sgn.appendLog("set up request sent");
     sendDebugInfo();
-
+  });
   };
 
-  var updateEmailIdByJSON = function(dataString){
+  var updateEmailIdDictByJSON = function(dataString){
+  sgn.executeCatchingError(function(dataString){
     var startString = ")]}'\n\n";
     var totalLength = dataString.length;
 
@@ -566,9 +458,11 @@ SimpleGmailNotes.start = function(){
       var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time, htmlUnescape(email.excerpt));
       gEmailIdDict[emailKey] = email;
     }
+  }, dataString);
   };
 
-  var updateEmailIdByDOM = function(dataString){
+  var updateEmailIdDictByJS = function(dataString){
+  sgn.executeCatchingError(function(dataString){
     var totalLength = dataString.length;
     var signatureString = "var GM_TIMING_START_CHUNK2=";
 
@@ -598,23 +492,25 @@ SimpleGmailNotes.start = function(){
       var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time, htmlUnescape(email.excerpt));
       gEmailIdDict[emailKey] = email;
     }
-
+  }, dataString);
   };
 
+  var isLoggedIn = function(){
+    return sgn.gdriveEmail && sgn.gdriveEmail !== "";
+  };
 
   var lastPullDiff = 0;
   var lastPullHash = null;
   var lastPullItemRange = null;
   var lastPendingCount = 0;
-
   var lastAbstractSignature = "";
-  SimpleGmailNotes.duplicateRequestCount = 0;
-
-  var pullNotes = function(){
-    if(!SimpleGmailNotes.isInbox() && 
+  sgn.duplicateRequestCount = 0;
+  var markAbstracts = function(){
+  sgn.executeCatchingError(function(){
+    if(!sgn.isInbox() && 
        (!$("tr.zA").length ||
          (sgnGmailDom.isInsideEmail() && !sgnGmailDom.isPreviewPane()))){
-      addErrorToLog("pull skipped");
+      sgn.appendLog("mark email id skipped");
       debugLog("Skipped pulling because no tr to check with");
       return;  
     }
@@ -627,26 +523,23 @@ SimpleGmailNotes.start = function(){
     sendDebugInfo();
 
     if(isBackgroundDead()){
-      addErrorToLog("background is dead.");
-      return; //no need to pull
+      sgn.appendLog("background is dead.");
+      return; //no need to pull, walty temp
     }
 
-
     var visibleRows;
-     
-    if(SimpleGmailNotes.isInbox()){
+    if(sgn.isInbox()){
       visibleRows = $(".an.b9[data-action-data]:visible");
     }
     else{
       visibleRows = $("tr.zA[id]:visible");
     }
-
+     
     var unmarkedRows = visibleRows.filter(":not([sgn_email_id])");
     //rows that has been marked, but has no notes
 
     var pendingRows = $([]);
-    
-    if(sgnGmailDom.isPreviewPane()){
+    if(sgnGmailDom.isPreviewPane() && sgnGmailDom.isVerticalSplit()){
       visibleRows.each(function(){
         if($(this).next().next().is(":not(:has(div.sgn))"))
           pendingRows = pendingRows.add($(this));
@@ -665,37 +558,26 @@ SimpleGmailNotes.start = function(){
     var thisAbstractSignature = thisPullDiff + "|" + thisPullHash + "|" + 
                                 thisPullItemRange + "|" + thisPendingCount;
 
-    /*
-    if(thisPullDiff == lastPullDiff 
-         && thisPullHash == lastPullHash
-         && thisPullItemRange == lastPullItemRange
-         && thisPendingCount == lastPendingCount){
-      debugLog("Skipped pulling because of duplicate network requests");
-      return;
-    }
-    */
-
-
     if(thisAbstractSignature == lastAbstractSignature){
-      SimpleGmailNotes.duplicateRequestCount += 1;
+      sgn.duplicateRequestCount += 1;
     }
     else
-      SimpleGmailNotes.duplicateRequestCount = 0;
+      sgn.duplicateRequestCount = 0;
 
-    if(SimpleGmailNotes.duplicateRequestCount > 3){
-      addErrorToLog("3 duplicate requests");
+    if(sgn.duplicateRequestCount > 3){
+      sgn.appendLog("3 duplicate requests");
       return; //danger, may be endless loop here
     }
 
     if(unmarkedRows.length === 0 && pendingRows.length === 0){
-      addErrorToLog("no need to check");
+      sgn.appendLog("no need to check");
       return;
     }
 
     debugLog("@104, total unmarked rows", unmarkedRows.length);
     //mark the email ID for each row
     unmarkedRows.each(function(){
-      if(SimpleGmailNotes.isInbox()){
+      if(sgn.isInbox()){
         var actionData = $(this).attr("data-action-data");
         var email_id = getInboxEmailId(actionData);
         $(this).attr("sgn_email_id", email_id);
@@ -711,8 +593,8 @@ SimpleGmailNotes.start = function(){
     });
 
     if(!isLoggedIn()){
-      addErrorToLog("not logged in, skipped pull requests");
-      SimpleGmailNotes.duplicateRequestCount = 0;
+      sgn.appendLog("not logged in, skipped pull requests");
+      sgn.duplicateRequestCount = 0;
       return;
     }
 
@@ -742,7 +624,7 @@ SimpleGmailNotes.start = function(){
 
     if(requestList.length === 0){
       debugLog("no need to pull rows");
-      addErrorToLog("no need to pull rows");
+      sgn.appendLog("no need to pull rows");
       return;
     }
 
@@ -751,220 +633,83 @@ SimpleGmailNotes.start = function(){
     lastAbstractSignature = thisAbstractSignature;
 
     debugLog("Simple-gmail-notes: pulling notes");
-    g_pnc += 1;
+    //g_pnc += 1;
     //the lock must be acaquired right before the request is issued
-    if(!acquireNetworkLock()){
-      addErrorToLog("pullNotes failed to get network lock");
-      return;
-    }
-
-    sendEventMessage("SGN_pull_notes",
+    //if(!acquireNetworkLock()){
+    //  sgn.appendLog("markAbstracts failed to get network lock");
+    //  return;
+    //}
+    sendContentMessage("SGN_pull_notes",
                      {email: sgnGmailPage.userEmail(), requestList:requestList});
 
 
-    addErrorToLog("pull request sent");
+    sgn.appendLog("pull request sent");
     sendDebugInfo();
+  });
   };
 
-  var isLoggedIn = function(){
-    return SimpleGmailNotes.gdriveEmail && SimpleGmailNotes.gdriveEmail !== "";
-  };
-
-  var addErrorToLog = function(err){
-    if(gDebugInfoErrorTrace.length > 4096)  //better to give a limit 
-      return;
-
-    var result = "";
-
-    if(err.message)
-      result += err.message + ":\n";
-
-    if(err.stack)
-      result += err.stack + "\n--\n\n";
-
-    if(!result)
-      result += "[" + err + "]";  //this would cast err to string
-
-    if(gDebugInfoErrorTrace.indexOf(result) < 0) //do not repeatly record
-      gDebugInfoErrorTrace += result;
-  };
-
-  //I have to use try/catch instead of window.onerror because of restriction of same origin policy: 
-  //http://stackoverflow.com/questions/28348008/chrome-extension-how-to-trap-handle-content-script-errors-globally
-  var pullNotesCatchingError = function(){
-    try{
-      pullNotes();
-    }
-    catch(err){
-      addErrorToLog(err);
-    }
-  };
-
-  var setupNoteEditorCatchingError = function(){
-    setTimeout(function(){
-      try{
-        setupNoteEditor();
-      }
-      catch(err){
-        addErrorToLog(err);
-      }
-    }, 0);
-  };
-
-  var sendHeartBeatCatchingError = function(){
-    try{
-      sendHeartBeat();
-    }
-    catch(err){
-      addErrorToLog(err);
-    }
-  };
 
   var main = function(){
-    SimpleGmailNotes.$ = $;
+    sgn.$ = $;
 
     //sgnGmailDom = new SimpleGmailNotes_Gmail(localJQuery);
     sgnGmailDom = new SGNGmailDOM(localJQuery);
 
     var sgnGmailPageOptions = {
       openEmailCallback: function(){  //no effect for inbox
-        debugLog("simple-gmail-notes: open email event", obj);
-        g_oec += 1;
-        setupNoteEditorCatchingError();
+        debugLog("simple-gmail-notes: open email event");
+        //g_oec += 1;
+        setupNoteEditor();
       },
       httpEventCallback: function(params, responseText, readyState) { //no effect for inbox
         //debugLog("xhr:", xhr);
-        updateEmailIdByJSON(responseText);
+        updateEmailIdDictByJSON(responseText);
       },
       onloadCallback: function(){
         debugLog("simple-gmail-notes: load event");
-        g_lc += 1;
-        setupNoteEditorCatchingError();
+        //g_lc += 1;
+        setupNoteEditor();
       },
     };
 
-
     sgnGmailPage = new SGNGmailPage(localJQuery, sgnGmailPageOptions);
 
-    /*
-    sgnGmailDom.observe.on('open_email', function(obj){
-      debugLog("simple-gmail-notes: open email event", obj);
-      g_oec += 1;
-      setupNoteEditorCatchingError();
-    });
-
-    sgnGmailDom.observe.on('load', function(obj){
-      debugLog("simple-gmail-notes: load event");
-      g_lc += 1;
-      setupNoteEditorCatchingError();
-    });
-
-    //id is always undefined
-    sgnGmailDom.observe.after('http_event', function(params, id, xhr) {
-      debugLog("xhr:", xhr);
-      updateEmailIdByJSON(xhr.responseText);
-    });
-
-    */
     document.addEventListener('SGN_PAGE_heart_beat_response', function(e) {
-      SimpleGmailNotes.lastHeartBeat = Date.now();
-      SimpleGmailNotes.gdriveEmail = JSON.parse(e.detail);
+      sgn.lastHeartBeat = Date.now();
+      sgn.gdriveEmail = JSON.parse(e.detail);
     });
 
-    document.addEventListener('SGN_PAGE_update_preferences', function(e){
-      var preferences = JSON.parse(e.detail);
-
-      var fontColor = preferences["fontColor"];
-      if(fontColor)
-        $(".sgn_input").css("color", htmlEscape(fontColor));
-
-      var backgroundColor = preferences["backgroundColor"];
-      if(backgroundColor){
-        if(!SimpleGmailNotes.getCurrentBackgroundColor()){
-          $(".sgn_input").css("background-color", backgroundColor);
-        }
-
-        $(".sgn_history_note").css("background-color", backgroundColor);
-      }
-
-      var fontSize = preferences["fontSize"];
-      if(fontSize != "default"){
-        $(".sgn_input").css("font-size", fontSize + "pt");
-        $(".sgn_current_connection").css("font-size", fontSize + "pt");
-      }
-      fontSize = parseInt($(".sgn_input").css("font-size"));
-
-      var noteHeight = preferences["noteHeight"];
-      if(SimpleGmailNotes.isInbox())
-        noteHeight = 4;
-
-      noteHeight = parseInt(noteHeight);
-      if(noteHeight){
-        $(".sgn_input").css("height", noteHeight * fontSize * 1.2 + 6 + "px");
-      }
-
-
-      var firstVisible = $(".sgn_container:visible").first();
-      //avoid duplicates
-      $(".sgn_container").hide();
-      firstVisible.show();
-
-      var notePosition = preferences["notePosition"];
-
-      if(!SimpleGmailNotes.isInbox())
-        updateGmailNotePosition(firstVisible, notePosition);
-
-      //reset class attribute with current 'position' class
-      firstVisible.removeClass('sgn_position_top');
-      firstVisible.removeClass('sgn_position_bottom');
-      firstVisible.removeClass('sgn_position_side-top');
-      firstVisible.removeClass('sgn_position_side-bottom');
-      firstVisible.addClass('sgn_position_' + notePosition);
-
-      var showConnectionPrompt = (preferences["showConnectionPrompt"] !== "false");
-      if(!showConnectionPrompt){
-        $(".sgn_current_connection").hide();
-      }
-
-      var showAddCalendar = (preferences["showAddCalendar"] !== "false");
-      if(!showAddCalendar){
-        $(".sgn_add_calendar").hide();
-      }
-
-      var showDeleteButton = (preferences["showDelete"] !== "false");
-      if(!showDeleteButton){
-        $(".sgn_delete").hide();
-      }
-
-      var showNoteColorPicker = (preferences["showNoteColorPicker"] !== "false");
-      if(!showNoteColorPicker){
-        $(".sgn_color_picker").hide();
-      }
-
-      debugLog("@470", preferences);
-      SimpleGmailNotes.preferences = e.detail;
-    });
+    /*
+    */
 
     //use current DOM to update email ID of first page
     for(var i=0; i<document.scripts.length; i++){
-      updateEmailIdByDOM(document.scripts[i].text);
+      updateEmailIdDictByJS(document.scripts[i].text);
     }
 
-    setTimeout(pullNotesCatchingError, 0);
-    setInterval(pullNotesCatchingError, 2000);
+    //https://stackoverflow.com/questions/6685396/execute-the-setinterval-function-without-delay-the-first-time
+    setInterval(function _run(){
+      //exeception in one call should not affect others
+      sendHeartBeat();
+      markAbstracts();
+      setupNoteEditor();
+      sendDebugInfo();
+      return _run;
+    }(), 1500);
+
+    //setTimeout(pullNotesCatchingError, 0);
+    //setInterval(pullNotesCatchingError, 2000);
+
     //better not to overlapp to much with the above one
-    setInterval(setupNoteEditorCatchingError, 1770); 
-    setInterval(sendHeartBeatCatchingError, 1400);
+    //setInterval(setupNoteEditorCatchingError, 1770); 
+    //setInterval(sendDebugInfo, 3000); //update debug info to background
 
-
-    setInterval(sendDebugInfo, 3000); //update debug info to back side
-
-    //mainly for debug purpose
-    SimpleGmailNotes._sgnGmailDom = sgnGmailDom;
-    SimpleGmailNotes._sgnGmailPage = sgnGmailPage;
-    SimpleGmailNotes._sendPreference = sendPreference;
-    SimpleGmailNotes._resetPreferences = resetPreferences;
-    SimpleGmailNotes._deleteNote = deleteNote;
+    //======= FOR DEBUG =======
+    sgn._sgnGmailDom = sgnGmailDom;
+    sgn._sgnGmailPage = sgnGmailPage;
+    sgn._sendPreference = debugSendPreference;
+    sgn._resetPreferences = debugResetPreferences;
+    sgn._deleteNote = debugDeleteNote;
   };
 
   main();

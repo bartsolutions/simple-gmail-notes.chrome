@@ -16,6 +16,15 @@ var SGNGmailDOM = function(localJQuery){
     return $('div[role=main]:first');
   };
 
+
+  api.inboxDataNode = function(){
+    return $(".gT.s2:visible");
+  };
+
+  api.inboxHookNode = function(){
+    return $(".gj.s2:visible");
+  };
+
   api.currentPageInfo = function(){
     var hash  = window.location.hash.split('#').pop();
     var parts = hash.split("/");

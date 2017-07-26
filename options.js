@@ -149,6 +149,7 @@ $(document).ready(function(){
   $("#bart_logo").attr("href", SGNO.getOfficalSiteUrl("pr"));
   $("#bart_logo img").attr("src", SGNO.getLogoImageSrc("pr"));
   $("#support").attr("href", SGNO.getSupportUrl());
+  $("#review").attr("href", SGNO.getReviewUrl());
 
   pullPreferences();
 });

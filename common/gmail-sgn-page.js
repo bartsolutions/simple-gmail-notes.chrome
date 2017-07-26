@@ -47,7 +47,7 @@ var SGNGmailPage = function(localJQuery, options){
       return _userEmail;
 
     if(SimpleGmailNotes.isInbox()){
-      var hook = $("#gb .gb_b.gb_eb.gb_R");
+      var hook = $("#gb a.gb_b.gb_R");
       _userEmail = hook.attr("title").split("(")[1].split(")")[0];
     }
     else
@@ -121,11 +121,11 @@ var SGNGmailPage = function(localJQuery, options){
     if(options.httpEventCallback)
       options.httpEventCallback(params, responseText, readyState);
 
-    if(params.url && 
-        (params.url.view == 'cv' || params.url.view == 'ad') && 
-        typeof params.url.th == 'string' && 
-        typeof params.url.search == 'string' && 
-        params.url.rid === undefined) {
+    if(params && 
+        (params.view == 'cv' || params.view == 'ad') && 
+        typeof params.th == 'string' && 
+        typeof params.search == 'string' && 
+        params.rid === undefined) {
       //open_email event
         options.openEmailCallback();
     }
@@ -143,7 +143,7 @@ var SGNGmailPage = function(localJQuery, options){
 							_ajaxCallback(this.responseText, this.readyState, this.responseURL);
 						}
 					}, false);
-					open.call(this, method, url, async, user, pass);
+					open.apply(this, arguments);
 			};
 		})(win.XMLHttpRequest.prototype.open);
 	}

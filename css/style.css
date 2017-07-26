@@ -105,7 +105,10 @@
     vertical-align: middle;
 }
 
-.sgn_container .sgn_prompt_login .sgn_login{
+.sgn_container .sgn_prompt_login .sgn_login, 
+.sgn_container .sgn_error.sgn_revoke a,
+.sgn_container .sgn_error.sgn_revoke a:visited
+{
   color: #4D9ED0;
 }
 

@@ -10,6 +10,7 @@ $(document).ready(function(){
   });
 
   $("#support").click(function(){
+    var url = SGNP.getSupportUrl();
 
     window.open(url, "_blank");
     return false;

@@ -1,14 +1,10 @@
 /*
  * Simple Gmail Notes 
  * https://github.com/walty8
- * Copyright (C) 2017 Walty Yeung <walty8@gmail.com>
+ * Copyright (C) 2017 Walty Yeung <walty@bart.com.hk>
  * License: GPLv3
  *
- * This script is going to be shared for both Firefox and Chrome extensions.
- *
- * Note that jquery function calls should be avoided in this file, because 
- * jquery could not be imported to the FF background page, see sendAjax and 
- * iterateArray for the samples.
+ * This script is going to be shared for both background and options page
  *
  */
 
@@ -22,23 +18,32 @@ var settings = {
   SCOPE: 'https://www.googleapis.com/auth/drive.file'
 };
 
-var gUpgradeMessage = "<div class='title'>Simple Gmail Notes Updated</div><br/><br/>" +
-            "<div class='item'>New in " + SGNB.getExtensionVersion() + ":</div>" +
-            "<div class='item'>- SUPPORT GOOGLE INBOX!</div>" +
-            "<div class='item'>- Removed all other permissions, except access to Google servers</div>" +
-            "<div class='item'>- Fixed problem of note window jumping in the sidebar display</div>" +
-            "<div class='item'>- Shortcut access from toolbar button</div><br/>" +
-            "If you think the extension is helpful, please support the development via a " +
-              "<a target='_blank' class='strong' href='" + SGNB.getDonationUrl("nt") + "'>donation</a>." +
-              " Thank you!<br/><br/>" +
-            "We also build fantastic app, website and private extension, " +
+var gInstallMessage = "<div class='title'>Simple Gmail Notes Installed</div><br/><br/>" +
+            "<div class='item'>How to use Simple Gmail Notes:</div>" +
+            "<div class='item'>1. Click any email</div>" +
+            "<div class='item'>2. Click 'log in' link at the top of email</div>" +
+            "<div class='item'>3. Write anything in the text area</div>" +
+            "<br/>" +
+            "We also build fantastic apps, websites and private extensions, " +
               "<a class='strong' target='_blank' href='" + SGNB.getContactUsUrl("nt") + 
                 "'>contact us</a> for more details.<br/><br/><br/>" + 
             "<div style='text-align:right'>" +
               "<a  target='_blank' href='" + SGNB.getOfficalSiteUrl("nt") + "'>" +
                 "<img src='" + SGNB.getWhiteLogoImageSrc("nt") + "'></a></div>";
 
-var gBadgeText = "New!";
+var gUpgradeMessage = "<div class='title'>Simple Gmail Notes Updated</div><br/><br/>" +
+            "<div class='item'>New in " + SGNB.getExtensionVersion() + ":</div>" +
+            "<div class='item'>- Show Google Drive side error</div>" +
+            "<div class='item'>- Tried to fix problem of text area disappear</div>" +
+            "<br/>" +
+            "We also build fantastic apps, websites and private extensions, " +
+              "<a class='strong' target='_blank' href='" + SGNB.getContactUsUrl("nt") + 
+                "'>contact us</a> for more details.<br/><br/><br/>" + 
+            "<div style='text-align:right'>" +
+              "<a  target='_blank' href='" + SGNB.getOfficalSiteUrl("nt") + "'>" +
+                "<img src='" + SGNB.getWhiteLogoImageSrc("nt") + "'></a></div>";
+
+var gBadgeText = "";
 
 var gPreferenceTypes = ["abstractStyle", "noteHeight", "fontColor", 
                         "backgroundColor", "fontSize", "abstractFontColor", 
@@ -96,12 +101,12 @@ var iterateArray = function(arr, callback){
 };
 
 var getRedirectUri = function() {
-  return "https://jfjkcbkgjohminidbpendlodpfacgmlm.chromiumapp.org/provider_cb";
+  return SGNB.getBrowser().identity.getRedirectURL();
 };
 
 var launchAuthorizer = function(sender, callback) {
   debugLog("Trying to login Google Drive.");
-  SGNB.getBrowser().identity.launchWebAuthFlow(
+  var result = SGNB.getBrowser().identity.launchWebAuthFlow(
     {"url": "https://accounts.google.com/o/oauth2/auth?" +
       $.param({"client_id": settings.CLIENT_ID,
           "scope": settings.SCOPE,
@@ -116,6 +121,12 @@ var launchAuthorizer = function(sender, callback) {
     },
     callback
   );
+
+  debugLog("authentication result: ", result);
+};
+
+var getLastError = function(){
+  return SGNB.getBrowser().runtime.lastError.message;
 };
 
 var removeCachedToken = function(tokenValue){
@@ -425,10 +436,21 @@ var loginGoogleDrive = function(sender, messageId, title){
   debugLog("Trying to login Google Drive.");
   launchAuthorizer(sender, function(code) {
       debugLog("Code collected", code);
-      if(!code){
+      if(!code || code.indexOf("error=") > 0 ){
+        var error = "";
+        if(!code)
+          error = getLastError();
+        else{
+          //https://xxx/?error=access_denied#"
+          error = code.split("error=")[1];
+          error = error.replace(/#/g, '');
+        }
+          
         sendContentMessage(sender, {action:"show_log_in_prompt"});
         sendContentMessage(sender, {action:"disable_edit"});
-        sendContentMessage(sender, {action:"show_error", type:"login"});
+        sendContentMessage(sender, {action:"show_error", 
+                                    type:"custom",
+                                    message:"Failed to login: " + error});
       }
       else{
         //get code from redirect url
@@ -566,8 +588,15 @@ var gdriveQuery = function(sender, query, success_cb, error_cb){
         success_cb(data);
       },
       error:function(data){
-        if(error_cb)
+        if(error_cb) {
           error_cb(data);
+        }
+        else {
+	  sendContentMessage(sender, {action:"show_error",
+                                      type:"custom",
+                                      message:"Google Drive error: " +
+                                      JSON.stringify(data)});
+        }
       }
     });
   });
@@ -603,7 +632,9 @@ var searchNoteHistory = function(sender, messageId, title){
   if(title === "")
     return null;
 
-  var query = "title='" + settings.NOTE_FOLDER_NAME + "' or fullText contains '" + title + "'";
+  //fullText contain must be alpha numeric
+  var searchTitle = title.replace(/[^a-zA-Z0-9]/g, " ");
+  var query = "fullText contains '" + settings.NOTE_FOLDER_NAME + "' or fullText contains '" + searchTitle + "'";
 
   gdriveQuery(sender, query, 
     function(data){ //success callback
@@ -733,10 +764,9 @@ var searchNote = function(sender, messageId){
 //Do as much initilization as possible, while not trigger login page
 var initialize = function(sender, messageId, title){
   var preferences = getPreferences();
+  //preferences['debugBackgroundInfo'] = "Extension Version: " + SGNB.getExtensionVersion();
 
-  preferences['debugBackgroundInfo'] = "Extension Version: " + SGNB.getExtensionVersion();
-
-  sendContentMessage(sender, {action:"update_preferences", preferences:preferences});
+  //sendContentMessage(sender, {action:"update_preferences", preferences:preferences});
 
   debugLog("@476", preferences);
   if(getStorage(sender, "refresh_token")){
@@ -835,8 +865,8 @@ var pullNotes = function(sender, pendingPullList){
     return;
   }
 
-  var preferences = getPreferences();
-  sendContentMessage(sender, {action:"update_preferences", preferences:preferences});
+  //var preferences = getPreferences();
+  //sendContentMessage(sender, {action:"update_preferences", preferences:preferences});
   debugLog("@414", pendingPullList);
 
   var totalRequests = Math.floor((pendingPullList.length-1) / 120) + 1;
@@ -934,28 +964,22 @@ var deleteNoteByMessageId = function(sender, messageId){
 
 };
 
-var gAlertUpgradeDone = false;
-var alertUpgradeMessageIfNeeded = function(sender){
-  if(!gUpgradeMessage)
+var alertMessageIfNeeded = function(sender, message, preferenceType){
+  if(!message)
     return;
 
-  if(gAlertUpgradeDone)
-    return;
-  
   preferences = getPreferences();
-  if(preferences["upgrade_notification_done"]){
-    gAlertUpgradeDone = true;
+  if(preferences[preferenceType]){
     return;
   }
 
-  preferences["upgrade_notification_done"] = true;
-  gAlertUpgradeDone = true; 
-  sendContentMessage(sender, {action: "alert_message", message: gUpgradeMessage}); 
+  preferences[preferenceType] = true;
+  sendContentMessage(sender, {action: "alert_message", message: message}); 
 };
 
 //For messaging between background and content script
 var setupListeners = function(sender, request){
-  var preferences;
+  var preferences = {};
 
   debugLog("Request body:", request);
   switch (request.action){
@@ -984,10 +1008,23 @@ var setupListeners = function(sender, request){
       openTab("options.html");
       break;
     case "heart_beat_request":
+      var displayPreferences = {};
+      preferences = getPreferences();
+      for(var i=0; i<gPreferenceTypes.length; i++){
+        var key = gPreferenceTypes[i];
+        if(key.startsWith("debug"))
+          continue;
+
+        displayPreferences[key] = preferences[key];
+      }
+
+
       //do nothing except echo back, to show it's alive
-      alertUpgradeMessageIfNeeded(sender);
+      alertMessageIfNeeded(sender, gInstallMessage, "install_notification_done");
+      alertMessageIfNeeded(sender, gUpgradeMessage, "upgrade_notification_done");
       sendContentMessage(sender, {action: "heart_beat_response", 
-                                  gdriveEmail:getStorage(sender, "gdrive_email")});  
+                                  gdriveEmail:getStorage(sender, "gdrive_email"),
+                                  preferences:displayPreferences});
       break;
     case "update_debug_page_info":
       preferences = getPreferences();
@@ -1006,6 +1043,7 @@ var setupListeners = function(sender, request){
       break;
     case "reset_preferences":
       pushPreferences({});
+      preferences = getPreferences();
       preferences = updateDefaultPreferences(localStorage);
       break;
     default:
