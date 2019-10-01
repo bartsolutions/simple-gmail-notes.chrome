@@ -1,4 +1,4 @@
-**This is a _Chrome exntension_ that adds notes to Gmail conversations. One note per conversation.**
+**This is a _Chrome extension_ and _Firefox addon_ that adds notes to Gmail conversations. One note per conversation.**
 
 - 100% free and open source! 
 
@@ -16,28 +16,39 @@
 
 - See the extension website for the source code repository.
 
+- Integrate with [Simple Mobile CRM](https://mobilecrm.io) (require extra sign in)
+
 **Dependencies (included in source code)**
 
 - [jQuery](https://jquery.com/)
 
 - [jQuery Popup Overlay](https://github.com/vast-engineering/jquery-popup-overlay)
 
-- [gmail.js](https://github.com/KartikTalwar/gmail.js/tree/master)
+- [jQuery Simple Color](https://github.com/recurser/jquery-simple-color)
+
+- [Featherlight](https://noelboss.github.io/featherlight/)
+
+- [js-lru](https://github.com/rsms/js-lru)
+
+- [TinyMCE](https://www.tiny.cloud/)
+
+- [Bulma CSS](https://bulma.io/)
 
 - [ikooni icons](https://www.iconfinder.com/iconsets/ikooni-outline-free-basic)
+
+**Chrome Store Download**
+
+- <https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm>
+
+**Firefox Addon Download**
+
+- <https://addons.mozilla.org/en-US/firefox/addon/simple-gmail-notes/>
+
 
 **More Technical Details**
  - <http://blog.walty8.com/simple-gmail-notes-chrome-extension/>
 
-**Chrome Store**
+**About Source Code Update**
 
-- [https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm](https://chrome.google.com/webstore/detail/simple-gmail-notes/jfjkcbkgjohminidbpendlodpfacgmlm)
+- To see the latest source code in production, one is always encouraged to use source code viewer like [Chrome extension source viewer](https://chrome.google.com/webstore/detail/chrome-extension-source-v/jifpbeccnghkjeaalbbjmodiffmgedin?hl=en), and directly inspect the source code from Chrome store. The source code is never obfuscated.
 
-----
-
-_Firefox Addon_
-
-- The corresponding Firefox Addon could be found here:
- * Store: <https://addons.mozilla.org/en-us/firefox/addon/simple-gmail-notes/>
-
-- Since the notes are stored in Google Drive, it means the notes written in Chrome Extension could be retrieved from Firefox Addon.
