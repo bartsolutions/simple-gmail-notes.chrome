@@ -3,28 +3,45 @@
   "name": "Simple Gmail Notes",
   "short_name": "SGNotes",
   "description": "__MSG_extDescription__",
-  "version": "1.1.2.0",
+  "version": "2.2.1.7",
   "default_locale": "en",
-  "icons": { "16": "image/icon.16.png",
-           "48": "image/icon.48.png",
-          "128": "image/icon.128.png" },
-
+  "icons": {
+    "16": "image/icon.16.png",
+    "48": "image/icon.48.png",
+    "128": "image/icon.128.png"
+  },
   "permissions": [
     "storage",
     "activeTab",
     "identity",
-    "https://www.googleapis.com/*",  
+    "https://www.googleapis.com/*",
     "https://accounts.google.com/*"
   ],
   "web_accessible_resources": [
     "lib/jquery-3.1.0.min.js",
     "lib/jquery.popupoverlay.js",
+    "lib/lru.js",
+    "lib/tinymce/tinymce.min.js",
+    "lib/tinymce/jquery.tinymce.min.js",
+    "lib/tinymce/plugins/lists/plugin.min.js",
+    "lib/tinymce/plugins/link/plugin.min.js",
+    "lib/tinymce/skins/lightgray/*",
+    "lib/tinymce/themes/modern/theme.min.js",
+    "lib/featherlight/featherlight.min.js",
+    "lib/featherlight/featherlight.min.css",
+    "css/style.css",
+    "css/bulma.min.css",
     "common/gmail-sgn-dom.js",
     "common/gmail-sgn-page.js",
     "common/shared-common.js",
     "page.js",
     "image/donation.24.png",
+    "image/table-sort.png",
     "image/color-picker.24.png",
+    "image/modal-loading.gif",
+    "image/Google-Drive-icon.png",
+    "image/share.24.png",
+    "image/shared.24.png",
     "image/search.24.png",
     "image/logout.24.png",
     "image/revoke.24.png",
@@ -32,36 +49,50 @@
     "image/bart-logo.24.png",
     "image/preferences.24.png",
     "image/delete.24.png",
-    "image/chat.24.png"
+    "image/chat.24.png",
+    "image/share-auto.24.png",
+    "image/share-outdated.24.png",
+    "image/opportunity.png",
+    "image/note-timestamp.png",
+    "image/warning.3x.png",
+    "image/crm-logo.24.png",
+    "image/template.png"
   ],
-  "background": { 
-      "scripts" : ["lib/jquery-3.1.0.min.js", 
-                   "common/shared-common.js",
-                   "background.js",
-                   "background-event.js"],
-      "persistent" : false
+  "background": {
+    "scripts": [
+      "lib/jquery-3.1.0.min.js",
+      "common/shared-common.js",
+      "background.js",
+      "background-event.js"
+    ],
+    "persistent": false
   },
-  "content_scripts":  [{
-      "matches": [ "https://mail.google.com/*", "https://inbox.google.com/*"],
-      "js": [ "lib/jquery-3.1.0.min.js", "lib/jquery.popupoverlay.js", 
-              "lib/jquery.simple-color.js", 
-              "common/shared-common.js",
-              "common/gmail-sgn-dom.js",
-              "content.js"],
-      "css": [ "css/style.css"],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://mail.google.com/*",
+        "https://inbox.google.com/*"
+      ],
+      "js": [
+        "lib/jquery-3.1.0.min.js",
+        "lib/jquery.popupoverlay.js",
+        "lib/jquery.simple-color.js",
+        "lib/featherlight/featherlight.min.js",
+        "common/shared-common.js",
+        "common/gmail-sgn-dom.js",
+        "content.js"
+      ],
+      "css": [
+        "css/style.css",
+        "lib/featherlight/featherlight.min.css"
+      ],
       "run_at": "document_end"
-  }],
+    }
+  ],
   "browser_action": {
-    "default_icon" : "image/icon.128.png", 
+    "default_icon": "image/icon.128.png",
     "default_popup": "popup.html"
   },
   "options_page": "options.html",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgyUBS53d5P2ograP4JKK656jrrauipHsAdgcTZyL1j5MKBMD4yBmHl9BcmS+sfhmOE5fS38ng7XRZIErp8SrWbJwwstMWx+FTDKlrFS3J5so85CgOpRNge+Ge8UyhxAkPB7zui1AU3wD/XieaGN2L9pmT4MN1u6pPs2Lf/8i96Vp8YjUKaKIWmevKeqsGr1HNHZt41/dcBBIr6vW6OoWlViI1bae+p4Cv6VertdadkuW4hc7z8jVrlC0Lyu43oETmXWflUhw/hCctktI+KwJNk47Pm9vX2Bgw7EdovukrYPV+iNzzE49jirbQkZvMGuNV3fA+NbUwmo7c9dypCAweQIDAQAB",
-  "applications": {
-    "gecko": {
-      "id": "@simple-gmail-notes",
-      "strict_min_version": "53.0"
-    }
-  }
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgyUBS53d5P2ograP4JKK656jrrauipHsAdgcTZyL1j5MKBMD4yBmHl9BcmS+sfhmOE5fS38ng7XRZIErp8SrWbJwwstMWx+FTDKlrFS3J5so85CgOpRNge+Ge8UyhxAkPB7zui1AU3wD/XieaGN2L9pmT4MN1u6pPs2Lf/8i96Vp8YjUKaKIWmevKeqsGr1HNHZt41/dcBBIr6vW6OoWlViI1bae+p4Cv6VertdadkuW4hc7z8jVrlC0Lyu43oETmXWflUhw/hCctktI+KwJNk47Pm9vX2Bgw7EdovukrYPV+iNzzE49jirbQkZvMGuNV3fA+NbUwmo7c9dypCAweQIDAQAB"
 }
-

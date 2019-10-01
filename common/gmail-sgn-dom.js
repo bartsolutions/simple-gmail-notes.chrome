@@ -12,7 +12,7 @@ var SGNGmailDOM = function(localJQuery){
   var $ = localJQuery;
   var api = {};
 
-  api.inboxContent = function(){
+  api.pageContent = function(){
     return $('div[role=main]:first');
   };
 
@@ -23,6 +23,74 @@ var SGNGmailDOM = function(localJQuery){
 
   api.inboxHookNode = function(){
     return $(".gj.s2:visible");
+  };
+
+  api.isConversationMode = function(node){
+    var isConversationMode;
+    if(node)
+      isConversationMode = node.find('[data-thread-perm-id*="msg-"]:visible').length === 0 &&
+                            node.find('[data-thread-id*="msg-"]:visible:first').length === 0;
+    else
+      isConversationMode = $('tr.zA [data-thread-perm-id*="msg-"]:visible').length === 0 &&
+                            $('tr.zA [data-thread-id*="msg-"]:visible').length === 0 &&
+                            $('h2.hP[data-thread-perm-id*="msg-"]:visible').length === 0 &&
+                            $('h2.hP[data-thread-id*="msg-"]:visible').length === 0;
+
+    return isConversationMode;
+
+  };
+
+  api.getPreviewpaneNode = function(){
+    var idNode = $("tr.zA.aps:visible[sgn_email_id]").first();
+    return idNode;
+  };
+  
+  api.getPreviewpaneEmailId = function(){
+    var messageId;
+    var idNode = api.getPreviewpaneNode();
+    if(idNode.length){
+      messageId = idNode.attr("sgn_email_id");
+    }else{
+      messageId = "PREVIEW";  
+    }
+
+    return messageId;
+  };
+
+  api.getNewGmailEmailIdFromNode = function(node){
+    var emailId;
+
+    if(api.isConversationMode(node)){
+      emailId =  $(node).find("*[data-legacy-thread-id]").attr("data-legacy-thread-id");
+    }
+    else{
+      emailId =  $(node).find("*[data-legacy-last-message-id]").attr("data-legacy-last-message-id");
+    }
+
+    return emailId;
+  };
+
+  //get email id, if node exists it should be detail page
+  api.getNewGmailEmailId = function(){
+    if(!SimpleGmailNotes.isNewGmail()){
+      return null;
+    }
+
+    if(api.isPreviewPane()){ //this is for old and new gmail
+      emailId = api.getPreviewpaneEmailId();
+    }
+    else  //no preview
+    {
+      if(api.isConversationMode()){
+        emailId = api.getCurrentThreadId();
+      }
+      else{
+        emailId = api.getLastMessageId();
+      }
+    }
+
+    //console.log("new email id, @207: ", emailId);
+    return emailId;
   };
 
   api.currentPageInfo = function(){
@@ -46,6 +114,9 @@ var SGNGmailDOM = function(localJQuery){
     if(info.lastPart.match(/[0-9A-Fa-f]{16}/))   //detail page
         return null;
 
+    if(info.lastPart.match(/[0-9A-Za-z]{32}/))   //new UI detail page
+        return null;
+
     if(api.isQueryPage()){
         page = hash;    //include the query part
     }
@@ -56,8 +127,44 @@ var SGNGmailDOM = function(localJQuery){
     return page;
   };
 
+  var _userEmail;
+  //page specific data checking
+  api.userEmail = function() {
+    if(_userEmail)
+      return _userEmail;
+
+    var hook = $("#gb a.gb_b.gb_R,#gb a.gb_Da,#gb a.gb_Ca");  //adapt to new UI
+    var labelText = "";
+
+    if(!hook.length && SimpleGmailNotes.isNewGmail()){
+      hook = $("#gb a[aria-label*='@']");
+    }
+
+    if(!hook.length){
+      return "";
+    }
+
+    if(SimpleGmailNotes.isNewGmail()){
+      labelText = hook.attr("aria-label");
+    }
+    else{ //for inbox and classic gmail
+      labelText = hook.attr("title");
+    }
+
+    if(labelText.indexOf("(") !== -1){
+      //split from last bracket
+      _userEmail = labelText.split("(").slice(-1)[0];
+      _userEmail = _userEmail.split(")")[0];
+    }
+    else
+      _userEmail = $.trim(labelText.split(":")[1]);
+    
+    return _userEmail;
+  };
+
+
   api.isPreviewPane = function(){
-    var dom = api.inboxContent();
+    var dom = api.pageContent();
     var boxes = dom.find("[gh=tl]");
 
     var previewPaneFound = false;
@@ -87,6 +194,16 @@ var SGNGmailDOM = function(localJQuery){
       return false;
     }
 
+
+    return true;
+
+    /*
+    //new gmail will return false during currentPage or previewPane checking
+    if(SimpleGmailNotes.isNewGmail()){
+      return true;
+    }
+
+    //try to find email id in classic email
     var items = $('.ii.gt');
     var ids = [];
 
@@ -100,10 +217,11 @@ var SGNGmailDOM = function(localJQuery){
     }
 
     return ids.length > 0;
+    */
   };
 
   api.isHorizontalSplit = function() {
-    var dom = api.inboxContent();
+    var dom = api.pageContent();
     var box = dom.find("[gh=tl]").find('.nn');
 
     return box.length === 0;
@@ -115,7 +233,7 @@ var SGNGmailDOM = function(localJQuery){
   };
 
   api.inboxes = function() {
-    var dom = api.inboxContent();
+    var dom = api.pageContent();
     return dom.find("[gh=tl]");
   };
 
@@ -141,34 +259,142 @@ var SGNGmailDOM = function(localJQuery){
     return ids;
   };
 
-  api.emailId = function() {
-    var hash = null;
+  //get the email id of current email
+  api.getEmailIdFromURL = function() {
+    var messageId;
 
-    if(api.isInsideEmail()) {
-      if(api.isPreviewPane()) {
-        var items = api.emailContents();
-        var text = [];
+    if(api.isPreviewPane()){ //this is for old and new gmail
+      messageId = api.getPreviewpaneEmailId();
+    }
+    else
+      messageId = window.location.hash.split("/").pop().replace(/#/, '').split('?')[0];
 
-        for(var i=0; i<items.length; i++) {
-          var mailId = items[i].getAttribute('class').split(' ')[2];
-          var isEditable = items[i].getAttribute('contenteditable');
-          var isVisible = items[i].offsetWidth > 0 && items[i].offsetHeight > 0;
-          if(mailId != 'undefined' && mailId !== undefined && isVisible) {
-            if(isEditable != 'true') {
-              text.push(mailId);
-            }
-          }
-        }
+    return messageId;
+  };
 
-        hash = text[0].substring(1, text[0].length);
-      } else {
-        hash = window.location.hash.split("/").pop().replace(/#/, '').split('?')[0];
+
+  var _dec2hexCached = {};
+  //http://stackoverflow.com/questions/18626844/convert-a-large-integer-to-a-hex-string-in-javascript
+  api.dec2hex = function(str){ // .toString(16) only works up to 2^53
+    if(_dec2hexCached[str])
+      return _dec2hexCached[str];
+
+    var dec = str.toString().split(''), sum = [], hex = [], i, s;
+    while(dec.length){
+      s = 1 * dec.shift();
+      for(i = 0; s || i < sum.length; i++){
+        s += (sum[i] || 0) * 10;
+        sum[i] = s % 16;
+        s = (s - sum[i]) / 16;
       }
-
+    }
+    while(sum.length){
+      hex.push(sum.pop().toString(16));
     }
 
-    return hash;
+    var result = hex.join('');
+    _dec2hexCached[str] = result;
+
+    return result;
+  }; 
+
+
+  api.getInboxEmailId = function(actionData){
+    if(!actionData){
+      return "";
+    }
+
+    var messageId = $.parseJSON(actionData)[0][1][0];
+    messageId = messageId.split(":")[1];
+    //http://stackoverflow.com/questions/57803/how-to-convert-decimal-to-hex-in-javascript
+    messageId = api.dec2hex(messageId);
+    return messageId;
+  };
+
+  // mail gmail related logic
+  // get current message id (in email detail page)
+  api.getCurrentMessageId = function(){
+    var messageId = '';
+    if(SimpleGmailNotes.isInbox()){
+      var actionData = api.inboxDataNode().parent().attr("data-action-data");
+      messageId = api.getInboxEmailId(actionData);
+    }
+    else{   
+      if(SimpleGmailNotes.isNewGmail()){
+        messageId = api.getNewGmailEmailId();
+      }
+      else{
+        messageId = api.getEmailIdFromURL();
+      }
+    }
+
+    if(!messageId){
+      SimpleGmailNotes.appendLog("message not found");
+    }
+
+    return messageId;
+  };
+
+  api.getCurrentThreadId = function(){
+    var threadId = "";
+    if(SimpleGmailNotes.isInbox()){
+      //for inbox message ID and thread ID are the same
+      threadId = getCurrentMessageId();
+    }
+    else if(SimpleGmailNotes.isNewGmail()){
+      if(api.isPreviewPane()){
+        var idNode = api.getPreviewpaneNode();
+        //works for both conversation & non-conversation mode
+        threadId = idNode.find('*[data-legacy-thread-id]').attr('data-legacy-thread-id');
+      }
+      else
+        //works for both conversation & non-conversation mode
+        threadId = $('*[data-legacy-thread-id]:visible').attr('data-legacy-thread-id');
+    }
+    else{ //for classic gmail
+      if($("h3.iw").length > 1){  //conversation mode, message id == thread id
+        threadId = getCurrentMessageId();
+      }
+      else{
+        threadId = "";  //classic email non conversation mode
+      }
+    }
+
+    return threadId;
+  };
+
+
+  api.getLastMessageId = function(){
+    var lastMessageId;
+
+    if(api.isPreviewPane()){
+      var idNode = api.getPreviewpaneNode();
+      lastMessageId = idNode.find('*[data-legacy-last-message-id]').attr('data-legacy-last-message-id');
+    }
+    else{
+      //for both conversation and non-conversation
+      lastMessageId = $('*[data-legacy-message-id]:visible').last().attr('data-legacy-message-id');
+    }
+
+    return lastMessageId;
+  };
+
+  api.getPrintPageEmail = function() {
+    var printEmailNode = $("tr:first").children('td:last');
+    var printEmailNodeStr = printEmailNode.text();
+
+    var email;
+    if (printEmailNodeStr.indexOf("<") !== -1) {
+      email = printEmailNodeStr.split("<").slice(-1)[0];
+      email = email.split(">")[0];
+    } else {
+      email = $.trim(printEmailNodeStr.split(":")[1]);
+    }
+    console.log("email print", email);
+    return email;
+
   };
 
   return api;
 };
+

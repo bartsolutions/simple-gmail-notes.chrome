@@ -1,4 +1,4 @@
-/*
+/*   
  * Simple Gmail Notes
  * https://github.com/walty8
  * Copyright (C) 2017 Walty Yeung <walty@bart.com.hk>
@@ -13,21 +13,22 @@ $(window).focus(function() {
 }).blur(function() {
   gIsWindowFocused = false;
 });
-
 SimpleGmailNotes.start = function(){
 
 (function(SimpleGmailNotes, localJQuery){
   var $ = localJQuery;
 
   /* global variables (inside the closure)*/
-  var sgnGmailDom;
   var sgnGmailPage;
-  var gEmailIdDict = {};
+  var gEmailIdDict = new LRUMap(2000);  //at most ~2MB memory
+  var gClassicGmailConversation = false;
   var gDebugInfoDetail = "";
   var gDebugInfoSummary = "";
+  var gCRMLoggedInChecked = false;
   //var gDebugInfoErrorTrace = "";
   //followings are for network request locking control
   var sgn = SimpleGmailNotes;
+  var sgnGmailDom = new SGNGmailDOM(localJQuery);
 
   sgn.gdriveEmail = "";
   sgn.preferences = {};
@@ -41,59 +42,52 @@ SimpleGmailNotes.start = function(){
       eventDetail = {};
     }
 
-    eventDetail.email = sgnGmailPage.userEmail();
+    eventDetail.email = sgnGmailDom.userEmail();
     document.dispatchEvent(new CustomEvent(eventName,  {detail: eventDetail}));
   };
 
   //utils
-  var debugLog = function()
-  {
+  var debugLog = function(){
     if (sgn.isDebug()) {
         console.log.apply(console, arguments);
     }
   };
 
   var debugDeleteNote = function(){
-      sendContentMessage('delete', {messageId: getCurrentMessageId()});
+    sendContentMessage('SGN_delete', {messageId: sgnGmailDom.getCurrentMessageId()});
   };
 
   var debugResetPreferences = function(){
-      sendContentMessage('reset_preferences');
+    sendContentMessage('SGN_reset_preferences');
   };
 
   var debugSendPreference = function(preferenceType, preferenceValue){
-      sendContentMessage('send_preference',
-        {preferenceType: preferenceType, preferenceValue: preferenceValue});
+    sendContentMessage('SGN_send_preference',
+      {preferenceType: preferenceType, preferenceValue: preferenceValue});
   };
 
-  var sendDebugInfo = function(){
-    var debugInfo = "Browser Version: " + navigator.userAgent + "\n" + 
-                    gDebugInfoSummary + "\n" + gDebugInfoDetail + 
-                    "\nPE:" + sgn.debugLog;
-    sendContentMessage('SGN_update_debug_page_info', {debugInfo:debugInfo});
+  var gPreviousDebugLog = "";
+  var sendDebugLog = function(){
+    var debugLog = sgn.getLog();
+    if(debugLog && debugLog != gPreviousDebugLog){
+      sendContentMessage('SGN_update_debug_page_info', {debugInfo:debugLog});
+      gPreviousDebugLog = debugLog;
+    }
   };
+
+  SimpleGmailNotes.sendPageDebugLog = sendDebugLog;
 
 
   var htmlEscape = function(str) {
-      return String(str)
-              .replace(/&/g, '&amp;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#39;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;');
+    return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
   };
 
-  // I needed the opposite function today, so adding here too:
-  var htmlUnescape = function(value){
-      return String(value)
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&amp;/g, '&');
-  };
-
+ 
 
   var isNumeric = function(str){
     var code, i, len;
@@ -106,113 +100,45 @@ SimpleGmailNotes.start = function(){
     }
     return true;
   };
-
-
-  var specialCharRe = new RegExp(String.fromCharCode(160), 'g');
-  var stripHtml = function(value){
-    return value.replace(/<(?:.|\n)*?>/gm, '')
-                .replace(specialCharRe, ' ');
-  };
-
-  var _dec2hexCached = {};
-  //http://stackoverflow.com/questions/18626844/convert-a-large-integer-to-a-hex-string-in-javascript
-  var dec2hex = function(str){ // .toString(16) only works up to 2^53
-    if(_dec2hexCached[str])
-      return _dec2hexCached[str];
-
-    var dec = str.toString().split(''), sum = [], hex = [], i, s;
-    while(dec.length){
-        s = 1 * dec.shift();
-        for(i = 0; s || i < sum.length; i++){
-            s += (sum[i] || 0) * 10;
-            sum[i] = s % 16;
-            s = (s - sum[i]) / 16;
-        }
-    }
-    while(sum.length){
-        hex.push(sum.pop().toString(16));
-    }
-
-    var result = hex.join('');
-    _dec2hexCached[str] = result;
-
-    return result;
-  }; 
-
-
 	
   //heartbeat checking, background script will die after long idle / upgrade
   var isBackgroundDead = function(){
-      var thresholdTime = 8;
-      var currentTime = Date.now();
+    var thresholdTime = 8;
+    var currentTime = Date.now();
       //copy out to avoid race condition
-      var lastHeartBeat = sgn.lastHeartBeat; 
-      if(sgn.isDebug())
-        thresholdTime = 300;
+    var lastHeartBeat = sgn.lastHeartBeat; 
+    if(sgn.isDebug())
+      thresholdTime = 300;
 
-      var isDead = (currentTime - lastHeartBeat > thresholdTime * 1000);
-      if(isDead){
-        debugLog("background died");
-      }
+    var isDead = (currentTime - lastHeartBeat > thresholdTime * 1000);
+    if(isDead){
+      debugLog("background died");
+    }
 
-      return isDead;
+    return isDead;
   };
 
-  var heartBeatAlertSent = false;
+  //var heartBeatAlertSent = false;
+  var focusedErrorCount = 0;
   var sendHeartBeat = function(){
   sgn.executeCatchingError(function(){
     sendContentMessage("SGN_heart_beat_request");
+    sendDebugLog();
+
     var warningMessage = sgn.offlineMessage;
 
     if(isBackgroundDead() && gIsWindowFocused){
-      var warningNode = $("<div class='sgn_inactive_warning'><div>" + 
-                            warningMessage + "</div></div>");
-      var warningNodeCount = $(".sgn_inactive_warning:visible");
-
-      if(sgn.isInbox()){
-        var containerNode = $(".sgn_container:visible");
-        if(containerNode.find("> .sgn_inactive_warning").length === 0){
-          containerNode.prepend(warningNode);
-        }
-
-        var pageNode = $(".cM.bz");
-        if(pageNode.find("> .sgn_inactive_warning").length === 0){
-          pageNode.prepend(warningNode.clone());
-        }
-      }
-      else{  //gmail page
-        var hookNode = $("#\\:5");
-        if(hookNode.find("> .sgn_inactive_warning").length === 0){
-          $("#\\:5").append(warningNode);
-        }
-      }
-
-      var inputNode = $(".sgn_input:visible");
-      if(inputNode.length){
-          //there is something wrong with the extension
-          inputNode.prop("disabled", true);
-          /*
-          var previousVal = $(".sgn_input").val();
-          if(previousVal.indexOf(warningMessage)< 0){
-            inputNode.css("background-color", "")
-                     .css("font-size", "")
-                     .css("color", "red");
-            //just in case the user has put some note at that moment
-            inputNode.val(warningMessage + "\n\n--\n\n" + previousVal); 
-          }
-        */
-      }
-      else {
-        if(!heartBeatAlertSent && isLoggedIn()){
-          //alert(warningMessage);    
-          //may be do it later, the checking of current page 
-          //is still a bit tricky
-          //the alert is quite annoying, only do it once
-          heartBeatAlertSent = true;  
-        }
-      }
+      focusedErrorCount += 1;
+    }
+    else{
+      focusedErrorCount = 0;
     }
 
+    if(focusedErrorCount > 3){
+      // showOfflineNotice();
+
+      sendContentMessage("SGN_show_offline_notice");
+    }
 
     if(!isBackgroundDead()){  
       if($(".sgn_inactive_warning").length){
@@ -229,9 +155,10 @@ SimpleGmailNotes.start = function(){
 
   // === GMAIL ONLY FUNCTION START ===
   var getEmailKey = function(title, sender, time, excerpt){
+    time = time.split("\n")[0]; //some extension will mess up with this
     var emailKey = sender + "|" + time + "|" + stripHtml(title) + "|" + stripHtml(excerpt);
 
-    debugLog("@209, generalted email key:" + emailKey);
+    //debugLog("@209, generalted email key:" + emailKey);
 
     //in case already escaped
     emailKey = htmlEscape(emailKey);
@@ -273,83 +200,58 @@ SimpleGmailNotes.start = function(){
     return excerpt;
   };
 
-  var getEmailKeyGmailNode = function(mailNode){
+
+  var getEmailId = function(mailNode){
+    var emailId = "";
     var title = getGmailNodeTitle(mailNode);
     var sender = getGmailNodeSender(mailNode);
     var time = getGmailNodeTime(mailNode);
     var excerpt = getGmailNodeExcerpt(mailNode);
+
     var emailKey = getEmailKey(title, sender, time, excerpt);
+    var email = gEmailIdDict.get(emailKey);
 
-    debugLog("@249, email key:" + emailKey);
+    if(!email){ //second try
+      emailKey = getEmailKey(title, sender, time, '__INCREMENT_MAIL__');
+      email = gEmailIdDict.get(emailKey);
+    }
 
-    return emailKey;
+    if(email)
+      emailId = email.id;
+
+    debugLog("@249, email ID:" + emailId);
+
+    return emailId;
   };
   // === GMAIL ONLY FUNCTIONS END ===
 
   // === INBOX ONLY FUNCTIONS START ====
-  var getInboxEmailId = function(actionData){
-    if(!actionData){
-      return "";
-    }
-
-    var messageId = $.parseJSON(actionData)[0][1][0];
-    messageId = messageId.split(":")[1];
-    //http://stackoverflow.com/questions/57803/how-to-convert-decimal-to-hex-in-javascript
-    messageId = dec2hex(messageId);
-
-    return messageId;
-  };
   // === INBOX ONLY FUNCTIONS END ===
 
-  // mail gmail related logic
-  var getCurrentMessageId = function(){
-    var messageId = '';
-    if(sgn.isInbox()){
-      var actionData = sgnGmailDom.inboxDataNode().parent().attr("data-action-data");
-      messageId = getInboxEmailId(actionData);
-    }
-    else{
-      if(sgnGmailDom.isPreviewPane()){
-        var idNode = $("tr.zA.aps:visible[sgn_email_id]").first();
-
-        if(idNode.length){
-          messageId = idNode.attr("sgn_email_id");
-        }else{
-          messageId = "PREVIEW";
-        }
-      }
-    }
-    if(!messageId){
-      messageId = sgnGmailDom.emailId();
-    }
-    if(!messageId){
-      sgn.appendLog("message not found");
-      return;
-    }
-    return messageId;
-  };
-
+   
   //set up note editor in the email detail page
   var setupNoteEditor = function(){
-  sgn.executeCatchingError(function(){
+    sgn.executeCatchingError(function(){
     //No email selected, happened when page up or page down
-    if(!sgn.isInbox() && !$(".nH.aHU:visible").length && sgnGmailDom.isPreviewPane()){
-      sgn.appendLog("No email selected");
-      return;
-    }
+      if(!sgn.isInbox() && !$(".nH.aHU:visible").length && sgnGmailDom.isPreviewPane()){
+        sgn.appendLog("No email selected");
+        return;
+      }
 
-    var visible_container = $(".sgn_container:visible");
-    if(visible_container.length && visible_container.height())  
-    {
-      sgn.appendLog("textarea already exists");
-      return;
-    }
+      var visible_container = $(".sgn_container:visible");
+      if(visible_container.length && visible_container.height())  
+      {
+        sgn.appendLog("textarea already exists");
+        return;
+      }
 
-    var messageId = getCurrentMessageId();
-    if(!messageId){
-      sgn.appendLog("message not found");
-      return;
-    }
+      var messageId = sgnGmailDom.getCurrentMessageId();
+      if(!messageId){
+        sgn.appendLog("message not found");
+        return;
+      }
+
+      sgn.appendLog("Page URL: " + window.location.href);
 
     //if(!acquireNetworkLock()){
         //sgn.appendLog("Network lock failed");
@@ -357,30 +259,45 @@ SimpleGmailNotes.start = function(){
         //return;
     //}
 
-    sendContentMessage('SGN_setup_note_editor', {messageId:messageId});
+      sendContentMessage('SGN_setup_note_editor', {messageId:messageId});
 
-    sgn.appendLog("set up request sent");
-    sendDebugInfo();
-  });
+      sgn.appendLog("set up request sent");
+      sendDebugLog();
+    });
   };
 
+  var checkCRMLoggedIn = function() {
+    sgn.executeCatchingError(function() {
+      if (gCRMLoggedInChecked) {
+        sgn.appendLog("crm logged in already checked");
+        return;
+      }
+
+      sendContentMessage('SGN_check_crm_logged_in');
+
+      sgn.appendLog("check crm logged in request sent");
+      sendDebugLog();
+    });
+  }
+
   var updateEmailIdDictByJSON = function(dataString){
-  sgn.executeCatchingError(function(dataString){
-    var startString = ")]}'\n\n";
-    var totalLength = dataString.length;
+    sgn.executeCatchingError(function(dataString){
+      var startString = ")]}'\n\n";
+      var totalLength = dataString.length;
 
-    if(dataString.substring(0, startString.length) != startString){
+      if(dataString.substring(0, startString.length) != startString){
       //not a valid view data string
-      return;
-    }
+        return;
+      }
 
-    var strippedString = dataString.substring(startString.length);
 
-    var lineList = dataString.split("\n");
-    var email_list = [];
-    var i;
+      var strippedString = dataString.substring(startString.length);
 
-    if(lineList.length == 3){  //JSON data
+      var lineList = dataString.split("\n");
+      var email_list = [];
+      var i;
+
+      if(lineList.length == 3){  //JSON data
         if(dataString.substring(totalLength-1, totalLength) != ']'){
           //not a valid format
           return;
@@ -409,56 +326,66 @@ SimpleGmailNotes.start = function(){
 
           email_list = sgnGmailPage.parseViewData(newData);
         }
+        else if(strippedString.indexOf('["ms"') > 0){
+          emailData = $.parseJSON(strippedString);
+          email_list = sgnGmailPage.parseIncrementData(emailData[0]);
+        }
     }
     else if(lineList.length > 3){ //JSON data mingled with byte size
-      if(dataString.substring(totalLength-2, totalLength-1) != ']'){
+        if(dataString.substring(totalLength-2, totalLength-1) != ']'){
         //not a valid format
-        return;
-      }
-
-      var firstByteCount = lineList[2];
-
-      if(!isNumeric(firstByteCount)){
-        return; //invalid format
-      }
-
-      if(strippedString.indexOf('["tb"') < 0){
-        return; //invalid format
-      }
-
-      var tempString = "[null";
-      var resultList = [];
-
-      for(i=3; i<lineList.length; i++){
-        var line = lineList[i];
-        if(isNumeric(line)){
-          continue;
+          return;
         }
 
-        if(line.indexOf('["tb"') < 0){
-          continue;
+        var firstByteCount = lineList[2];
+
+        if(!isNumeric(firstByteCount)){
+          return; //invalid format
         }
 
-        var tempList = $.parseJSON(line);
+        if(strippedString.indexOf('["tb"') < 0){
+          return; //invalid format
+        }
 
-        for(var j=0; j<tempList.length; j++){
-          if(tempList[j][0] == 'tb'){
-            resultList.push(tempList[j]);
+        var tempString = "[null";
+        var resultList = [];
+
+        for(i=3; i<lineList.length; i++){
+          var line = lineList[i];
+          if(isNumeric(line)){
+            continue;
           }
-        }
+
+          if(line.indexOf('["tb"') < 0){
+            continue;
+          }
+
+          var tempList = $.parseJSON(line);
+
+          for(var j=0; j<tempList.length; j++){
+            if(tempList[j][0] == 'tb'){
+              resultList.push(tempList[j]);
+            }
+          }
 
         //resultList.push(tempList[0]);
+        }
+
+        email_list = sgnGmailPage.parseViewData(resultList);
+      }
+      
+      for(i=0; i < email_list.length; i++){
+        var email = email_list[i];
+        var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time, htmlUnescape(email.excerpt));
+        gEmailIdDict.set(emailKey, email);
+
+        if(!gClassicGmailConversation && email.id != email.lastMessageId){
+          gClassicGmailConversation = true;
+          sendContentMessage('SGN_set_classic_gmail_conversation');
+        }
       }
 
-      email_list = sgnGmailPage.parseViewData(resultList);
-    }
-
-    for(i=0; i < email_list.length; i++){
-      var email = email_list[i];
-      var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time, htmlUnescape(email.excerpt));
-      gEmailIdDict[emailKey] = email;
-    }
-  }, dataString);
+    }, dataString);
   };
 
   var updateEmailIdDictByJS = function(dataString){
@@ -490,7 +417,7 @@ SimpleGmailNotes.start = function(){
     for(var i=0; i< email_list.length; i++){
       var email = email_list[i];
       var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time, htmlUnescape(email.excerpt));
-      gEmailIdDict[emailKey] = email;
+      gEmailIdDict.set(emailKey, email);
     }
   }, dataString);
   };
@@ -508,22 +435,16 @@ SimpleGmailNotes.start = function(){
   var markAbstracts = function(){
   sgn.executeCatchingError(function(){
     if(!sgn.isInbox() && 
+       !sgn.isNewGmail() &&
        (!$("tr.zA").length ||
          (sgnGmailDom.isInsideEmail() && !sgnGmailDom.isPreviewPane()))){
       sgn.appendLog("mark email id skipped");
-      debugLog("Skipped pulling because no tr to check with");
+      //debugLog("Skipped pulling because no tr to check with");
       return;  
     }
 
-    gDebugInfoSummary = "Last Summary Page URL: " + window.location.href;
-    gDebugInfoSummary += "\nIs Vertical Split: " + sgnGmailDom.isVerticalSplit();
-    gDebugInfoSummary += "\nIs Horizontal Split: " + sgnGmailDom.isHorizontalSplit();
-    gDebugInfoSummary += "\nIs Preview Pane: " + sgnGmailDom.isPreviewPane();
-    gDebugInfoSummary += "\nIs Multiple Inbox: " + sgnGmailDom.isMultipleInbox();
-    sendDebugInfo();
 
     if(isBackgroundDead()){
-      sgn.appendLog("background is dead.");
       return; //no need to pull, walty temp
     }
 
@@ -531,7 +452,7 @@ SimpleGmailNotes.start = function(){
     if(sgn.isInbox()){
       visibleRows = $(".an.b9[data-action-data]:visible");
     }
-    else{
+    else{   //work for both old and new gmail
       visibleRows = $("tr.zA[id]:visible");
     }
      
@@ -541,12 +462,20 @@ SimpleGmailNotes.start = function(){
     var pendingRows = $([]);
     if(sgnGmailDom.isPreviewPane() && sgnGmailDom.isVerticalSplit()){
       visibleRows.each(function(){
-        if($(this).next().next().is(":not(:has(div.sgn))"))
-          pendingRows = pendingRows.add($(this));
+        if(SimpleGmailNotes.isNewGmail()){
+          if($(this).is(":not(:has(div.sgn))")){
+            pendingRows = pendingRows.add($(this));
+          }
+        }else{
+          if($(this).next().next().is(":not(:has(div.sgn))")){
+            pendingRows = pendingRows.add($(this));
+          }
+        }
       });
     }
-    else
+    else{
       pendingRows = visibleRows.filter("[sgn_email_id]:not(:has(.sgn))");
+    }
 
     var thisPullDiff = visibleRows.length - unmarkedRows.length;
     var thisPullHash = window.location.hash;
@@ -577,18 +506,21 @@ SimpleGmailNotes.start = function(){
     debugLog("@104, total unmarked rows", unmarkedRows.length);
     //mark the email ID for each row
     unmarkedRows.each(function(){
+      var emailId;
       if(sgn.isInbox()){
         var actionData = $(this).attr("data-action-data");
-        var email_id = getInboxEmailId(actionData);
-        $(this).attr("sgn_email_id", email_id);
+        emailId = sgnGmailDom.getInboxEmailId(actionData);
+      }
+      else if(sgn.isNewGmail()){
+        emailId = sgnGmailDom.getNewGmailEmailIdFromNode($(this));
       }
       else{
-        var emailKey = getEmailKeyGmailNode($(this));
-        var email = gEmailIdDict[emailKey];
-        if(email){
-          //add email id to the TR element
-          $(this).attr("sgn_email_id", email.id);
-        }
+        emailId = getEmailId($(this));
+      }
+
+      if(emailId){
+        //add email id to the TR element
+        $(this).attr("sgn_email_id", emailId);
       }
     });
 
@@ -606,9 +538,9 @@ SimpleGmailNotes.start = function(){
           var dummy = 1;
       }
       else{ //this apply to both normal gmail and inbox view
-        var email_id = $(this).attr("sgn_email_id");
-        if(email_id)
-          requestList.push(email_id);
+        var emailId = $(this).attr("sgn_email_id");
+        if(emailId)
+          requestList.push(emailId);
       }
     });
 
@@ -640,20 +572,58 @@ SimpleGmailNotes.start = function(){
     //  return;
     //}
     sendContentMessage("SGN_pull_notes",
-                     {email: sgnGmailPage.userEmail(), requestList:requestList});
+                     {email: sgnGmailDom.userEmail(), requestList:requestList});
 
 
     sgn.appendLog("pull request sent");
-    sendDebugInfo();
+    sendDebugLog();
   });
   };
+  
 
+  var deleteNoteCallBack = function(data){
+    sendContentMessage('SGN_delete_notes', data);
+  };
+
+  var silentShareCallBack = function(data){
+    // show handle the result in content script
+    sendContentMessage('SGN_silent_share', data);
+    //console.log(data);
+  };
+
+  var checkCRMLoggedInCallBack = function(data) {
+    gCRMLoggedInChecked = true;
+    if (data["status"] === "success") {
+      sendContentMessage('SGN_crm_logged_in_success', data);
+    }
+  }
+
+  var batchPullNotesCallBack = function(data) {
+    sendContentMessage('SGN_batch_pull_notes', data);
+  };
+
+  var dummyCallBack = function(){
+    var i=0;  //for debug breakpoint set up
+  };
 
   var main = function(){
     sgn.$ = $;
 
+    sgn.appendLog("page main start");
+
+    sgn.appendLog("Browser Version: " + navigator.userAgent + "\n" + 
+                    gDebugInfoSummary + "\n" + gDebugInfoDetail);
+
+
+    var debugSummary = "Page URL: " + window.location.href + 
+                         "\nIs Vertical Split: " + sgnGmailDom.isVerticalSplit() + 
+                         "\nIs Horizontal Split: " + sgnGmailDom.isHorizontalSplit() +
+                         "\nIs Preview Pane: " + sgnGmailDom.isPreviewPane() +
+                         "\nIs Multiple Inbox: " + sgnGmailDom.isMultipleInbox() +
+                         "\nIs Conversation: " + sgnGmailDom.isConversationMode();
+    sgn.appendLog(debugSummary);
+    sendDebugLog();
     //sgnGmailDom = new SimpleGmailNotes_Gmail(localJQuery);
-    sgnGmailDom = new SGNGmailDOM(localJQuery);
 
     var sgnGmailPageOptions = {
       openEmailCallback: function(){  //no effect for inbox
@@ -674,14 +644,251 @@ SimpleGmailNotes.start = function(){
 
     sgnGmailPage = new SGNGmailPage(localJQuery, sgnGmailPageOptions);
 
+    var isTinyMCELoaded = function(){
+      if(window.tinymce){
+        return true;
+      }
+      else{
+        return false;
+      }
+    };
+
+    var tinymceInit = function(tinymceProperties){
+      tinymce.baseURL = tinymceProperties.baseUrl;
+      tinymce.init({
+        selector: '.sgn_input',
+        statusbar: false,
+        menubar: false,
+        branding: true,
+        readonly: 1,
+        content_css: tinymceProperties.cssUrl,
+        plugins: ["lists", "link"],
+        toolbar: "bold italic underline strikethrough | numlist bullist | link",
+        init_instance_callback: function(editor){
+          var editorBody = $(editor.getBody());
+          $(".mce-edit-area").css('height', tinymceProperties.height);
+          $(".mce-edit-area iframe").css('height', tinymceProperties.height);
+          editorBody.css('background-color', tinymceProperties.backgroundColor);
+          editorBody.css('color', htmlEscape(tinymceProperties.fontColor));
+          editorBody.css('font-size', tinymceProperties.fontSize + "pt");
+          editor.on('blur', function(e){
+            var content = tinymce.activeEditor.getContent();
+            $('.sgn_input').val(content);
+            sendContentMessage('SGN_save_content', true);
+          });
+        }
+      });
+    };
+
+    var loadTinymceScript = function(tinymceProperties){
+      var tinymceUrl = tinymceProperties.baseUrl + '/tinymce.min.js';
+      $.getScript(tinymceUrl)
+        .done(function(){
+          console.log('load tinymce.min.js successfully');  
+            tinymceInit(tinymceProperties);
+        })
+        .fail(function(){
+          console.log('fail to load tinymce.min.js');
+        });
+    };
+
+
+    document.addEventListener('SGN_tinyMCE_update_note', function(e){
+      if(!isTinyMCELoaded()){
+        return;
+      }
+
+      var tinymceProperties = JSON.parse(e.detail); 
+      var content = tinymceProperties.content;
+      if(!content.startsWith("<p>") && 
+         !content.startsWith("<ul>") &&
+         !content.startsWith("<ol>")){          //deal with linebreak when content in plainText showed up in richTextarea
+        var plainTextSplit = content.split('\n');
+        content = "";
+        for(var i = 0;i < plainTextSplit.length;i++){
+          content = content + "<p>" + plainTextSplit[i] + "</p>";
+        }
+        
+      }
+      if(tinymce.activeEditor){
+          tinymce.activeEditor.setContent(content); 
+      }
+      
+    });
+   
+
+    document.addEventListener('SGN_tinyMCE_delete_message', function(e){
+      if(!isTinyMCELoaded()){
+        return;
+      }
+
+      var tinymceProperties = JSON.parse(e.detail);
+      if(tinymce.activeEditor){
+        tinymce.activeEditor.setContent('');
+      }
+     
+    });
+    
+
+    document.addEventListener('SGN_tinyMCE_disable', function(e){
+      if(!isTinyMCELoaded()){
+        return;
+      }
+
+      var tinymceProperties = JSON.parse(e.detail);
+      var editor = tinymce.activeEditor;
+      if(editor){
+        editor.setMode('readonly');
+        $(editor.getBody()).css("background-color", "");
+        editor.setContent("");
+      }
+
+    });
+
+
+    // start set textarea to edit but can't focus
+    var setEditorCommandState = function (cmd, state) {
+      var editor = tinymce.activeEditor;
+      try {
+        editor.getDoc().execCommand(cmd, false, state);
+      } catch (ex) {
+      }
+    };
+
+    var setEditorModeCode = function(){
+      var editor = tinymce.activeEditor;
+      editor.readonly = false;
+      editor.getBody().contentEditable = true;
+      setEditorCommandState(editor, 'StyleWithCSS', false);
+      setEditorCommandState(editor, 'enableInlineTableEditing', false);
+      setEditorCommandState(editor, 'enableObjectResizing', false);
+      editor.nodeChanged();
+      editor.fire('SwitchMode', { mode: 'code' });
+    };
+    //end
+
+    document.addEventListener('SGN_tinyMCE_enable', function(e){
+      if(!isTinyMCELoaded()){
+        return;
+      }
+
+      var tinymceProperties = JSON.parse(e.detail);
+      if(tinymce.activeEditor){
+        var editor = tinymce.activeEditor;
+        if(editor.getBody()){
+          setEditorModeCode();
+        }
+        else {  //give some time for the editor to get loaded
+          setTimeout(setEditorModeCode, 300);
+        }
+      }
+      
+    });
+    
+
+    document.addEventListener('SGN_tinyMCE_remove', function(e){
+      if(!isTinyMCELoaded()){
+        return;
+      }
+
+      var tinymceProperties = JSON.parse(e.detail);
+      if(tinymce.activeEditor){
+        tinymce.activeEditor.remove();
+      }
+      
+    });
+
+    
+    document.addEventListener('SGN_tinyMCE_set_backgroundColor', function(e){
+      if(!isTinyMCELoaded()){
+        return;
+      }
+      var tinymceProperties = JSON.parse(e.detail);
+      var backgroundColor = tinymceProperties.backgroundColor;
+      if(tinymce.activeEditor){
+          editor = $(tinymce.activeEditor.getBody());
+          editor.css('background-color', backgroundColor); 
+      }
+    });
+
+    
+    document.addEventListener('SGN_tinyMCE_init', function(e){
+      var tinymceProperties = JSON.parse(e.detail);
+      if(!isTinyMCELoaded())
+        loadTinymceScript(tinymceProperties);
+      else{
+        if(tinymce.activeEditor){  //only init once
+          return;
+        }
+        tinymceInit(tinymceProperties);
+      }
+
+    });
+
+    document.addEventListener('SGN_PAGE_share_notes', function(e){
+      var detail = JSON.parse(e.detail);
+      var shareData = {"source": "sgn_share_notes", "data": detail["data"]};
+      popupWindow['sgn-share-notes-popup'].postMessage(shareData, "*");
+    });
+
     document.addEventListener('SGN_PAGE_heart_beat_response', function(e) {
       sgn.lastHeartBeat = Date.now();
       sgn.gdriveEmail = JSON.parse(e.detail);
+      return true;
+    });
+    
+    var popupWindow = {
+      'sgn-share-popup': null,
+      'sgn-share-notes-popup': null,
+      'sgn-opportunity-popup': null
+    };
+    var previousPopupInfo = null;
+
+    document.addEventListener('SGN_PAGE_open_popup', function(e){
+      var detail = JSON.parse(e.detail);
+      var url = detail.url;
+      var windowName = detail.windowName;
+      var strWindowFeatures = detail.strWindowFeatures;
+
+      if(popupWindow[windowName])
+        popupWindow[windowName].close();
+
+      popupWindow[windowName] = window.open(url, windowName, strWindowFeatures);
+
+      previousPopupInfo = [url, windowName, strWindowFeatures];
     });
 
-    /*
-    */
+    var crmLoggedInCallBack = function(data) {
+      if(previousPopupInfo){
+        var url = previousPopupInfo[0];
+        var windowName = previousPopupInfo[1];
+        var strWindowFeatures = previousPopupInfo[2];
 
+        popupWindow[windowName] = window.open(url, windowName, strWindowFeatures);
+      }
+    };
+
+    var crmLoggedOutCallBack = function(){
+      //dummy call back from CRM logged in jsonp response
+    };
+
+
+
+    $(window).on('beforeunload', function(){
+      var popupShareWindow = popupWindow['sgn-share-popup'];
+      if (popupShareWindow)
+        popupShareWindow.close();
+
+      var popupShareNotesWindow = popupWindow['sgn-share-notes-popup'];
+      if (popupShareNotesWindow)
+        popupShareWindow.close();
+
+      var popupOpportunityWindow = popupWindow['sgn-opportunity-popup'];
+      if (popupOpportunityWindow)
+        popupOpportunityWindow.close();
+    });
+
+    //initialization script
     //use current DOM to update email ID of first page
     for(var i=0; i<document.scripts.length; i++){
       updateEmailIdDictByJS(document.scripts[i].text);
@@ -693,16 +900,27 @@ SimpleGmailNotes.start = function(){
       sendHeartBeat();
       markAbstracts();
       setupNoteEditor();
-      sendDebugInfo();
+      sendDebugLog();
+      checkCRMLoggedIn();
       return _run;
     }(), 1500);
 
+    //throw new Error("my custom error");
     //setTimeout(pullNotesCatchingError, 0);
     //setInterval(pullNotesCatchingError, 2000);
 
     //better not to overlapp to much with the above one
     //setInterval(setupNoteEditorCatchingError, 1770); 
-    //setInterval(sendDebugInfo, 3000); //update debug info to background
+    //setInterval(sendDebugLog, 3000); //update debug info to background
+
+    //======= INTERFACE TO EXPOSE =====
+    sgn.silentShareCallBack = silentShareCallBack;
+    sgn.deleteNoteCallBack = deleteNoteCallBack;
+    sgn.checkCRMLoggedInCallBack = checkCRMLoggedInCallBack;
+    sgn.crmLoggedInCallBack = crmLoggedInCallBack;
+    sgn.crmLoggedOutCallBack = crmLoggedOutCallBack;
+    sgn.batchPullNotesCallBack = batchPullNotesCallBack;
+    sgn.dummyCallBack = dummyCallBack;
 
     //======= FOR DEBUG =======
     sgn._sgnGmailDom = sgnGmailDom;
@@ -710,14 +928,20 @@ SimpleGmailNotes.start = function(){
     sgn._sendPreference = debugSendPreference;
     sgn._resetPreferences = debugResetPreferences;
     sgn._deleteNote = debugDeleteNote;
+    sgn._sendDebugLog = sendDebugLog;
   };
 
   main();
+
 
 }(window.SimpleGmailNotes = window.SimpleGmailNotes || 
                             {}, jQuery.noConflict(true)));
 
 }; //end of SimpleGmailNotes.start
 
-SimpleGmailNotes.start();
+SimpleGmailNotes.executeCatchingError(function(){
+    SimpleGmailNotes.start();
+});
+
+SimpleGmailNotes.sendPageDebugLog();
 

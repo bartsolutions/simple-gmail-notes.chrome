@@ -6,6 +6,7 @@
 <script src="common/shared-common.js"></script>
 <script src="background.js"></script>
 <script src="options.js"></script>
+<link rel="stylesheet" href="css/bulma.min.css">
 <style>
   * {
    font-size: 16px;
@@ -23,199 +24,187 @@
   }
 
   .logo{
-    text-align:center;
-      margin-top:15px;
+    text-align:right;
+    margin-top:15px;
   }
 
+  .debugInfo{
+  }
+
+  pre {
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  ul {
+    padding-bottom: 20px;
+  }
+
+#disabled_accounts {
+  margin-left: 20px;
+  color: gray;
+}
+
+#disabled_accounts label {
+  display: block;
+}
+ 
+.debug_line{
+    background-color: #e2e0e0;
+    margin: 0;
+}
+
+.subscription{
+  margin-top:20px;
+  line-height: 2;
+}
+
+.logo img{
+  height: 60px;
+}
+
+.templates_title{
+    margin-left: 15px;
+    font-size: 14px;
+    text-align: left;
+    color: #757575;
+}
+
+.templates_content{
+  margin-top: 22px;
+  height: 210px;
+  width: 100%;
+  padding-left: 9px;
+  padding-right: 9px;
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.simple_template{
+  padding-left: 15px;
+}
+textarea::-webkit-input-placeholder {
+  color: #999999;
+  font-size: 12px;
+}
+
 </style>
+
+  <script>
+  </script>
 </head>
 <body>
 
-<div>
-  <div style='border:solid 1px red;padding:5px'>
-    <h2 style='color:red'>About the Donation</h2>
-    <ul>
-      <li><b>If you do like this extension, please support the development <a id='donation' style='color:blue' target='_blank' href='#'>via a donation</a>, or <a id='review' style='color:blue' target='_blank' href='#'>give us a 5 star review</a>.</b>
-    </ul>
+
+<div class="container">
+  <div class="logo">
+    <a target="_blank" id="bart_logo" href="#">
+      <img src="https://www.bart.com.hk/wp-content/logo2.png">
+    </a>
+
+    <a target="_blank" id="bart_logo" href="https://cloud.withgoogle.com/partners/detail/?id=CIGAgICAgMCE8wE%3D&hl=en-GB&language=en">
+      <img src="https://www.bart.com.hk/wp-content/partner-badge_2x.png">
+    </a>
+  </div>
+  <div class="subscription notification is-warning has-padding">
+    If you do like this extension, please 
+    <a target='_blank' href='https://www.bart.com.hk/simple-gmail-notes-support-package/?f=p'><strong>subscribe to Support Package</strong></a>. <br/>
+    This not only helps support our development, you will also receive the prioritized email support (normally within 24 hours) regarding to any questions for Simple Gmail Notes.
   </div>
 
-  <div style='border:solid 1px red;padding:5px;margin-top:10px'>
-    <h2 style='color:red'>Hire Us</h2>
-    <ul>
-      <li><b>We also build <i>fantastic</i> mobile app (iOS and Android), website, and private extension. 
-          <a id='contact_us' style='color:blue' target='_blank' href='#'>Contact us</a> for more details.</b>
-    </ul>
-  </div>
-
+  
   <br/>
-    <h2>Preferences</h2>
+    <h2 class="title">Preferences</h2>
+    <nav class="panel">
+    <p class="panel-heading">Notes Appearance</p>
+    <div class="panel-block">
+      <table id="notesAppearance">
+      </table>
+    </div>
+  </nav>
+  <nav class="panel">
+    <p class="panel-heading">Advanced Features</p>
+    <div class="panel-block">
+      <table id="advancedFeatures">
+      </table>
+    </div>
+  </nav>
+
+  <nav class="panel">
+    <p class="panel-heading">Template</p>
+    <div class="panel-block">
+      <div style="width:100%;">
+        <div class="templates_title">
+            If a template is provided, a new button of 'load template' will appear in the SGN toolbar.
+        </div>
+        <div class="simple_template">
+            <div>
+                <textarea class="templates_content" placeholder="Template content ..." id="templateContent"></textarea>
+            </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+
+  <nav class="panel">
+    <p class="panel-heading">Sync to Mobile Device</p>
+    <div class="panel-block">
+      <table id="simpleMobileCRM">
+      <tr id="disabled_accounts_container">
+        <td>
+          Disable the extension for the following Gmail accounts:
+          <div id="disabled_accounts">
+          </div>
+        </td>
+        <td>
+        </td>
+      </tr>
+    </table>
+  <div class="notification">
+    After share is done, you could view the notes in 
+    <a target='_blank' href='https://mobilecrm.io/ios-download/'>iPhone / iPad</a>
+    / <a target='_blank' href='https://mobilecrm.io/android-download/'>Android</a> 
+    / <a target='_blank' href='https://mobilecrm.io/addon-download/'>Gmail Addon</a>. <br/>
+    <a href='https://mobilecrm.io' target='_blank'>Learn More</a>
+  </div>
+  </div>
+  </nav>
+
 
   <table>
     <tr>
-      <td>
-        Note Abstract Style
-      </td>
-      <td>
-          <select id="abstract_style">
-              <option value="none">(No Abstract)</option>
-              <option value="fixed_SGN">(Fixed) (SGN)</option>
-          </select>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        Only use first line for abstract
-      </td>
-      <td>
-        <input type="checkbox" id="first_line_abstract"/>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        Note height, in number of rows
-  <br/>(Max of 4 rows for Inbox)
-      </td>
-      <td>
-        <select id="note_height">
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        Note position
-  <br/>(No effect for Inbox)
-      </td>
-      <td>
-        <select id="note_position">
-          <option>top</option>
-          <option>bottom</option>
-          <option value="side-top">sidebar top</option>
-          <option value="side-bottom">sidebar bottom</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        Note font color
-      </td>
-      <td>
-        <input type="text" id="font_color">
-      </td>
-    </tr>
-    <tr>
-      <td>
-        Note background color
-      </td>
-      <td>
-        <input type="text" id="background_color">
-      </td>
-    </tr>
-    <tr>
-      <td>
-        Note font size
-      </td>
-      <td>
-          <select id="font_size">
-              <option value="default">(Default)</option>
-          </select>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        Abstract font color
-      </td>
-      <td>
-        <input type="text" id="abstract_font_color">
-      </td>
-    </tr>
-    <tr>
-      <td>
-        Abstract background color
-      </td>
-      <td>
-        <input type="text" id="abstract_background_color">
-      </td>
-    </tr>
-    <tr>
-      <td>
-        Abstract font size
-      </td>
-      <td>
-          <select id="abstract_font_size">
-              <option value="default">(Default)</option>
-          </select>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <label for="show_connection_prompt">
-        Show Prompt for Current <br/>Google Drive Account
-      </label>
-      </td>
-      <td>
-        <input type="checkbox" id="show_connection_prompt"/>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <label for="show_add_calendar">
-        Show Button of <br/>Add to Google Calendar
-      </label>
-      </td>
-      <td>
-        <input type="checkbox" id="show_add_calendar"/>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <label for="show_delete">
-        Show Button of <br/>Delete
-      </label>
-      </td>
-      <td>
-        <input type="checkbox" id="show_delete"/>
-      </td>
-    </tr>
-    <tr>
-    <tr>
-      <td>
-        <label for="show_delete">
-        Show Button of <br/>Note Color Picker
-      </label>
-      </td>
-      <td>
-        <input type="checkbox" id="show_note_color_picker"/>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <label for="show_note_history">
-        Show Note History
-  <br/>(No effect for Inbox)
-      </label>
-      </td>
-      <td>
-        <input type="checkbox" id="show_note_history"/>
-      </td>
-    </tr>
-    <tr>
       <td colspan=2>
         <div id="status"></div>
-        <div> <button id="save">Save</button> </div>
+        <div> <button id="save" class="button is-link">Save</button> </div>
         <br/>
         <br/>
         <br/>
-        <div> <button id="reset">Reset to Default Values</button> &nbsp; <button id="revoke">Manage Access Tokens</button> </div>
+        <div> <button id="reset" class="button is-danger">Reset to Default Values</button> &nbsp; <button id="revoke" class="button is-link">Manage Access Tokens</button> </div>
       </td>
     </tr>
-  </table>
+   </table>
 
   <br/>
 
-  <h2>FAQ</h2>
+  <hr/>
+  <h2 class="title">FAQ</h2>
+  <ul>
+    <li><b>How do I view the notes on mobile devices?</b></li>
+    <li>Due to limitation from Google side, chrome extensions are not available on mobile devices. However, you could click the share button above text area, and view the notes from <a href='https://mobilecrm.io'>Simple Mobile CRM.</a> The app is available for iPhone, iPad and Android, and is free.</li>
+  </ul>
+  <ul>
+    <li><b>Would the current extension be affected after <a href=https://mobilecrm.io">Simple Mobile CRM</a> integration?</b></li>
+    <li>The short answer is <span class="has-text-danger">'no, your existing notes, services and privacies would NOT be affected'</span>. In case you have further concerns, please visit our <a target="_blank" href='https://mobilecrm.io/faq'>CRM FAQ</a> for the detailed answers.</li>
+  </ul>
+
+  <ul>
+    <li><b>When the note is saved?</b></li>
+    <li>By default, the note is saved whenever the text area is out of focus (e.g. click anywhere else on the page, or view another email).</li>
+  </ul>
   <ul>
     <li><b>May I get more information about the extension?</b></li>
-    <li>Please visit the <a style='color: blue' target="_blank" href='http://www.simplegmailnotes.com'>http://www.simplegmailnotes.com</a> for the detailed instructions and policies.</li></ul>
+    <li>Please visit the <a  target="_blank" href='https://www.bart.com.hk/simple-gmail-notes/'>https://www.bart.com.hk/simple-gmail-notes/</a> for the detailed instructions and policies.</li></ul>
   <ul>
       <li><b>How do I refresh the Gmail page?</b></li>
       <li>Please left click the address bar and press 'Enter' key to do a full refresh.</li>
@@ -225,23 +214,24 @@
     <li>Some times the note abstract would take up to 2 seconds to appear. If the abstract does not appear after a long time, please help report a bug.</li>
   </ul>
   <ul>
-      <li><b>Why I need to log into my Google drive again while I already opened Google drive in the browser?</b></li>
+      <li><b>Why I need to log into my Google drive again while I already opened Google drive in another tab?</b></li>
     <li>For security reasons, the extension could not get the Google drive access from your existing browser right away. You need to explicitly grant so.</li>
   </ul>
   <ul>
       <li><b>How do I report a bug?</b></li>
-      <li><div>Please report your bug in the <a id='support' style='color: blue' target='_blank' href='#'>supporting site</a>.</div> 
+      <li><div>Please report your bug in the <a id='support' target='_blank' href='#'>supporting site</a>.</div> 
           <div>And please also <b>include the following debug information</b> in the bug report: </div>
-          <pre id='debug_page_info'> </pre>
-          <pre id='debug_content_info'> </pre>
-          <pre id='debug_background_info'> </pre>
+          <div class="debugInfo container">
+            <pre id='debug_page_info'> </pre>
+            <hr class="debug_line">
+            <pre id='debug_content_info'> </pre>
+            <hr class="debug_line">
+            <pre id='debug_background_info'> </pre>
+            <hr class="debug_line">
+            <pre id='debug_gdrive_info'> </pre>
+          </div>
       </li>
   </ul>
-  <div class="logo">
-    <a target="_blank" id="bart_logo" href="#">
-      <img src="">
-    </a>
-  </div>
 </div>
 </body>
 </html>

@@ -38,24 +38,9 @@ var SGNGmailPage = function(localJQuery, options){
     options = {openEmailCallback:{}, httpEventCallback:{}, onloadCallback:{}};
 
 
+
   api.globals = window.GLOBALS;
-
-  var _userEmail;
-  //page specific data checking
-  api.userEmail = function() {
-    if(_userEmail)
-      return _userEmail;
-
-    if(SimpleGmailNotes.isInbox()){
-      var hook = $("#gb a.gb_b.gb_R");
-      _userEmail = hook.attr("title").split("(")[1].split(")")[0];
-    }
-    else
-      _userEmail = api.globals[10];
-
-    return _userEmail;
-  };
-
+  //this only works for old gmail
   api.isConversationView = function() {
     var flagName = 'bx_vmb';
     var flagValue;
@@ -108,6 +93,55 @@ var SGNGmailPage = function(localJQuery, options){
     return parsed;
   };
 
+  api.parseIncrementData = function(incrementData) {
+    //console.log("@118", incrementData);
+    var parsed = [];
+    var data = [];
+    var threadId = "";
+    var threadTitle = "";
+    var time = "";
+    var sender = "";
+    var labels = [];
+
+
+    for(var j=0; j < incrementData.length; j++){
+      var x = incrementData[j];
+
+
+      if(x[0] == 'ms') {
+        if(!threadId)
+          threadId = x[1];
+        if(!threadTitle)
+          threadTitle = x[12];
+
+        time = x[24];
+        sender = x[6];
+        labels = x[9];
+      }
+      else {  //end of current thread
+        if(threadId){
+          parsed.push({
+            id: threadId,
+            title: threadTitle,
+            //excerpt: x[8],
+            excerpt: '__INCREMENT_MAIL__',
+            time: time,
+            sender: sender,
+            attachment: [],
+            labels: labels
+          });
+
+          threadId = "";
+          threadTitle = "";
+        }
+      }
+    }
+
+    //console.log("@139", parsed);
+
+    return parsed;
+  };
+
   //ajax related events
   var _ajaxCallback = function(responseText, readyState, url){
     //parsing logic from gmail.js
@@ -132,8 +166,7 @@ var SGNGmailPage = function(localJQuery, options){
   };
 
   //http://stackoverflow.com/questions/25335648/how-to-intercept-all-ajax-requests-made-by-different-js-libraries
-	
-	if(!SimpleGmailNotes.isInbox()){
+	if(!SimpleGmailNotes.isInbox() && !SimpleGmailNotes.isNewGmail()){
     var win = top.document.getElementById("js_frame").contentDocument.defaultView;
 		(function(open) {
 			win.XMLHttpRequest.prototype.open = function(method, url, async, user, pass) {
@@ -147,52 +180,22 @@ var SGNGmailPage = function(localJQuery, options){
 			};
 		})(win.XMLHttpRequest.prototype.open);
 	}
+  else{   //inbox or new gmail ui
 
-  /*
-  (function(orgSend) {
-    XMLHttpRequest.prototype.send = function(data) {
-        // in this case I'm injecting an access token (eg. accessToken) in the request headers before it gets sent
-        var curr_onreadystatechange = this.onreadystatechange;
-        this.onreadystatechange = function(progress) {
-          if (this.readyState === this.DONE) {
-            _ajaxCallback(this.responseText, this.readyState, this.responseURL);
-          }
+    //the following works for for inbox and new gmail UI
+    //set up the onload events, basically it just keep trying until the inbox 
+    //content is found
+    if(domApi.pageContent().length) {
+      options.onloadCallback();
+    }
 
-          if(curr_onreadystatechange){
-            //trigger the origianl call first, in case our callback crashes
-            curr_onreadystatechange.apply(this, arguments); 
-          }
-        };
-        orgSend.call(this, data);
-    };
-  })(XMLHttpRequest.prototype.send);
-  */
-
-  //DOM related events
-  //use it for the future enhancements
-  /*
-  var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-  var observer = new SGNObserver(function(mutations) {
-    // fired when a mutation occurs
-    console.log(mutations, observer);
-    // ...
-  });
-  observer.observe(document, {
-    subtree: true,
-    attributes: true
-  });
-  */
-
-  //set up the onload events, basically it just keep trying until the inbox 
-  //content is found
-  if(domApi.inboxContent().length) 
-    options.onloadCallback();
-  else{
+   
+    //retry 
     var load_count = 0;
     var delay = 200; // 200ms per check
     var attempts = 50; // try 50 times before giving up & assuming an error
     var timer = setInterval(function() {
-      var test = domApi.inboxContent().length;
+      var test = domApi.pageContent().length;
       if(test > 0) {
         clearInterval(timer);
         return options.onloadCallback();

@@ -14,11 +14,15 @@ $(window).on('load', function(){
       debugLog("Get message to background", request);
       sender = {worker: sender, email: request.email};
 
-      setupListeners(sender, request);
+      handleRequest(sender, request);
+      return true;
   });
 
-  var preferences = getPreferences();
-  preferences['debugBackgroundInfo'] = "Extension Version: " + SGNB.getExtensionVersion();
+
+  //var preferences = getPreferences();
+  //preferences['debugBackgroundInfo'] = "Extension Version: " + SGNB.getExtensionVersion();
+  var message = "Extension Version: " + SGNB.getExtensionVersion();
+  SGNB.appendLog(message, debugBackGroundScope);
 });
 
 SGNB.getBrowser().runtime.onInstalled.addListener(function(details){
@@ -27,12 +31,13 @@ SGNB.getBrowser().runtime.onInstalled.addListener(function(details){
       if(SGNB.isChrome()){
         alert("Thanks for installing. Please reload the Gmail page (click address bar & press enter key) to start using the extension!");
       }
+      preferences["install_notification_done"] = "";
       preferences["upgrade_notification_done"] = true;
     } 
-    else{
+    else if(details.reason == "update"){
       SGNB.getBrowser().browserAction.setBadgeText({"text": gBadgeText});
-      preferences["upgrade_notification_done"] = "";
       preferences["install_notification_done"] = true;
+      preferences["upgrade_notification_done"] = "";
       /*
       alert("The exteions of \'Simple Gmail Notes\' was updated. " +
             "Please reload the Gmail page (click address bar & press enter key) to continue using the extension!\n\n");

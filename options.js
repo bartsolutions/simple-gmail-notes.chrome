@@ -11,24 +11,25 @@ function showSavedPrompt(){
 function savePreferences() {
   //var hideListingNotes = $("#hide_listing_notes").is(":checked");
   //localStorage["hideListingNotes"] = hideListingNotes;
-
   var preferences = {};
-
-  preferences["abstractStyle"] = $("#abstract_style").val();
-  preferences["noteHeight"] = $("#note_height").val();
-  preferences["fontColor"] = $("#font_color").val();
-  preferences["backgroundColor"] = $("#background_color").val();
-  preferences["fontSize"] = $("#font_size").val();
-  preferences["abstractFontColor"] = $("#abstract_font_color").val();
-  preferences["abstractBackgroundColor"] = $("#abstract_background_color").val();
-  preferences["abstractFontSize"] = $("#abstract_font_size").val();
-  preferences["notePosition"] = $("#note_position").val();
-  preferences["showConnectionPrompt"] = String($("#show_connection_prompt").is(":checked"));
-  preferences["showAddCalendar"] = String($("#show_add_calendar").is(":checked"));
-  preferences["showDelete"] = String($("#show_delete").is(":checked"));
-  preferences["showNoteColorPicker"] = String($("#show_note_color_picker").is(":checked"));
-  preferences["showNoteHistory"] = String($("#show_note_history").is(":checked"));
-  preferences["firstLineAbstract"] = String($("#first_line_abstract").is(":checked"));
+  for (var i=0; i < gPreferenceTypes.length; i++) {
+    var preferencesName = gPreferenceTypes[i]["name"];
+    var jsPreferencesName = "#" + preferencesName;
+    var type = gPreferenceTypes[i]["type"];
+    if (type === "select" || type === "color" || type === "textarea") {
+      preferences[preferencesName] = $(jsPreferencesName).val(); 
+    } else if (type === "checkbox") {
+      preferences[preferencesName] = String($(jsPreferencesName).is(":checked"));
+    }
+  }
+  var disabledAccounts = [];
+  $("#disabledAccounts input").each(function(){
+    if($(this).is(":checked")){
+      var email = $(this).attr("data-email");
+      disabledAccounts.push(email);
+    }
+  });
+  preferences["disabledAccounts"] = JSON.stringify(disabledAccounts);
 
   pushPreferences(preferences);
 
@@ -45,86 +46,151 @@ function resetPreferences() {
 }
 
 function updateControls(preferences){
-  var abstractStyle = preferences["abstractStyle"];
-  $("#abstract_style").val(abstractStyle);
+  for (var i=0; i < gPreferenceTypes.length; i++) {
+    var preferencesName = gPreferenceTypes[i]["name"];
+    var jsPreferencesName = "#" + preferencesName;
+    var type = gPreferenceTypes[i]["type"];
+    var preferencesVal = preferences[preferencesName]
+    if (type === "color" || type === "select" || type === "textarea") {
+      if (type === "color") {
+        $(jsPreferencesName).setColor(preferencesVal.toUpperCase());
+      }
+      $(jsPreferencesName).val(preferencesVal);
+    } else if (type === "checkbox") {
+      $(jsPreferencesName).prop("checked", (preferencesVal !== "false"));
+    }
+  }
+  var disabledAccounts = JSON.parse(preferences["disabledAccounts"]);
+  for(var i=0; i < disabledAccounts.length; i++){
+    var disable_email = disabledAccounts[i];
+    $("#disabledAccounts").append("<label>" +
+                                    "<input type=checkbox data-email='" + 
+                                      disable_email + "' checked='checked'> " +
+                                    disable_email + 
+                                    "</label>");
+  }
+  if(!disabledAccounts.length){
+    $("#disabled_accounts_container").hide();
+  }
 
-
-  var noteHeight = preferences["noteHeight"];
-  $("#note_height").val(noteHeight);
-
-
-  var fontColor = preferences["fontColor"];
-  $("#font_color").setColor(fontColor.toUpperCase());
-  $("#font_color").val(fontColor);
-
-
-  var backgroundColor = preferences["backgroundColor"];
-  $("#background_color").setColor(backgroundColor.toUpperCase());
-  $("#background_color").val(backgroundColor);
-
-
-  var fontSize = preferences["fontSize"];
-  $("#font_size").val(fontSize);
-      
-  var abstractFontColor = preferences["abstractFontColor"];
-  $("#abstract_font_color").setColor(abstractFontColor.toUpperCase());
-  $("#abstract_font_color").val(abstractFontColor);
-
-  var abstractBackgroundColor = preferences["abstractBackgroundColor"];
-  $("#abstract_background_color").setColor(abstractBackgroundColor.toUpperCase());
-  $("#abstract_background_color").val(abstractBackgroundColor);
-
-  var abstractFontSize = preferences["abstractFontSize"];
-  $("#abstract_font_size").val(abstractFontSize);
-
-  var notePosition = preferences["notePosition"];
-  $("#note_position").val(notePosition);
-
-  var showConnectionPrompt = (preferences["showConnectionPrompt"] !== "false");
-  $("#show_connection_prompt").prop("checked", showConnectionPrompt);
-
-  var showAddCalendar = (preferences["showAddCalendar"] !== "false");
-  $("#show_add_calendar").prop("checked", showAddCalendar);
-
-  var showDelete = (preferences["showDelete"] !== "false");
-  $("#show_delete").prop("checked", showDelete);
-
-  var showNoteColorPicker = (preferences["showNoteColorPicker"] !== "false");
-  $("#show_note_color_picker").prop("checked", showNoteColorPicker);
-
-  var showNoteHistory = (preferences["showNoteHistory"] !== "false");
-  $("#show_note_history").prop("checked", showNoteHistory);
-
-  var firstLineAbstract = (preferences["firstLineAbstract"] !== "false");
-  $("#first_line_abstract").prop("checked", firstLineAbstract);
-
-
+  /*
   $("#debug_page_info").text(String(preferences["debugPageInfo"]));
   $("#debug_content_info").text(String(preferences["debugContentInfo"]));
   $("#debug_background_info").text(String(preferences["debugBackgroundInfo"]));
+  $("#debug_gdrive_info").text(String(preferences["debugGdriveInfo"]));
+  */
 }
 
+function initPreferencesSelect(preferencesName, title, index) {
+  var option = gPreferenceTypes[index]["option"];
+  var htmlOption = "";
+  for (var i=0; i< option.length; i++) {
+    var optionValue = option[i]["value"];
+    var optionText =  option[i]["text"];
+    if (optionValue) {
+      htmlOption += "<option value=\"" + optionValue + "\">" + optionText + "</option>";
+    } else {
+      htmlOption += "<option>" + optionText + "</option>";
+    }
+  }
+  var htmlSelect = "<tr>" +
+    "<td>" +
+      title +
+    "</td>" +
+    "<td>" +
+      "<div class=select>" +
+        "<select id=" + preferencesName + ">" +
+          htmlOption +
+        "</select>" +
+      "</div>" +
+    "</td>" +
+    "</tr>";
+  return htmlSelect;
+}
+
+function initPreferencesCheckbox(preferencesName, title, index) {
+  var htmlCheckbox = "<tr>" +
+    "<td>" +
+      "<label for=" + preferencesName + ">" + title + "</label>" +
+    "</td>" +
+    "<td>" +
+      "<input type='checkbox' id=" + preferencesName + ">" +
+    "</td>" +
+  "</tr>";
+  return htmlCheckbox;
+}
+
+function initPreferencesInputText(preferencesName, title, index) {
+  var htmlInputText = "<tr>" +
+    "<td>" +
+      title +
+    "</td>" +
+    "<td>" +
+      "<input type=text id=" + preferencesName + ">" +
+    "</td>" +
+  "</tr>";
+  return htmlInputText;
+}
 
 function initPreferences(){
   var i;
-
+  var gPreferencePanelNameDict = {"notesAppearance": "", "advancedFeatures": "", "simpleMobileCRM": ""};
+  for (var i=0; i < gPreferenceTypes.length; i++) {
+    var preferencesName = gPreferenceTypes[i]["name"];
+    var type = gPreferenceTypes[i]["type"];
+    var title = gPreferenceTypes[i]["title"];
+    var panelName = gPreferenceTypes[i]["panelName"];
+    var htmlContent = "";
+    if (type === 'textarea') {
+      continue;
+    } else if (type === "select") {
+      var htmlContent = initPreferencesSelect(preferencesName, title, i);
+    } else if (type === "color") {
+      var htmlContent = initPreferencesInputText(preferencesName, title, i);
+    } else if (type === "checkbox") {
+      var htmlContent = initPreferencesCheckbox(preferencesName, title, i);
+    }
+    gPreferencePanelNameDict[panelName] += htmlContent;
+  }
+  var gPreferencePanelNameList =  Object.keys(gPreferencePanelNameDict);
+  for (var i =0; i < gPreferencePanelNameList.length; i++) {
+    var gPreferencePanelName = "#" + gPreferencePanelNameList[i];
+    $(gPreferencePanelName).append(gPreferencePanelNameDict[gPreferencePanelNameList[i]]);
+  }
   for(i=2; i<=10; i++){
-    $("#abstract_style").append("<option value=" + i + ">First " + i + " Characters</option>");
+    $("#abstractStyle").append("<option value=" + i + ">First " + i + " Characters</option>");
   }
 
   for(i=3; i<=10; i++){
-    $("#abstract_style").append("<option value=" + i*5 + ">First " + i*5 + " Characters</option>");
+    $("#abstractStyle").append("<option value=" + i*5 + ">First " + i*5 + " Characters</option>");
   }
-
+  
   for(i=1; i<=30; i++){
-    $("#note_height").append("<option>" + i + "</option>");
+    $("#noteHeight").append("<option>" + i + "</option>");
   }
 
 
   for(i=8; i<=20; i++){
-    $("#font_size").append("<option>" + i + "</option>");
-    $("#abstract_font_size").append("<option>" + i + "</option>");
+    $("#fontSize").append("<option>" + i + "</option>");
+    $("#abstractFontSize").append("<option>" + i + "</option>");
   }
+
+}
+
+function initDebugMessage(){
+  background = SimpleGmailNotes.getBrowser().extension.getBackgroundPage();
+  var sgno = background.SimpleGmailNotes;
+  var pageInfo = sgno.getLog(background.debugPageScope);
+  var contentInfo = sgno.getLog(background.debugContentScope);
+  var backgroundInfo = sgno.getLog(background.debugBackGroundScope);
+  var gdriveInfo = sgno.getLog(background.debugGdriveScope);
+
+  $("#debug_page_info").text(pageInfo);
+  $("#debug_content_info").text(contentInfo);
+  $("#debug_background_info").text(backgroundInfo);
+  $("#debug_gdrive_info").text(gdriveInfo);
+  //$("#debug_gdrive_info").text(String(preferences["debugGdriveInfo"]));
+
 
 }
 
@@ -136,20 +202,26 @@ $(document).ready(function(){
   initPreferences();
   var SGNO = SimpleGmailNotes;
 
+  for (var i=0; i < gPreferenceTypes.length; i++) {
+    var type = gPreferenceTypes[i]["type"];
+    if (type === "color") {
+      var preferencesName = gPreferenceTypes[i]["name"];
+      var jsPreferencesName = "#" + preferencesName;
+      $(jsPreferencesName).simpleColor({ displayColorCode: true, chooserCSS: {'z-index': '999'}}); 
+    }
+  }
+
   $("#save").click(savePreferences);
   $("#reset").click(resetPreferences);
   $("#revoke").click(revokeToken);
-  $("#font_color").simpleColor({ displayColorCode: true });
-  $("#background_color").simpleColor({ displayColorCode: true });
-  $("#abstract_font_color").simpleColor({ displayColorCode: true });
-  $("#abstract_background_color").simpleColor({ displayColorCode: true });
   $("#donation").attr("href", SGNO.getDonationUrl("pr"));
   $("#contact_us").attr("href", SGNO.getOfficalSiteUrl("pr"));
 
   $("#bart_logo").attr("href", SGNO.getOfficalSiteUrl("pr"));
-  $("#bart_logo img").attr("src", SGNO.getLogoImageSrc("pr"));
   $("#support").attr("href", SGNO.getSupportUrl());
   $("#review").attr("href", SGNO.getReviewUrl());
 
   pullPreferences();
+
+  initDebugMessage();
 });
