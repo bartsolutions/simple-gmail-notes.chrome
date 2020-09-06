@@ -10,58 +10,83 @@
 
 /* global variables */
 //use a shorter name as we won't have name conflict here
-var SGNB = SimpleGmailNotes;
+var SGNC = SimpleGmailNotes;
 var settings = {
-  CLIENT_ID: "38131814991-p4u809qrr5ee1bsehregd4os69jf2n7i.apps.googleusercontent.com",
+  CLIENT_ID: SGNC.settings.CLIENT_ID,
+  SCOPE: SGNC.settings.SCOPE,
   CLIENT_SECRET: "mdA0U_jSkAjI_1x8pdgtrx02",
-  SCOPE: 'https://www.googleapis.com/auth/drive.file',
   NOTE_NAMES: ["_SIMPLE_GMAIL_NOTES_", "Simple Gmail Notes"],
   ACCESS_TOKEN_KEY: "access_token",
-  REFRESH_TOKEN_KEY: "refresh_token",
-
-  CRM_CLIENT_ID: "107383424448-bndpfgli7b0bf9c30u1p1058ovmo4o9b.apps.googleusercontent.com",
-  CRM_CLIENT_SECRET: "JxsNEc27Xcj5zh-lle6l3kGe",
-  CRM_SCOPE: 'profile email',
-  CRM_ACCESS_TOKEN_KEY: "crm_access_token",
-  CRM_REFRESH_TOKEN_KEY: "crm_refresh_token",
+  REFRESH_TOKEN_KEY: "refresh_token"
 };
 
 
-var gInstallMessage = "<div class='title'>Simple Gmail Notes Installed</div><br/><br/>" +
-            "<div class='item'>How to use Simple Gmail Notes:</div>" +
-            "<div class='item'>1. Click any email</div>" +
-            "<div class='item'>2. Click 'log in' link at the top of email</div>" +
-            "<div class='item'>3. Write anything in the text area</div>" +
-            "<br/><div class='item'>Hint:</div>" +
-            "<div class='item'>- You could now view the notes in mobile devices " +
-            "(<a target='_blank' href='https://www.youtube.com/watch?v=vpBt36GibcY'>View Demo</a>)</div>" +
-            "<div class='item'>- If you do like the extension, please support our development " +
-              " by subscribing to " +
-              "<a target='_blank' href='https://www.bart.com.hk/simple-gmail-notes-support-package/?f=n'>Support Package</a></div>" +
-            "<br/>" +
-            "<br/>" +
-            "<div style='text-align:right'>" +
-              "<a  target='_blank' href='" + SGNB.getOfficalSiteUrl("nt") + "'>" +
-                "<img src='" + SGNB.getWhiteLogoImageSrc("nt") + "'></a></div>";
+var getSgnMessageForInstallOrUpgrade = function(type) {
+  var title = '';
+  var tipCardString = '';
+  var message = ''
+  if (type == "install") {
+    title = "Simple Gmail Notes Installed";
+    contentString = "<div class='title_tip'>" + 
+              "<div class='item sub_title'>How to use Simple Gmail Notes:</div>" +
+              "<div class='item tip_item'>1. Click any email</div>" +
+              "<div class='item tip_item'>2. Click 'log in' link at the top of email</div>" +
+              "<div class='item tip_item'>3. Write anything in the text area</div></div>";
+  } else {
+    title = "Simple Gmail Notes Updated";
+    contentString = "<div class='title_tip'>" +
+              "<div class='item sub_title'>New in " + SGNC.getExtensionVersion() + ":</div>" +
+              "<div class='item tip_item'>- Fixed alternate login URL for Chrome and Firefox</div>" + 
+              "<div class='item tip_item'>- Added customer portal URL for subscription review in preferences page</div>" + 
+            "</div>";
+    contentString += "<div class='item divide_line'></div>" + 
+              "<div class='title_tip'><div class='item sub_title'>Important:</div>" +
+              "<div class='item tip_item'>This is a difficult time for us because of COVID-19, if you do think the extension is useful, " +
+              "please <a target='_blank' href='https://www.bart.com.hk/simple-gmail-notes-support-package/?f=n2'>" +
+                "subscribe to SGN support package</a> to support the continuous development and maintenance of the extension. Thank you!</div>";
 
-var gUpgradeMessage = "<div class='title'>Simple Gmail Notes Updated</div><br/><br/>" +
-            "<div class='item'><strong>New in " + SGNB.getExtensionVersion() + ":</strong></div>" +
-            "<div class='item'>- Fixed layout problem for sidebar display</div>" +
-            "<br/>" +
-            "<div class='item'><strong>New in Mobile CRM:</strong></div>" +
-            "<div class='item'>- Directly add Gmail note in mobile phone</div>" +
-            "<div class='item'>- Background note save</div>" +
-            "<br/><div class='item'>Hint:</div>" +
-            "<div class='item'>- You could now view the notes in mobile devices " +
+    /*
+    contentString += "<div class='title_tip title_hint'>" +
+                  "<div class='item sub_title sub_hint_title'>Hint:</div>" + 
+                  "<div class='item tip_item'>- You could now view the notes in mobile devices " + 
+                  "(<a target='_blank' href='https://www.youtube.com/watch?v=vpBt36GibcY'>View Demo</a>)</div>" + 
+                  "<div class='item tip_item'>- If you do like the extension, please support our development " +
+                    " by subscribing to " +
+                    "<a target='_blank' href='https://www.bart.com.hk/simple-gmail-notes-support-package/?f=n'>Support Package</a></div></div>" +
+              "</div>";
+              */
+  }
+  var gMessage = "<div class='title'><img class='sgn_logo' src="+ SGNC.getSgnLogoImageSrc('nt') + ">" + title + "</div>" +
+              contentString + 
+              "<div class='sgn_message_font' >Powered by" +
+                "<a  target='_blank' href='" + SGNC.getOfficalSiteUrl("nt") + "'>" +
+                  "<img src='" + SGNC.getBartLogoImageSrc("nt") + "'></a></div>";
+  return gMessage;
+}
+
+
+var gUpgradeMessage = "<div class='title'><img class='sgn_logo' src="+ SGNC.getSgnLogoImageSrc('nt') + ">" + "Simple Gmail Notes Updated</div>" +
+            "<div class='title_tip'><div class='item sub_title'>New in " + SGNC.getExtensionVersion() + ":</div>" +
+            "<div class='item tip_item'>- Enhancements for Mobile CRM</div>" + 
+            "</div>" +
+            "<div class='item divide_line'></div>" + 
+            "<div class='title_tip'><div class='item sub_title'>Subscribe to support package:</div>" +
+            "<div class='item tip_item'>- You could now view the notes in mobile devices " +
             "(<a target='_blank' href='https://www.youtube.com/watch?v=vpBt36GibcY'>View Demo</a>)</div>" +
-            "<div class='item'>- If you do like the extension, please support our development " +
+            "<div class='item tip_item'>- If you do like the extension, please support our development " +
               " by subscribing to " +
-              "<a target='_blank' href='https://www.bart.com.hk/simple-gmail-notes-support-package/?f=n'>Support Package</a></div>" +
-            "<br/>" +
-            "<br/>" +
-            "<div style='text-align:right'>" +
-              "<a  target='_blank' href='" + SGNB.getOfficalSiteUrl("nt") + "'>" +
-                "<img src='" + SGNB.getWhiteLogoImageSrc("nt") + "'></a></div>";
+              "<a target='_blank' href='https://www.bart.com.hk/simple-gmail-notes-support-package/?f=n'>Support Package</a></div></div>" +
+            "<div class='title_tip title_hint'>" +
+                "<div class='item sub_title sub_hint_title'>Hint:</div>" + 
+                "<div class='item tip_item'>- You could now view the notes in mobile devices " + 
+                "(<a target='_blank' href='https://www.youtube.com/watch?v=vpBt36GibcY'>View Demo</a>)</div>" + 
+                "<div class='item tip_item'>- If you do like the extension, please support our development " +
+                  " by subscribing to " +
+                  "<a target='_blank' href='https://www.bart.com.hk/simple-gmail-notes-support-package/?f=n'>Support Package</a></div></div>" +
+            "</div>" + 
+            "<div class='sgn_message_font' >Powered by" +
+              "<a  target='_blank' href='" + SGNC.getOfficalSiteUrl("nt") + "'>" +
+                "<img src='" + SGNC.getBartLogoImageSrc("nt") + "'></a></div>";
 
 var gBadgeText = "";
 var gPreferenceTypes = [
@@ -98,6 +123,7 @@ var gPreferenceTypes = [
       {"value": "default", "text": "(Default)"},
     ]
   },
+  {"type": "checkbox", "name": "enableNoteFontBold", "default": "false", "title": "Note in Bold Font", "panelName": "notesAppearance"},
   {"type": "color", "name": "abstractFontColor", "default": "#525252", "title": "Abstract font color", "panelName": "notesAppearance"},
   {"type": "color", "name": "abstractBackgroundColor", "default": "#FFFF99", "title": "Abstract background color", "panelName": "notesAppearance"},
   {"type": "select", "name": "abstractFontSize", "default": "default", "title": "Abstract font size", "panelName": "notesAppearance",
@@ -131,7 +157,8 @@ var gPreferenceTypes = [
       {"value": "Simple Gmail Notes", "text": "Simple Gmail Notes"}
     ]
   },
-
+  {"type": "checkbox", "name": "disableConsecutiveWarning", "default": "false", "title": "Disable Warning for Consecutive Network Requests", "panelName": "advancedFeatures",
+  },
 
   {"type": "checkbox", "name": "showCRMButton", "default": true, "title": "Enable Share Button For 'Simple Mobile CRM'",
    "panelName": "simpleMobileCRM"},
@@ -171,10 +198,10 @@ var isDebug = function(callback) {
 };
 
 var openTab = function(page){
-  if(SGNB.isChrome())
-    SGNB.getBrowser().tabs.create({"url": "chrome-extension://" + SGNB.getExtensionID() + "/" + page});
+  if(SGNC.isChrome())
+    SGNC.getBrowser().tabs.create({"url": "chrome-extension://" + SGNC.getExtensionID() + "/" + page});
   else
-    SGNB.getBrowser().tabs.create({"url" : browser.extension.getURL(page)});
+    SGNC.getBrowser().tabs.create({"url" : browser.extension.getURL(page)});
 };
 
 
@@ -184,12 +211,16 @@ var getRawStorageObject = function(){
 };*/
 
 var getRawPreferences = function(){
-  storage = getRawStorageObject();
+  storage = SGNC.getRawStorageObject();
   return storage; //preferences are put into local storage as well
 };
 
 var sendContentMessage = function(sender, message) {
-  SGNB.getBrowser().tabs.sendMessage(sender.worker.tab.id, message, function(response) {
+  if(!message.action || message.action != 'heart_beat_response'){
+    debugLog('@222', sender, message);
+  }
+  // debugLog('@221', sender, message);
+  SGNC.getBrowser().tabs.sendMessage(sender.worker.tab.id, message, function(response) {
     //debugLog("Message response:", response);
   });
 };
@@ -203,70 +234,108 @@ var iterateArray = function(arr, callback){
   $.each(arr, callback);
 };
 
-var getRedirectUri = function() {
-  return SGNB.getBrowser().identity.getRedirectURL();
+
+/*
+var getSGNWebLoginURL = function(url) {
+  var result= SGNC.getSGNWebBaseURL() + "/sgn/signin/?url=" + encodeURIComponent(url);
+
+  // debugLog('@242', result);
+  return result;
+};
+*/
+
+var handleGoogleAuthCode = function(code, sender, messageId, title, loginType) {
+  debugLog("Code collected", code);
+  if(!code || code.indexOf("error=") > 0 ){
+    var error = "";
+    if(!code)
+      error = getLastError();
+    else{
+      //https://xxx/?error=access_denied#"
+      error = code.split("error=")[1];
+      error = error.replace(/#/g, '');
+    }
+        
+    //var message = "[loginGoogleDrive]" + error;
+    //SGNC.appendLog(message, debugGdriveScope);
+    appendGdriveLog("loginGoogleDrive", error);
+    sendContentMessage(sender, {action:"show_log_in_prompt"});
+    sendContentMessage(sender, {action:"disable_edit"});
+
+    sendContentMessage(sender, {action:"show_error", 
+                                type:"login",
+                                message:error});
+  }else{
+    //get code from redirect url
+    if(code.indexOf("=") >= 0)  //for chrome
+      code = code.split("=")[1];
+
+    if(code.indexOf("&") >= 0)  //for chrome
+      code = code.split("&")[0];
+
+    code = code.replace("%2F", "/");
+
+    code = code.replace(/[#]/g, "");
+    debugLog("Collected code:" + code);
+    SGNC.setStorage(sender, "code", code);
+    updateRefreshTokenFromCode(sender, messageId, title, loginType);
+  }
+
 };
 
-var launchAuthorizer = function(sender, messageId, title, isCRM) {
+/*
+var onWindowCreated =  function(win){
+  console.log('@297');
+  win.openerWin = window;
+};
+
+var launchsgnweblogin = function(sender, messageid, title) {
+  debuglog("trying to login sgn web");
+  var clientid = settings.client_id;
+  var scope = settings.scope;
+  var state = sender.email + "/" + sender.worker.tab.id + "/" + messageid;
+
+  var url = getsgnwebloginurl("https://accounts.google.com/o/oauth2/auth?" + $.param({"client_id": clientid,
+          "scope": scope,
+          "redirect_uri": getredirecturi('sgn_web'),
+          "response_type": "code",
+          "access_type": "offline",
+          "login_hint": sender.email,
+          "state": state,
+          //"login_hint":"",
+          "prompt":"consent select_account" })); 
+
+  if(SGNC.isChrome()){
+    window.open(url, 'sgn_signin_popup', SGNC.getStrWindowFeatures(1000, 800));
+  }
+  else {  // for FF
+    // need to do message handling
+    var creating = SGNC.getBrowser().windows.create({allowScriptsToClose: true, url: url, type: 'popup', width:1000, height:800});
+    creating.then(onWindowCreated);
+  }
+
+};
+*/
+
+var launchAuthorizer = function(sender, messageId, title) {
   debugLog("Trying to login Google Drive.");
   var clientId = settings.CLIENT_ID;
   var scope = settings.SCOPE;
-  if(isCRM){
-    clientId = settings.CRM_CLIENT_ID;
-    scope = settings.CRM_SCOPE;
-  }
-
-  var result = SGNB.getBrowser().identity.launchWebAuthFlow(
+  var result = SGNC.getBrowser().identity.launchWebAuthFlow(
     {"url": "https://accounts.google.com/o/oauth2/auth?" +
       $.param({"client_id": clientId,
           "scope": scope,
-          "redirect_uri": getRedirectUri(),
+          "redirect_uri": SGNC.getRedirectUri(),
           "response_type":"code",
           "access_type":"offline",
           "login_hint":sender.email,
           //"login_hint":"",
           "prompt":"consent select_account"
-      }), 
-     "interactive": true
+      }),
+      "interactive": true
     },
     function(code) {
-      debugLog("Code collected", code);
-      if(!code || code.indexOf("error=") > 0 ){
-        var error = "";
-        if(!code)
-          error = getLastError();
-        else{
-          //https://xxx/?error=access_denied#"
-          error = code.split("error=")[1];
-          error = error.replace(/#/g, '');
-        }
-            
-        //var message = "[loginGoogleDrive]" + error;
-        //SGNB.appendLog(message, debugGdriveScope);
-        if(!isCRM){
-          appendGdriveLog("loginGoogleDrive", error);
-          sendContentMessage(sender, {action:"show_log_in_prompt"});
-          sendContentMessage(sender, {action:"disable_edit"});
-        }
-        sendContentMessage(sender, {action:"show_error", 
-                                    type:"custom",
-                                    message:"Failed to login: " + error});
-      }else{
-        //get code from redirect url
-        if(code.indexOf("=") >= 0)  //for chrome
-          code = code.split("=")[1];
-
-        if(code.indexOf("&") >= 0)  //for chrome
-          code = code.split("&")[0];
-
-        code = code.replace("%2F", "/");
-
-        code = code.replace(/[#]/g, "");
-        debugLog("Collected code:" + code);
-        setStorage(sender, "code", code);
-        updateRefreshTokenFromCode(sender, messageId, title, isCRM);
-      }
-
+      handleGoogleAuthCode(code, sender, messageId, title);
     }
   );
 
@@ -274,11 +343,11 @@ var launchAuthorizer = function(sender, messageId, title, isCRM) {
 };
 
 var getLastError = function(){
-  return SGNB.getBrowser().runtime.lastError.message;
+  return SGNC.getBrowser().runtime.lastError.message;
 };
 
 var removeCachedToken = function(tokenValue){
-  SGNB.getBrowser().identity.removeCachedAuthToken({'token':tokenValue}, function(){});
+  SGNC.getBrowser().identity.removeCachedAuthToken({'token':tokenValue}, function(){});
 };
 
 
@@ -305,7 +374,7 @@ function pullPreferences(){
 }
 
 var debugLog = function(){ //need some further work
-  if (isDebug() && console && console.log) {
+  if (isDebug() && console && debugLog) {
       console.log.apply(console, arguments);
   }
 };
@@ -326,7 +395,7 @@ var appendGdriveLog = function(prefix, message, postfix){
   if(postfix)
     result = result + "[" + postfix + "]";
 
-  SGNB.appendLog(result, debugGdriveScope);
+  SGNC.appendLog(result, debugGdriveScope);
 };
 
 var isEmptyPrefernce = function(preference){
@@ -416,7 +485,7 @@ var postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdr
       methodType = "PUT";
     }
 
-    var noteDescripton = stripHtml(content).substring(0,4096);
+    var noteDescripton = SGNC.stripHtml(content).substring(0,4096);
     if(content == gSgnEmtpy){
       noteDescripton = gSgnEmtpy;
     }
@@ -429,7 +498,7 @@ var postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdr
       type:methodType,
       url:uploadUrl + "?uploadType=multipart",
       headers: {
-          "Authorization": "Bearer " + getStorage(sender, settings.ACCESS_TOKEN_KEY)
+          "Authorization": "Bearer " + SGNC.getStorage(sender, settings.ACCESS_TOKEN_KEY)
       },
       contentType: "multipart/related; boundary=\"" + multipartRequest.boundary + "\"",
       data: multipartRequest.multipartRequestBody,
@@ -447,7 +516,7 @@ var postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdr
       },
       error: function(data){
         //var message = "[postNote]" + JSON.stringify(data);
-        //SGNB.appendLog(message, debugGdriveScope);
+        //SGNC.appendLog(message, debugGdriveScope);
         appendGdriveLog("postNote", data);
         sendContentMessage(sender, {action:"show_error", 
                                     type:"custom", 
@@ -458,14 +527,11 @@ var postNote = function(sender, messageId, emailTitleSuffix, gdriveFolderId, gdr
   });
 };
 
-var showRefreshTokenError = function(sender, error, isCRM){
+var showRefreshTokenError = function(sender, error){
   if(error && typeof(error) === "object"){
     if(error.responseText && error.responseText.indexOf("{") >= 0){ 
       //got an explicit error from google
-      if(isCRM)
-        logoutCRM(sender);
-      else
-        logoutGoogleDrive(sender);
+      logoutGoogleDrive(sender);
     }
     error = JSON.stringify(error);
   }
@@ -473,92 +539,74 @@ var showRefreshTokenError = function(sender, error, isCRM){
   //var preferences = getPreferences();
   //preferences['debugBackgroundInfo'] += " Refresh token error: " + error + ".";
   var message = " Refresh token error: " + error + ".";
-  SGNB.appendLog(message, debugBackGroundScope);
+  SGNC.appendLog(message, debugBackGroundScope);
 
-  if(isCRM)
-    sendContentMessage(sender, {action:"show_error", type:"revoke_crm"});
-  else
-    sendContentMessage(sender, {action:"show_error", type:"revoke"});
+  sendContentMessage(sender, {action:"show_error", type:"revoke"});
 };
 
 
-var updateRefreshTokenFromCode = function(sender, messageId, title, isCRM){
+var updateRefreshTokenFromCode = function(sender, messageId, title, loginType){
   var clientId = settings.CLIENT_ID;
   var clientSecret = settings.CLIENT_SECRET;
   var refreshTokenKey = settings.REFRESH_TOKEN_KEY;
   var accessTokenKey = settings.ACCESS_TOKEN_KEY;
 
-  if(isCRM){
-    clientId = settings.CRM_CLIENT_ID;
-    clientSecret = settings.CRM_CLIENT_SECRET;
-    refreshTokenKey = settings.CRM_REFRESH_TOKEN_KEY;
-    accessTokenKey = settings.CRM_ACCESS_TOKEN_KEY;
-  }
 
+  // console.log('@555', clientId, loginType);
   sendAjax({
     type: "POST",
     contentType: "application/x-www-form-urlencoded",
     data: {
-        "code":getStorage(sender, "code"),
+        "code":SGNC.getStorage(sender, "code"),
         "client_id": clientId,
         "client_secret": clientSecret,
-        "redirect_uri": getRedirectUri(),
+        "redirect_uri": SGNC.getRedirectUri(loginType),
         "grant_type":"authorization_code"
     },
     url: "https://www.googleapis.com/oauth2/v3/token",
     error: function(data){
       //var message = "[updateRefreshTokenFromCode]" + JSON.stringify(data);
-      //SGNB.appendLog(message, debugGdriveScope);
+      //SGNC.appendLog(message, debugGdriveScope);
       appendGdriveLog("updateRefreshTokenFromCode", data);
-      showRefreshTokenError(sender, data, isCRM);
+      showRefreshTokenError(sender, data);
     },
     success: function(data){
       if(!data.refresh_token){
         showRefreshTokenError(sender, 
-          "Google Drive token could not be collected.", isCRM);
+          "Google Drive token could not be collected.");
         //for future revoking
-        setStorage(sender, accessTokenKey, data.access_token); 
+        SGNC.setStorage(sender, accessTokenKey, data.access_token); 
       }else{
         debugLog("Updated refresh token", data);
-        setStorage(sender, refreshTokenKey, data.refresh_token);
-        setStorage(sender, accessTokenKey, data.access_token);
+        SGNC.setStorage(sender, refreshTokenKey, data.refresh_token);
+        SGNC.setStorage(sender, accessTokenKey, data.access_token);
 
-        if(isCRM){
-          //get id token
-          var idToken = data.id_token;
-          debugLog("@527, idToken: " + idToken);
-          sendContentMessage(sender, {action:"crm_user_logged_in", 
-                                      idToken: idToken,
-                                      email:getStorage(sender, "gdrive_email")});
-        }
-        else{
-          initialize(sender, messageId, title);
-          updateUserInfo(sender);
-        }
+        initialize(sender, messageId, title);
+        updateUserInfo(sender);
       }
     }
   });
 };
 
 var updateUserInfo = function(sender){
-  if(getStorage(sender, "gdrive_email")){
+  if(SGNC.getStorage(sender, "gdrive_email")){
     sendContentMessage(sender, {action:"update_user", 
-                         email:getStorage(sender, "gdrive_email")});
+                         email:SGNC.getStorage(sender, "gdrive_email")});
     return;
   }
 
   executeIfValidToken(sender, function(data){
     sendAjax({
       url:"https://www.googleapis.com/drive/v2/about?access_token=" + 
-        getStorage(sender, settings.ACCESS_TOKEN_KEY),
+        SGNC.getStorage(sender, settings.ACCESS_TOKEN_KEY),
       success:function(data){
-        setStorage(sender, "gdrive_email", data.user.emailAddress);
+        SGNC.setStorage(sender, "gdrive_email", data.user.emailAddress);
         sendContentMessage(sender, {action:"update_user", 
                              email:data.user.emailAddress});
       },
       error:function(data){
         //var message = "[updateUserInfo]" + JSON.stringify(data);
-        //SGNB.appendLog(message, debugGdriveScope);
+        //SGNC.appendLog(message, debugGdriveScope);
         appendGdriveLog("updateUserInfo", data);
         sendContentMessage(sender, {action:"show_error", type:"user"});
       }
@@ -566,30 +614,24 @@ var updateUserInfo = function(sender){
   });
 };
 
-var executeIfValidToken = function(sender, command, isCRM){
+var executeIfValidToken = function(sender, command){
   var clientId = settings.CLIENT_ID;
   var clientSecret = settings.CLIENT_SECRET;
   var refreshTokenKey = settings.REFRESH_TOKEN_KEY;
   var accessTokenKey = settings.ACCESS_TOKEN_KEY;
 
-  if(isCRM){
-    clientId = settings.CRM_CLIENT_ID;
-    clientSecret = settings.CRM_CLIENT_SECRET;
-    refreshTokenKey = settings.CRM_REFRESH_TOKEN_KEY;
-    accessTokenKey = settings.CRM_ACCESS_TOKEN_KEY;
-  }
 
-  if(!getStorage(sender, accessTokenKey) && 
-     !getStorage(sender, refreshTokenKey)){  //if acccess token not found
+  if(!SGNC.getStorage(sender, accessTokenKey) && 
+     !SGNC.getStorage(sender, refreshTokenKey)){  //if acccess token not found
       
     debugLog("@197, no token found, skip the verification");
-    showRefreshTokenError(sender, "No token found.", isCRM);
+    showRefreshTokenError(sender, "No token found.");
     return;
   }
 
   sendAjax({
     url:"https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=" + 
-          getStorage(sender, accessTokenKey),
+          SGNC.getStorage(sender, accessTokenKey),
     timeout: 10000,
     success:function(data){
       command(data);
@@ -602,23 +644,23 @@ var executeIfValidToken = function(sender, command, isCRM){
           type: "POST",
           contentType: "application/x-www-form-urlencoded",
           data: {
-              "refresh_token": getStorage(sender, refreshTokenKey),
+              "refresh_token": SGNC.getStorage(sender, refreshTokenKey),
               "client_id": clientId,
               "client_secret": clientSecret,
-              "redirect_uri": getRedirectUri(),
+              "redirect_uri": SGNC.getRedirectUri(),
               "grant_type": "refresh_token"
           },
           url: "https://www.googleapis.com/oauth2/v3/token",
           success:function(data){
             debugLog("Renewed token");
-            setStorage(sender, accessTokenKey, data.access_token);
+            SGNC.setStorage(sender, accessTokenKey, data.access_token);
             command(data);
           },
           error:function(data){
             //var message = "[executeIfValidToken]" + JSON.stringify(data);
-            //SGNB.appendLog(message, debugGdriveScope);
+            //SGNC.appendLog(message, debugGdriveScope);
             appendGdriveLog("executeIfValidToken", data);
-            showRefreshTokenError(sender, data, isCRM);
+            showRefreshTokenError(sender, data);
           }
         });
       }
@@ -631,52 +673,11 @@ var executeIfValidToken = function(sender, command, isCRM){
   });
 };
 
-var loginCRM = function(sender) {
-  launchAuthorizer(sender, null, null, true);
-};
-
-var loginGoogleDrive = function(sender, messageId, title){
-  debugLog("Trying to login Google Drive.");
-  launchAuthorizer(sender, messageId, title);
-};
-
-var updateCRMEmailThreadId = function(sender, email, messageId) {
-  executeIfValidToken(sender, function(data){
-    var clientId = settings.CRM_CLIENT_ID;
-    var clientSecret = settings.CRM_CLIENT_SECRET;
-    var refreshTokenKey = settings.CRM_REFRESH_TOKEN_KEY;
-    var accessTokenKey = settings.CRM_ACCESS_TOKEN_KEY;
-
-    var accessToken = getStorage(sender, accessTokenKey);
-
-    sendAjax({
-      type: "GET",
-      dataType: 'json',
-      contentType: "application/json",
-      headers: {
-          "Authorization": "Bearer " + accessToken
-      },
-      url: "https://www.googleapis.com/gmail/v1/users/me/messages/" + messageId,
-      success:function(data){
-        sendContentMessage(sender, {action:"get_crm_thread_id_success",
-                                    messageId: messageId,
-                                    emailData:data});
-      },
-      error: function(data){
-        sendContentMessage(sender, {action:"show_error", 
-                                    type:"custom", 
-                                    message:"Failed update email info: " + 
-                                      JSON.stringify(data)});
-      }
-    });
-  }, true);
-
-};
 
 // the revoke should be manually done by the user now
 /*
 var revokeToken = function(sender){
-  var tokenValue = getStorage(sender, "access_token");
+  var tokenValue = SGNC.getStorage(sender, "access_token");
   if(tokenValue){
     debugLog("Revoking access token: ", tokenValue);
     removeCachedToken(tokenValue);
@@ -686,9 +687,9 @@ var revokeToken = function(sender){
         debugLog("Revoke done", data);
         if(data.status == 200 || data.status == 400){
           debugLog("Removing local data");
-          //setStorage(sender, "access_token", "");
-          //setStorage(sender, "refresh_token", "");
-          //setStorage(sender, "gdrive_email", "");
+          //SGNC.setStorage(sender, "access_token", "");
+          //SGNC.setStorage(sender, "refresh_token", "");
+          //SGNC.setStorage(sender, "gdrive_email", "");
           //sendContentMessage(sender, {action:"show_log_in_prompt"});
           //sendContentMessage(sender, {action:"disable_edit"});
           logoutGoogleDrive(sender);
@@ -701,19 +702,13 @@ var revokeToken = function(sender){
 */
 
 var logoutGoogleDrive = function(sender){
-  setStorage(sender, "code", "");
-  setStorage(sender, settings.ACCESS_TOKEN_KEY, "");
-  setStorage(sender, settings.REFRESH_TOKEN_KEY, "");
-  setStorage(sender, "gdrive_email", "");
-  setStorage(sender, "crm_user_email", "");
+  SGNC.setStorage(sender, "code", "");
+  SGNC.setStorage(sender, settings.ACCESS_TOKEN_KEY, "");
+  SGNC.setStorage(sender, settings.REFRESH_TOKEN_KEY, "");
+  SGNC.setStorage(sender, "gdrive_email", "");
+  SGNC.setStorage(sender, "crm_user_email", "");
   sendContentMessage(sender, {action:"show_log_in_prompt"});
   sendContentMessage(sender, {action:"disable_edit"});
-};
-
-var logoutCRM = function(sender){
-  setStorage(sender, settings.CRM_ACCESS_TOKEN_KEY, "");
-  setStorage(sender, settings.CRM_REFRESH_TOKEN_KEY, "");
-  sendContentMessage(sender, {action:"logout_crm"});
 };
 
 
@@ -721,13 +716,13 @@ var loadMessage = function(sender, gdriveNoteId, messageId, properties, descript
   sendAjax({
     type:"GET",
     headers: {
-      "Authorization": "Bearer " + getStorage(sender, settings.ACCESS_TOKEN_KEY)
+      "Authorization": "Bearer " + SGNC.getStorage(sender, settings.ACCESS_TOKEN_KEY)
     },
     url: "https://www.googleapis.com/drive/v2/files/" + 
           gdriveNoteId + "?alt=media",
     success: function(data) {
       debugLog("Loaded message", data);
-      if(data == gSgnEmtpy || isMarkCrmDeleted(properties))
+      if(data == gSgnEmtpy || SGNC.isMarkCrmDeleted(properties))
         data = "";
 
       if(!properties)
@@ -742,11 +737,11 @@ var loadMessage = function(sender, gdriveNoteId, messageId, properties, descript
                                   description: description,
                                   properties:properties,  
                                   messageId:messageId, 
-                                  gdriveEmail:getStorage(sender, "gdrive_email")});  
+                                  gdriveEmail:SGNC.getStorage(sender, "gdrive_email")});  
     },
     error: function(data){
       //var message = "[loadMessage]" + JSON.stringify(data);
-      //SGNB.appendLog(message, debugGdriveScope);
+      //SGNC.appendLog(message, debugGdriveScope);
       appendGdriveLog("loadMessage", data);
       sendContentMessage(sender, {action:"show_error", 
                            type: "custom", 
@@ -785,7 +780,7 @@ var setupNotesFolder = function(sender, description, properties, messageId){
       dataType: 'json',
       contentType: "application/json",
       headers: {
-          "Authorization": "Bearer " + getStorage(sender, settings.ACCESS_TOKEN_KEY)
+          "Authorization": "Bearer " + SGNC.getStorage(sender, settings.ACCESS_TOKEN_KEY)
       },
       data: JSON.stringify({
             "title": getFolderName(),
@@ -804,36 +799,28 @@ var setupNotesFolder = function(sender, description, properties, messageId){
                                    description:description,
                                    properties:properties,
                                    messageId:messageId,
-                                   gdriveEmail:getStorage(sender, "gdrive_email")});
+                                   gdriveEmail:SGNC.getStorage(sender, "gdrive_email")});
        debugLog("Data loaded:", data);
      },
     error: function(data){
       //var message = "[setupNotesFolder]" + JSON.stringify(data);
-      //SGNB.appendLog(message, debugGdriveScope);
+      //SGNC.appendLog(message, debugGdriveScope);
       appendGdriveLog("setupNotesFolder", data);
     }
   });
 };
 
-var gdriveQuery = function(sender, query, success_cb, error_cb, baseWaiting){
-  if(baseWaiting === undefined)
-    baseWaiting = 1; //default retry count
-
+var sendAjaxAfterValidToken = function(sender, query, ajaxData, success_cb, error_cb, baseWaiting) {
   executeIfValidToken(sender, function(data){
-    if(!query.startsWith("trashed")){  //only append once
-      query = "trashed = false and ( " + query + ")";
-      query = encodeURIComponent(query);
-    }
-
-    debugLog("Search message by query:", query);
     sendAjax({
       type:"GET",
       dataType: 'json',
       contentType: "application/json",
+      data: ajaxData,
       headers: {
-          "Authorization": "Bearer " + getStorage(sender, settings.ACCESS_TOKEN_KEY)
+          "Authorization": "Bearer " + SGNC.getStorage(sender, settings.ACCESS_TOKEN_KEY)
       },
-      url: "https://www.googleapis.com/drive/v2/files?q=" + query,
+      url: query,
       success:function(data){
         //remove the items in the trash
         if(data.items && data.items.length){
@@ -852,7 +839,7 @@ var gdriveQuery = function(sender, query, success_cb, error_cb, baseWaiting){
           appendGdriveLog("gdriveQueryRetry", data, query);
           var sleepTime = parseInt((baseWaiting + Math.random()) * 1000);
           setTimeout(function(){
-              gdriveQuery(sender, query, success_cb, error_cb, baseWaiting * 2);
+            sendAjaxAfterValidToken(sender, query, ajaxData, success_cb, error_cb, baseWaiting * 2);
           }, sleepTime);
         }
         else{
@@ -871,6 +858,25 @@ var gdriveQuery = function(sender, query, success_cb, error_cb, baseWaiting){
       }
     });
   });
+};
+
+var appendQueryTrashedParam = function(query) {
+  if(!query.startsWith("trashed")){  //only append once
+      query = "trashed = false and ( " + query + ")";
+      query = encodeURIComponent(query);
+  }
+
+  debugLog("Search message by query:", query);
+  return query;
+};
+
+var gdriveQuery = function(sender, query, success_cb, error_cb, baseWaiting){
+  if(baseWaiting === undefined)
+    baseWaiting = 1; //default retry count
+
+  query = appendQueryTrashedParam(query);
+  var queryUrl = "https://www.googleapis.com/drive/v2/files?q=" + query;
+  sendAjaxAfterValidToken(sender, queryUrl, {}, success_cb, error_cb, baseWaiting)
 
 };
 
@@ -902,7 +908,7 @@ var renameNoteFolder = function(sender, folderId){
     dataType: "json",
     url: "https://www.googleapis.com/drive/v2/files/" + folderId,
     headers: {
-        "Authorization": "Bearer " + getStorage(sender, settings.ACCESS_TOKEN_KEY)
+        "Authorization": "Bearer " + SGNC.getStorage(sender, settings.ACCESS_TOKEN_KEY)
     },
     contentType: "application/json",
     data: JSON.stringify({
@@ -915,7 +921,7 @@ var renameNoteFolder = function(sender, folderId){
     },
     error: function(data){
       //var message = "[renameNoteFolder]" + JSON.stringify(data);
-      //SGNB.appendLog(message, debugGdriveScope);
+      //SGNC.appendLog(message, debugGdriveScope);
       appendGdriveLog("renameNoteFolder", data);
 
       sendContentMessage(sender, {action:"show_error", 
@@ -963,7 +969,7 @@ var removeDuplicateAndEmptyMessages = function(messageList){
   
 };
 
-var searchNoteHistory = function(sender, messageId, title){
+var searchNoteHistory = function(sender, gdriveFolderId, messageId, title){
   var originalTitle = title;
 
   title = extractTitle(title);
@@ -975,29 +981,17 @@ var searchNoteHistory = function(sender, messageId, title){
   var searchTitle = title.replace(/[^a-zA-Z0-9]/g, " ");
   searchTitle = shrinkSearchContent(searchTitle);
   var query = "(not properties has { key='"+gSgnCrmDeleted+"' and value='true' and visibility='PUBLIC' }) and " + 
-    "(fullText contains '" + getFolderName() + "' or fullText contains '" + searchTitle + "')";
+  "(fullText contains '" + searchTitle + "')"; 
   gdriveQuery(sender, query, 
     function(data){ //success callback
-      var gdriveFolderIds = [];
-      var gdriveNoteId = "";
       var i, currentItem;
       debugLog("@521", query, data);
 
       //first pass, get folder id for gmail notes
       for(i=0; i<data.items.length; i++){
         currentItem = data.items[i];
-
-        
-        if(settings.NOTE_NAMES.includes(currentItem.title) && 
-           currentItem.parents[0].isRoot){
-          //found the root folder
-           gdriveFolderIds.push(currentItem.id);
-        }
       }
       
-      if(!gdriveFolderIds.length)
-        return null;
-
       //second pass find the document
       debugLog("Searching message", title);
       total_found = 0;
@@ -1009,20 +1003,20 @@ var searchNoteHistory = function(sender, messageId, title){
 
         var currentMessageId = currentItem.title.split(" ")[0];
         var currentItemTitle = extractTitle(currentItem.title.substring(19));
-        if(currentItemTitle == title && 
-           gdriveFolderIds.includes(currentItem.parents[0].id)){
+        if(currentItemTitle == title){
             var crmDeleteTag = false;
             var properties = currentItem.properties;
 
-          result.push({"id": currentMessageId, 
-                       "noteId": currentItem.id,
-                       "description": currentItem.description,
-                       "properties": currentItem.properties,
-                       "modifiedDate": currentItem.modifiedDate,
-                       "createdDate": currentItem.createdDate});
-
           if(currentMessageId != messageId){
             needShow = true;
+
+            result.push({"id": currentMessageId, 
+                         "noteId": currentItem.id,
+                         "description": currentItem.description,
+                         "properties": currentItem.properties,
+                         "modifiedDate": currentItem.modifiedDate,
+                         "createdDate": currentItem.createdDate});
+
           }
         }
 
@@ -1039,15 +1033,15 @@ var searchNoteHistory = function(sender, messageId, title){
       }
   }, function(data){
     //var message = "[searchNoteHistory]" + JSON.stringify(data);
-    //SGNB.appendLog(message, debugGdriveScope);
+    //SGNC.appendLog(message, debugGdriveScope);
     appendGdriveLog("searchNoteHistory");
   });
 };
 
 
 //list the files created by this app only (as restricted by permission)
-var searchNote = function(sender, messageId){
-  console.log("@1065 messageId", messageId);
+var searchNote = function(sender, messageId, title){
+  // debugLog("@1065 messageId", messageId);
    
   var query = getFolderQuery() + " or title contains '" + messageId +"'";
   gdriveQuery(sender, query, 
@@ -1111,6 +1105,10 @@ var searchNote = function(sender, messageId){
         if(gdriveNoteId){
           loadMessage(sender, gdriveNoteId, messageId, properties, description, 
                 modifiedTime);
+
+          if(preferences['showNoteHistory'] !== 'false' && title){
+            searchNoteHistory(sender, gdriveFolderIds[0], messageId, title);
+          }
         }else{//ready for write new message
           sendContentMessage(sender, {
               action:"enable_edit",
@@ -1118,7 +1116,7 @@ var searchNote = function(sender, messageId){
               description:description,
               properties:properties,
               messageId:messageId,
-              gdriveEmail:getStorage(sender, "gdrive_email")
+              gdriveEmail:SGNC.getStorage(sender, "gdrive_email")
           });
         }
       }
@@ -1126,7 +1124,7 @@ var searchNote = function(sender, messageId){
     function(data){ //error callback
       //showRefreshTokenError(sender, data);
       //var message = "[searchNote]" + JSON.stringify(data);
-      //SGNB.appendLog(message, debugGdriveScope);
+      //SGNC.appendLog(message, debugGdriveScope);
       appendGdriveLog("searchNote");
     }
   );
@@ -1137,24 +1135,24 @@ var initialize = function(sender, messageId, title){
   var accessTokenKey = settings.ACCESS_TOKEN_KEY;
   var refreshTokenKey = settings.REFRESH_TOKEN_KEY;
   var preferences = getPreferences();
-  //preferences['debugBackgroundInfo'] = "Extension Version: " + SGNB.getExtensionVersion();
+  //preferences['debugBackgroundInfo'] = "Extension Version: " + SGNC.getExtensionVersion();
 
   //sendContentMessage(sender, {action:"update_preferences", preferences:preferences});
 
   debugLog("@476", preferences);
-  if(getStorage(sender, refreshTokenKey)){
+  if(SGNC.getStorage(sender, refreshTokenKey)){
     debugLog("Initializing, current refresh token:", 
-                getStorage(sender, refreshTokenKey), 
+                SGNC.getStorage(sender, refreshTokenKey), 
                 accessTokenKey, 
-                getStorage(sender, accessTokenKey));
-    searchNote(sender, messageId);
+                SGNC.getStorage(sender, accessTokenKey));
+    searchNote(sender, messageId, title);
 
-    if(preferences['showNoteHistory'] !== 'false'){
-      searchNoteHistory(sender, messageId, title); 
-    }
+    //if(preferences['showNoteHistory'] !== 'false'){
+      //searchNoteHistory(sender, messageId, title); 
+    //}
   }
   else{ //no refresh token
-    if(getStorage(sender, accessTokenKey)){
+    if(SGNC.getStorage(sender, accessTokenKey)){
       logoutGoogleDrive(sender);
     }
     sendContentMessage(sender, {action:"show_log_in_prompt"});
@@ -1195,7 +1193,7 @@ var sendSummaryNotes = function(sender, pullList, resultList){
         properties = item.properties;
 
       description = item.description;
-      shortDescription = SGNB.getSummaryLabel(description, preferences);
+      shortDescription = SGNC.getSummaryLabel(description, preferences);
     }
     else{
       emailId = gSgnEmtpy;
@@ -1205,7 +1203,7 @@ var sendSummaryNotes = function(sender, pullList, resultList){
 
     result.push({"id":emailId, "description":description, "short_description":shortDescription, "properties":properties});
   }
-  sendContentMessage(sender, {email:getStorage(sender, "gdrive_email"), 
+  sendContentMessage(sender, {email:SGNC.getStorage(sender, "gdrive_email"), 
                               action:"update_summary", noteList:result});
 };
 
@@ -1213,7 +1211,7 @@ var pullNotes = function(sender, pendingPullList){
   var abstractStyle = getPreferenceAbstractStyle();
   var i;
 
-  if(abstractStyle == "none" || !getStorage(sender, settings.ACCESS_TOKEN_KEY)){
+  if(abstractStyle == "none" || !SGNC.getStorage(sender, settings.ACCESS_TOKEN_KEY)){
     debugLog("@482, skipped pulling because settings -> hide listing notes or no access token");
     sendSummaryNotes(sender, pendingPullList, []);  //send an empty result
     return;
@@ -1370,9 +1368,9 @@ var batchDo = function(sender, requestMethod, requestUrl, noteInfos,
       url:batchUrl,
       headers: {
           "content-type": 'multipart/mixed; boundary="-------314159265358979323846"',
-          "Authorization": "Bearer " + getStorage(sender, accessTokenKey)
+          "Authorization": "Bearer " + SGNC.getStorage(sender, accessTokenKey)
       },
-      data: getMultipart(noteInfos, getStorage(sender, accessTokenKey), requestUrl, requestMethod),
+      data: getMultipart(noteInfos, SGNC.getStorage(sender, accessTokenKey), requestUrl, requestMethod),
       success: function(data){
         var response = parseBatchResponse(data);
         successCommand(response);
@@ -1392,7 +1390,7 @@ var markShareNoteList = function(sender, noteInfos){
     debugLog("share notes", data);
   }, function(data){
     //var message = "[markShareNoteList]" + JSON.stringify(data);
-    //SGNB.appendLog(message, debugGdriveScope);
+    //SGNC.appendLog(message, debugGdriveScope);
     appendGdriveLog("markShareNoteList", data);
     debugLog("failed to share notes", data);
   });
@@ -1410,13 +1408,13 @@ var markDeleteNoteList = function(sender, noteInfos, gdriveFolderId){
       resultData.push({"messageId": messageId, "properties": data[i]["properties"]});
     }
     sendContentMessage(sender, {action:"delete_crm_notes", noteList: resultData,
-                        email: getStorage(sender, "gdrive_email")});
-    sendContentMessage(sender, {email: getStorage(sender, "gdrive_email"),
+                        email: SGNC.getStorage(sender, "gdrive_email")});
+    sendContentMessage(sender, {email: SGNC.getStorage(sender, "gdrive_email"),
                             action: "show_success_delete_message"
                             });
   }, function(data){
     //var message = "[markDeleteNoteList]" + JSON.stringify(data);
-    //SGNB.appendLog(message, debugGdriveScope);
+    //SGNC.appendLog(message, debugGdriveScope);
     appendGdriveLog("markDeleteNoteList", data);
     debugLog("fail to mark Note(Deleted)", data);
   });
@@ -1428,15 +1426,15 @@ var actualDeleteNoteList = function(sender, noteInfos, gdriveFolderId){
 
   batchDo(sender, requestMethod, requestUrl, noteInfos, function(data){
     debugLog("message deleted successfully");
-    sendContentMessage(sender, {email: getStorage(sender, "gdrive_email"),
+    sendContentMessage(sender, {email: SGNC.getStorage(sender, "gdrive_email"),
                             action: "show_success_delete_message"
                             });
   }, function(data){
     debugLog("message deleted failed");
     //var message = "[deleteNoteList]" + JSON.stringify(data);
-    //SGNB.appendLog(message, debugGdriveScope);
+    //SGNC.appendLog(message, debugGdriveScope);
     appendGdriveLog("deleteNoteList", data);
-    sendContentMessage(sender, {email: getStorage(sender, "gdrive_email"),
+    sendContentMessage(sender, {email: SGNC.getStorage(sender, "gdrive_email"),
                           action: "show_error_delete_message"});
   });
 };
@@ -1454,69 +1452,85 @@ var shrinkSearchContent = function(content){
     newContent = newContent.substring(0, lastSpaceIndex);
   }
 
-  //console.log("@1393, shrinked content", newContent);
+  //debugLog("@1393, shrinked content", newContent);
   return newContent;
 };
 
-var searchNoteList = function(sender, gdriveFolderId, searchContent){
+var searchNoteList = function(sender, gdriveFolderId, searchContent) {
   var notes = [];
-  var query = "(not properties has { key='"+gSgnCrmDeleted+"' and value='true' and visibility='PUBLIC' }) and " +
-                "(parents in '" + gdriveFolderId + "')"; 
-  var userId = sender.email;
-  
-  if(searchContent){
+  var initialNotes = [];
+  var startQueryUrl = "https://www.googleapis.com/drive/v2/files?q=";
+  query = "(not properties has { key='"+gSgnCrmDeleted+"' and value='true' and visibility='PUBLIC' }) and " +
+                  "(parents in '" + gdriveFolderId + "')"; 
+  if (searchContent) {
     searchContent = shrinkSearchContent(searchContent);
-
     query = query + " and fullText contains '" + searchContent + "'";
   }
+  query = appendQueryTrashedParam(query);
+  startQueryUrl = startQueryUrl + query;
 
-  gdriveQuery(sender, query, function(data){
-    for(var i=0; i<data.items.length; i++){
-      var description = data.items[i].description;
-      var length = description.length;
-      if (length > 50){
-          length = 50;
+  var getFirstHundredNotes = function(searchFullUrl, ajaxData){
+    sendAjaxAfterValidToken(sender, searchFullUrl, ajaxData, function(data){
+      initialNotes = initialNotes.concat(data.items)
+      for(var i=0; i<initialNotes.length; i++){
+        var description = initialNotes[i].description;
+        var length = description.length;
+        if (length > 50){
+            length = 50;
+        }
+        var shortDescription = SGNC.getShortDescription(description, length);
+
+        var content = description;
+        // remove previous description html tag
+        var crmContent = SGNC.htmlUnescape(SGNC.stripHtml(content));
+        
+        var initialTitle = initialNotes[i].title;
+        var messageId = initialTitle.split("-")[0].replace(/\s/g, '');
+        var noteDatetime = initialNotes[i].modifiedDate;
+        var properties = initialNotes[i].properties;
+
+        var position = initialTitle.indexOf("-");
+        var title = initialTitle.substring(position+1, initialTitle.length);
+
+        var modifiedTime  = formatDate(noteDatetime, true);
+        var modifiedDate = formatDate(noteDatetime);
+
+        notes.push({
+          'noteId': initialNotes[i].id, 
+          'id': messageId,
+          'description': description,
+          'messageId': messageId,
+          'shortDescription': shortDescription,
+          'content': crmContent,
+          'modifiedDate': modifiedDate,
+          'modifiedTime': modifiedTime,
+          'properties': properties,
+          'title': title
+        });
       }
-      var shortDescription = SGNB.getShortDescription(description, length);
+      notes = removeDuplicateAndEmptyMessages(notes);
+      // debugLog("@1563 notes", notes.length);
+      if (notes.length >= 100 || !data.nextPageToken) {
+        notes = notes.slice(0, 100);
+        sendContentMessage(sender, {action:"show_search_result", notes: notes, 
+                                  email: sender.email});
+        return;
+      }
+      if (data.nextLink && data.nextPageToken) {
+        debugLog("@1527------ data.nextLink", data.nextLink);
+        getFirstHundredNotes(data.nextLink, {"nextPageToken": data.nextPageToken});
+      }
 
-      var content = description;
-      // remove previous description html tag
-      var crmContent = htmlUnescape(stripHtml(content));
-      
-      var initialTitle = data.items[i].title;
-      var messageId = initialTitle.split("-")[0].replace(/\s/g, '');
-      var noteDatetime = data.items[i].modifiedDate;
-      var properties = data.items[i].properties;
+    },function(data){
+      //var message = "[searchNoteList]" + JSON.stringify(data);
+      //SGNC.appendLog(message, debugGdriveScope);
+      appendGdriveLog("searchNoteList");
+    }, 1);
+    
+  };
 
-      var position = initialTitle.indexOf("-");
-      var title = initialTitle.substring(position+1, initialTitle.length);
+  getFirstHundredNotes(startQueryUrl, searchContent);
 
-      var modifiedTime  = formatDate(noteDatetime, true);
-      var modifiedDate = formatDate(noteDatetime);
-
-      notes.push({
-        'noteId': data.items[i].id, 
-        'id': messageId,
-        'description': description,
-        'messageId': messageId,
-        'shortDescription': shortDescription,
-        'content': crmContent,
-        'modifiedDate': modifiedDate,
-        'modifiedTime': modifiedTime,
-        'properties': properties,
-        'title': title
-      });
-    }
-    notes = removeDuplicateAndEmptyMessages(notes);
-    sendContentMessage(sender, {action:"show_search_result", notes: notes, 
-                                email: sender.email});
-
-  },function(data){
-    //var message = "[searchNoteList]" + JSON.stringify(data);
-    //SGNB.appendLog(message, debugGdriveScope);
-    appendGdriveLog("searchNoteList");
-  });
-  
 };
 
 var deleteNoteByNoteId = function(sender, messageId, gdriveNoteId, markCrmDeleted){
@@ -1544,7 +1558,7 @@ var deleteNoteByNoteId = function(sender, messageId, gdriveNoteId, markCrmDelete
       contentType: contentType,
       data: requestBody,
       headers: {
-          "Authorization": "Bearer " + getStorage(sender, settings.ACCESS_TOKEN_KEY)
+          "Authorization": "Bearer " + SGNC.getStorage(sender, settings.ACCESS_TOKEN_KEY)
       },
       success: function(data){
         debugLog("message deleted successfully");
@@ -1552,14 +1566,14 @@ var deleteNoteByNoteId = function(sender, messageId, gdriveNoteId, markCrmDelete
           var noteList = [];
           noteList.push({"messageId": messageId, "properties":data["properties"]});
           sendContentMessage(sender, {action:"delete_crm_notes",
-                              email: getStorage(sender, "gdrive_email"),
+                              email: SGNC.getStorage(sender, "gdrive_email"),
                               noteList: noteList});
         }
         sendContentMessage(sender, {action:"revoke_summary_note", messageId: messageId});
       },
       error: function(data){
         //var message = "[deleteNoteByNoteId]" + JSON.stringify(data);
-        //SGNB.appendLog(message, debugGdriveScope);
+        //SGNC.appendLog(message, debugGdriveScope);
         appendGdriveLog("deleteNoteByNoteId", data);
         sendContentMessage(sender, {action:"show_error", 
                                     type:"custom", 
@@ -1571,7 +1585,7 @@ var deleteNoteByNoteId = function(sender, messageId, gdriveNoteId, markCrmDelete
 };
 
 var deleteNoteList = function(sender, noteInfos, isMark, gdriveFolderId){
-  var noteInfosChunkArray = getArrayChunk(noteInfos, 100);
+  var noteInfosChunkArray = SGNC.getArrayChunk(noteInfos, 100);
   var chunkLength = noteInfosChunkArray.length;
   for(var i=0; i<chunkLength; i++){
     if(noteInfosChunkArray[i] && noteInfosChunkArray[i].length > 0){
@@ -1606,7 +1620,7 @@ var deleteNoteByMessageId = function(sender, messageId){
       function(data){ //error backback
         debugLog("@743, query failed", data);
         //var message = "[deleteNoteByMessageId]" + JSON.stringify(data);
-        //SGNB.appendLog(message, debugGdriveScope);
+        //SGNC.appendLog(message, debugGdriveScope);
         appendGdriveLog("deleteNoteByMessageId");
       }
   );
@@ -1678,10 +1692,12 @@ var handleRequest = function(sender, request){
       break;
     case "reconnect":
     case "login":
-      loginGoogleDrive(sender, request.messageId, request.title);
+      debugLog("Trying to login Google Drive.");
+      launchAuthorizer(sender, request.messageId, request.title);
       break;
     case "crm_oauth":
-      loginCRM(sender);
+      // this logic will not be used any more
+      // launchAuthorizer(sender, null, null, true);
       break;
     case "post_note":
       content = request.content;
@@ -1695,6 +1711,14 @@ var handleRequest = function(sender, request){
       break;
     case "pull_notes":
       pullNotes(sender, request.pendingPullList);
+      break;
+    case "login_sgn_web":
+      var code = request.code;
+      var messageId = request.messageId;
+      var title = null;
+      var loginType = "sgn_web";
+      // console.log('@1719', sender, code, messageId);
+      handleGoogleAuthCode(code, sender, messageId, title, loginType);
       break;
     case "open_options":
       openTab("options.html");
@@ -1711,19 +1735,23 @@ var handleRequest = function(sender, request){
       }
 
       //do nothing except echo back, to show it's alive
-      alertMessageIfNeeded(sender, gInstallMessage, "install_notification_done");
-      alertMessageIfNeeded(sender, gUpgradeMessage, "upgrade_notification_done");
+      var alertInstallMessage = getSgnMessageForInstallOrUpgrade('install');
+      var alertUpgradeMessage = getSgnMessageForInstallOrUpgrade('upgrade');
+      alertMessageIfNeeded(sender, alertInstallMessage, "install_notification_done");
+      alertMessageIfNeeded(sender, alertUpgradeMessage, "upgrade_notification_done");
+
       sendContentMessage(sender, {action: "heart_beat_response", 
                                   email:request.email,
-                                  gdriveEmail:getStorage(sender, "gdrive_email"),
-                                  crmUserEmail:getStorage(sender, "crm_user_email"),
+                                  gdriveEmail:SGNC.getStorage(sender, "gdrive_email"),
+                                  crmUserEmail:SGNC.getStorage(sender, "crm_user_email"),
+                                  crmUserToken:SGNC.getStorage(sender, "crm_user_token"),
                                   preferences:displayPreferences});
       break;
     case "update_debug_page_info":
-      SGNB.setLog(request.debugInfo, debugPageScope);
+      SGNC.setLog(request.debugInfo, debugPageScope);
       break;
     case "update_debug_content_info":
-      SGNB.setLog(request.debugInfo, debugContentScope);
+      SGNC.setLog(request.debugInfo, debugContentScope);
       break;
     case "delete":
       deleteNoteByMessageId(sender, request.messageId);
@@ -1737,12 +1765,11 @@ var handleRequest = function(sender, request){
       preferences = getPreferences();
       preferences = updateDefaultPreferences(localStorage);
       break;
-    case "update_crm_user_email":
-      var crm_user_email = request.email;
-      setStorage(sender, "crm_user_email", crm_user_email);
-      break;
-    case "update_crm_email_thread_id":
-      updateCRMEmailThreadId(sender, request.email, request.messageId);
+    case "update_crm_user_info":
+      var crm_user_email = request.crm_user_email;
+      var crm_user_token = request.crm_user_token;
+      SGNC.setStorage(sender, "crm_user_email", crm_user_email);
+      SGNC.setStorage(sender, "crm_user_token", crm_user_token);
       break;
     case "disable_account":
       var accountEmail = request.email;
@@ -1760,3 +1787,26 @@ var handleRequest = function(sender, request){
   }
 };
 
+/*
+window.addEventListener("message", function(e){
+  if(!e.data.startsWith("sgnlogin:"))
+    return;
+
+  if (e.data.startsWith("sgnlogin:")) {
+    var data = e.data.split(":");
+    var state = data[1];
+    var code = data[2];
+    var error = data[3];
+
+    var stateData = state.split("/");
+    var email = stateData[0];
+    var tabId = parseInt(stateData[1]);
+    var messageId = stateData[2];
+
+    //simulate state
+    var sender = {email: email, worker: {tab: {id: tabId}}};
+    handleGoogleAuthCode(code, sender, messageId, null, "sgn_web");
+  }
+  debugLog('@1835', e.data);
+}, true);
+*/

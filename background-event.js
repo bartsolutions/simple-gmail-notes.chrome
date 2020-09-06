@@ -9,7 +9,7 @@
 
 //For messaging between background and content script
 $(window).on('load', function(){
-  SGNB.getBrowser().runtime.onMessage.addListener(
+  SGNC.getBrowser().runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
       debugLog("Get message to background", request);
       sender = {worker: sender, email: request.email};
@@ -20,22 +20,27 @@ $(window).on('load', function(){
 
 
   //var preferences = getPreferences();
-  //preferences['debugBackgroundInfo'] = "Extension Version: " + SGNB.getExtensionVersion();
-  var message = "Extension Version: " + SGNB.getExtensionVersion();
-  SGNB.appendLog(message, debugBackGroundScope);
+  //preferences['debugBackgroundInfo'] = "Extension Version: " + SGNC.getExtensionVersion();
+  var message = "Extension Version: " + SGNC.getExtensionVersion();
+  SGNC.appendLog(message, debugBackGroundScope);
 });
 
-SGNB.getBrowser().runtime.onInstalled.addListener(function(details){
+SGNC.getBrowser().runtime.onInstalled.addListener(function(details){
     var preferences = getPreferences();
     if(details.reason == "install"){
-      if(SGNB.isChrome()){
+      /*
+      if(SGNC.isChrome()){
         alert("Thanks for installing. Please reload the Gmail page (click address bar & press enter key) to start using the extension!");
       }
+      */
+      chrome.tabs.create({url: "https://www.bart.com.hk/simple-gmail-notes-installed/"}, function (tab) {
+          console.log("Welcome page launched");
+      });
       preferences["install_notification_done"] = "";
       preferences["upgrade_notification_done"] = true;
     } 
     else if(details.reason == "update"){
-      SGNB.getBrowser().browserAction.setBadgeText({"text": gBadgeText});
+      SGNC.getBrowser().browserAction.setBadgeText({"text": gBadgeText});
       preferences["install_notification_done"] = true;
       preferences["upgrade_notification_done"] = "";
       /*

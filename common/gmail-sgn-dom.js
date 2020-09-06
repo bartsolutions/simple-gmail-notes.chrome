@@ -146,18 +146,36 @@ var SGNGmailDOM = function(localJQuery){
 
     if(SimpleGmailNotes.isNewGmail()){
       labelText = hook.attr("aria-label");
+
+      if(!labelText){ // added 20191127, seems googles uses aria-hidden
+        labelText = $("#gb .gb_ob").text();
+      }
+
+      if(!labelText){ // for delegated email
+        labelText = $("#gb .gb_mb").text();
+      }
     }
     else{ //for inbox and classic gmail
       labelText = hook.attr("title");
     }
+
+    if(!labelText)
+      return "";
 
     if(labelText.indexOf("(") !== -1){
       //split from last bracket
       _userEmail = labelText.split("(").slice(-1)[0];
       _userEmail = _userEmail.split(")")[0];
     }
-    else
+    else if(labelText.indexOf(":") !== -1){
       _userEmail = $.trim(labelText.split(":")[1]);
+    }
+    else
+      _userEmail = labelText;
+
+    if(_userEmail.indexOf(" ") !== -1) {
+      _userEmail = _userEmail.split(" ").slice(-1)[0];
+    }
     
     return _userEmail;
   };
@@ -169,7 +187,8 @@ var SGNGmailDOM = function(localJQuery){
 
     var previewPaneFound = false;
     boxes.each(function() {
-      if($(this).hasClass('aia')) {
+      if($(this).hasClass("aia") || $(this).find('> .aia').length ||
+         $(this).find('>*>.aia').length){
         previewPaneFound = true;
       }
     });
@@ -390,10 +409,23 @@ var SGNGmailDOM = function(localJQuery){
     } else {
       email = $.trim(printEmailNodeStr.split(":")[1]);
     }
-    console.log("email print", email);
+    email = $.trim(email);
+    // console.log("email print", email);
     return email;
 
   };
+
+  api.getEmailDate = function() {
+    var emailDateNode = $("table.cf.gJ").find("span.g3");
+    var emailDate = null;
+    if (emailDateNode && emailDateNode.length > 0) {
+      emailDate = emailDateNode.attr("title");
+    }
+
+    // console.log("@421---- email date", emailDate);
+
+    return emailDate;
+  }
 
   return api;
 };

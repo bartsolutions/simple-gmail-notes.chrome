@@ -13,8 +13,10 @@ var settings = {
 };
 
 
+
 var sgnGmailDom = new SGNGmailDOM(jQuery);
 
+var gSummaryPulled = false;
 var gCRMLoggedInChecked = false;
 var gCRMLoggedIn = false;
 var gClassicGmailConversation = false;
@@ -50,9 +52,11 @@ var acquireNetworkLock = function() {
     resetCounter = true;
   }
 
-  if(gConsecutiveRequests >= 40){
-    //penalty timeout for 60 seconds
-    gNextPullTimestamp = timestamp + 60 * 1000; 
+  var disableConsecutiveWarning = isDisableConsecutiveWarning()
+
+  if(gConsecutiveRequests >= 40 && !disableConsecutiveWarning){
+    //penalty timeout for 600 seconds
+    gNextPullTimestamp = timestamp + 600 * 1000; 
 
     var message = "40 consecutive network requests detected from Simple Gmail Notes, " +
                   "the extension would be self-disabled for 60 seconds.\n\n" +
@@ -165,6 +169,7 @@ var gCurrentPreferences = {};
 var gLastHeartBeat = Date.now();
 var gSgnUserEmail = "";
 var gCrmUserEmail = "";
+var gCrmUserToken = "";
 var gLastPreferenceString = "";
 
 var gSgnEmtpy = "<SGN_EMPTY>";
@@ -224,6 +229,36 @@ var isTinyMCEEditable = function(){
   return false;
 };
 
+var getCrmThreadId = function() {
+  var threadId = '';
+  if(SGNC.isNewGmail()){
+    threadId = sgnGmailDom.getCurrentThreadId();
+  }
+  else if(SGNC.isInbox()){
+    threadId = sgnGmailDom.getCurrentMessageId();
+  }
+  else {  //classic gmail
+    if(gClassicGmailConversation){
+      threadId = sgnGmailDom.getCurrentMessageId();
+    }
+    else{
+      //for classic gmail UI & non conversation mode, 
+      //it seems impossible to get thread id
+    }
+  }
+
+  return threadId;
+}
+
+var getCrmLastMessageId = function() {
+  var sgnLastMessageId = ''; 
+  if(SGNC.isNewGmail()){
+    sgnLastMessageId = sgnGmailDom.getLastMessageId();
+  }
+
+  return sgnLastMessageId;
+}
+
 var disableEdit = function(retryCount){
   if(retryCount === undefined)
     retryCount = settings.MAX_RETRY_COUNT;
@@ -263,9 +298,9 @@ var enableEdit = function(retryCount){
   
 
   if(isRichTextEditor()){
-    if(isTinyMCEEditable())
-      return;
-    sendEventMessage('SGN_tinyMCE_enable');
+    if(!isTinyMCEEditable())
+      sendEventMessage('SGN_tinyMCE_enable');
+    return;
     
   }else{
     $(".sgn_input").prop("disabled", false);
@@ -279,8 +314,15 @@ var enableEdit = function(retryCount){
   
 };
 
+var isSGNEnabled = function() {
+  return $(".sgn_prompt_logout:visible").length > 0 || gSummaryPulled;
+};
+
 var isCRMEnabled = function() {
-  var preferences = SimpleGmailNotes.preferences;
+  if(!isSGNEnabled())
+    return false;
+
+  var preferences = SGNC.preferences;
   var enabled = (preferences && preferences["showCRMButton"] !== "false");
 
   return enabled;
@@ -309,7 +351,7 @@ var showLoginPrompt = function(retryCount){
 
 var getNoteProperty = function(properties, propertyName){
   if(!properties){
-    console.log("Warning, no property found");
+    debugLog("Warning, no property found");
     return "";
   }
 
@@ -323,6 +365,9 @@ var getNoteProperty = function(properties, propertyName){
 };
 
 var setBackgroundColorWithPicker = function(backgroundColor){
+  if(!backgroundColor)
+    return;
+
   var input = SGNC.getCurrentInput();
   if(isRichTextEditor()){
     sendEventMessage('SGN_tinyMCE_set_backgroundColor', {backgroundColor: backgroundColor});
@@ -457,11 +502,14 @@ var postNote = function(email, messageId, crmProp){
   var properties = [{"key" : "sgn-author", "value" : email},
                     {"key" : "sgn-message-id", "value" : messageId}];
 
-  if(crmProp){
+  content = SGNC.getCurrentContent();
+
+  if(crmProp){  //silent push callback
     folderId = crmProp["sgn-gdrive-folder-id"];
     noteId = crmProp["sgn-gdrive-note-id"];
     emailSubject = crmProp["sgn-subject"];
-    content = crmProp["sgn-content"];
+    if(crmProp["note_updated"])
+      content = crmProp["sgn-content"];
 
     properties.push({"key" : "sgn-background-color", "value" : crmProp["sgn-background-color"]});
     properties.push({"key": "sgn-shared", "value": crmProp["sgn-shared"]});
@@ -474,7 +522,6 @@ var postNote = function(email, messageId, crmProp){
     folderId = gCurrentGDriveFolderId;
     noteId = gCurrentGDriveNoteId;
     emailSubject = gCurrentEmailSubject;
-    content = SGNC.getCurrentContent();
 
     var backgroundColor = SGNC.getCurrentBackgroundColor();
     //a new timestamp is not provided
@@ -532,7 +579,7 @@ var postNote = function(email, messageId, crmProp){
   gPreviousContent = content;
 
   //always push the note to CRM (except from CRM succcess)
-  //console.log("@373", properties);
+  //debugLog("@373", properties);
   //if(container.hasClass('sgn-shared') && !skipCRMShare){
   //  shareToCRM(email, messageId, true);
   //}
@@ -555,7 +602,7 @@ var deleteMessage = function(messageId){
 };
 
 var appendTemplateContent = function(email, messageId) {
-  var preferences = SimpleGmailNotes.preferences;
+  var preferences = SGNC.preferences;
   var note = SGNC.getCurrentContent() + preferences['templateContent'];
   $(".sgn_input:visible").val(note);
   if(isRichTextEditor()){
@@ -566,8 +613,280 @@ var appendTemplateContent = function(email, messageId) {
   postNote(email, messageId);
 };
 
+var convertTimestamp = function(timestamp){
+  var result = "";
+  if(timestamp){
+      var receviedDatetime = moment.utc(parseInt(timestamp, 10));
+      var friendlyDate = moment(receviedDatetime).calendar(null, {
+        lastWeek: 'Do MMM',
+        lastDay: '[Yesterday]',
+        sameDay: '[Today]',
+        nextDay: '[Tomorrow]',
+        nextWeek: 'Do MMM',
+        sameElse: 'Do MMM'
+      });
+      var friendlyTime = moment(receviedDatetime).format('hh:mm a');
+
+      result = friendlyDate + ' ' + friendlyTime;
+  }
+
+  return result;
+};
+
+var cleanupSideBar = function(){
+  var isDisplayHistoryPosition = $('.Bs.nH .Bu.y3 .y4').is(":visible");
+  if(isDisplayHistoryPosition){
+    $('.Bs.nH .Bu.y3 .y4').css('height', '0px'); //change history position in main page
+  }
+};
+
+var addCRMNodeToSideBar = function(crmNode, extraClass, sideBarContainerExtraClass){
+  var sidebar = SGNC.getSidebarNode();
+  // create opportunity detail note
+  var sidebarNode = $("<div class='sgn_sidebar sgn_crm_comments'></div>").addClass(extraClass);
+  var sidebarContainerNode = $("<div class='sgn_sidebar_container'></div>").addClass(sideBarContainerExtraClass);
+
+  sidebarContainerNode.append(crmNode);
+  sidebarNode.append(sidebarContainerNode);
+  sidebar.append(sidebarNode);
+
+  if(sidebar.find(".sgn_history:visible").length){
+    sidebar.find(".sgn_history:visible").before(sidebarNode);
+  }
+  else{
+    // debugLog('@601');
+    sidebar.append(sidebarNode);
+  }
+};
+
+var hideCRMSidebarNode = function(){
+  $(".sgn_sidebar.sgn_crm_opportunity").remove();
+  $(".sgn_sidebar.sgn_crm_comments").remove();
+};
+
+var hideHistorySidebarNode = function(){
+  $(".sgn_sidebar.sgn_history").remove();
+};
+
+var appendCommentRecordNodes = function(comments) {
+  $(".sgn_comment_history").empty();
+  if(!comments){
+    return;
+  }
+  var commentRecordNode;
+  for (var i = 0; i < comments.length; i++) {
+    commentRecordNode = generateCommentRecordNode(comments[i]);
+    $(".sgn_comment_history").prepend(commentRecordNode);
+  }
+  updateCommentsTotal();
+}
+
+var generateCommentRecordNode = function(commentData) {
+  if (!commentData){
+    return;
+  }
+  var commentModifiedTime = commentData["modified_datetime"];
+  var commentFormatDay = new Date(parseInt(commentModifiedTime));
+  // var commentFormatDay = convertTimestamp(commentModifiedTime);
+  commentFormatDay = moment(commentFormatDay).fromNow();
+  var commentContent = commentData["content"];
+  var authorName = commentData["author"];
+  var authorImage = commentData["avatar"];
+  var commentRecordNode = $("<div class='sgn_comment_record'></div>");
+  var commentAuthorImageContainer = $("<div class='sgn_comment_author_image'></div>");
+  var commentAuthorImage = $("<img class='sgn_author_image'>").attr("src", authorImage);
+  commentAuthorImageContainer.append(commentAuthorImage); 
+  commentRecordNode.append(commentAuthorImageContainer);
+
+  var commentRecordInfoContainer = $("<div class='sgn_comment_detail_info'></div>");
+  var commentAuthorNameAndTimeNode = $("<div class='sgn_comment_author_and_time'><span class='sgn_comment_author'>" + authorName + "</span> "+
+  "<span class='sgn_comment_time'>" + commentFormatDay + "</span></div>");
+  commentRecordInfoContainer.append(commentAuthorNameAndTimeNode);
+  var commentContentNode = $("<div class='sgn_comment_content_detail'></div>");
+  commentContentNode.text(commentContent);
+  commentRecordInfoContainer.append(commentContentNode);
+  commentRecordNode.append(commentRecordInfoContainer);
+  return commentRecordNode;
+}
+
+var updateCommentUI = function(isLoading) {
+  if (isLoading) {
+    $("button.sgn_comment_send").text('Send...');
+  } else {
+    $("button.sgn_comment_send").text('Send');
+    $("div.sgn_comment_textarea").text('');
+  }
+}
+
+var sendCrmNoteComment = function(email) {
+  var content = $("div.sgn_comment_textarea").text();
+  if(!content)
+    return;
+
+  var subContent = content.substring(0, 1000);
+  var threadId = getCrmThreadId();
+  var commentData = {"thread_id": threadId, "content": subContent};
+
+  var currentMessageId = sgnGmailDom.getCurrentMessageId();
+  var hideEmailInfo = false;
+  var emailData = getCRMShareEmailData(email, currentMessageId, hideEmailInfo);
+  commentData["email_info"] = emailData;
+  commentData["source"] = "sgn";
+  commentData["action"] = 'comment-share';
+  var commentUrl = getCRMCommentUrl(getCrmUser(email), commentData);
+  updateCommentUI(true);
+  $.ajax({                                                                    
+    url: commentUrl,                                                                 
+    dataType: "jsonp",                                                        
+    jsonpCallback: "SimpleGmailNotes.commentNoteCallBack",                    
+    success: function(response){                                              
+      // debugLog("@389", response);                                       
+      updateCommentUI(false);
+    },                                                                        
+    error: function(response){                                                
+      // debugLog("@rsponse", response);
+      updateCommentUI(false);
+      // even for timeout error, it would not return in this closure          
+      //debugLog("Failed to connect to server");                           
+    }                                                                         
+  });
+}
+
+var buildSgnCommentsNode = function(email, noteComments) {
+  var crmCommentNode = $("<div class='sgn_comment_container'></div>");
+  var titleNode = $("<div class='sgn_comment_title'></div>")
+  var inviteTeamMemberNode = $("<div class='sgn_comment_invite'>" + 
+  "<a class='sgn_inviation_action'>Invite Team Member <i class='sgn_member_right_arrow'></a></div>");
+  var showCommentNumberNode = $("<div class='sgn_comment_tips'>Comments</div>");
+  titleNode.append(showCommentNumberNode).append(inviteTeamMemberNode);
+
+  crmCommentNode.append(titleNode);
+  var commentTextAreaContainer = $("<div class='sgn_comment_textarea_container'></div>");
+  var commentActionButtonNode = $("<div class='sgn_comment_buttons'>" + 
+  "<div class='sgn_comment_action_buttons'><button class='sgn_comment_send'>Send</button><button class='sgn_comment_cancel'>Cancel</button></div>" + 
+  "<div class='sgn_comment_emoji'>" + 
+  "<button class='sgn_comment_emoji_item' data-emoji='👍'>👍</button>" + 
+  "<button class='sgn_comment_emoji_item' data-emoji='🤔️'>🤔️</button>" + 
+  "<button class='sgn_comment_emoji_item' data-emoji='😩'>😩</button>" + 
+  "</div></div>");
+  var commentTextArea = $("<div class='sgn_comment_textarea' contenteditable='true' data-text='Add comment here'></div>");
+  var commentErrorNode = $("<div class='sgn_comment_error'></div>");
+  commentTextAreaContainer.append(commentTextArea);
+  commentTextAreaContainer.append(commentActionButtonNode);
+  crmCommentNode.append(commentTextAreaContainer);
+  crmCommentNode.append(commentErrorNode);
+  var commentRecordContainer = $("<div class='sgn_comment_history'></div>");
+  crmCommentNode.append(commentRecordContainer);
+  addCRMNodeToSideBar(crmCommentNode, undefined, "sgn_extra_comment_container");
+  appendCommentRecordNodes(noteComments);
+
+  $("button.sgn_comment_cancel").click(function() {
+    $("div.sgn_comment_textarea").text('');
+  });
+  $("button.sgn_comment_send").click(function() {
+    sendCrmNoteComment(email);
+  });
+  $("button.sgn_comment_emoji_item").click(function() {
+    var commentContent = $("div.sgn_comment_textarea").text();
+    var emoji = $(this).attr("data-emoji");
+    $("div.sgn_comment_textarea").text(commentContent + emoji);
+  });
+  $("a.sgn_inviation_action").click(function() {
+    var inviationUrl = getCRMInvitationMemberUrl(email);
+    sendEventMessage(
+      'SGN_PAGE_open_popup',
+      {
+        url: inviationUrl,
+        windowName: 'sgn-invitation-member',
+        strWindowFeatures: SGNC.getStrWindowFeatures(1000, 700)
+      }
+    );
+  });
+};
+
+
+var removeLoginSidebarNode = function() {
+  $("div.sgn_login_container").remove();
+};
+
+var setupLoginSidebarNode = function() {
+  debugLog("@802----- gCRMLogged iN", gCRMLoggedIn);
+  if ($("div.sgn_login_container").length > 0) {
+    return;
+  }
+  if (gCRMLoggedIn) {
+    return;
+  }
+  var sgnHistoryNode = $("div.sgn_history.sgn_sidebar");
+  if (sgnHistoryNode.length === 0) {
+    return
+  }
+
+  var loginLogoUrl = SGNC.getLogoImageSrc("ed");
+  var loginNodeContainer = $("<div class='sgn_login_container'>" + 
+    "<img class='sgn_comment_login_logo' src=" + loginLogoUrl + "/></div>");
+  var commentIconNode = $("<div class='sgn_comment_login_icon_node'></div>");
+  var commentIcon = $("<img >").attr("src", SGNC.getIconBaseUrl() + "/login-comment-icon.3x.png");
+  commentIconNode.append(commentIcon);
+  loginNodeContainer.append(commentIconNode);
+  var commentLoginContainer = $("<div class='sgn_comment_login_container'>" + 
+    "<div class='sgn_comment_login_title'>Add Comment</div>" + 
+    "<div><button class='sgn_comment_login_button'>Login</button></div></div>");
+  loginNodeContainer.append(commentLoginContainer);
+  sgnHistoryNode.prepend(loginNodeContainer);
+
+  $("button.sgn_comment_login_button").click(function() {
+    var loginUrl = getCRMLoginUrl();
+    sendEventMessage(
+      'SGN_PAGE_open_popup',
+      {
+        url: loginUrl,
+        windowName: 'sgn-login-page',
+        strWindowFeatures: SGNC.getStrWindowFeatures(1000, 700)
+      }
+    );
+
+  });
+}
+
+var setupCRMSidebarNode = function(email, opportunityInfo, noteComments) {
+  // debugLog("@779----- note comments", noteComments);
+  if (!isCRMEnabled() || $(".sgn_crm_opportunity:visible").length) {
+    return;
+  }
+
+  if($.isEmptyObject(opportunityInfo)){
+    return;
+  }
+
+  cleanupSideBar();
+
+  var opportunityInfoNode = $("<div class='sgn_opportunity_info'></div>");
+  var opportunityAvatar = $("<img class='sgn_avatar'>").attr(
+    "src", opportunityInfo["avatar"]);
+  var opportunityName = $("<div class='sgn_opportunity_name'>").text(
+    opportunityInfo["name"]);
+  var opportunityArrow = $("<img class='sgn_arrow'>").attr("src",
+    SGNC.getIconBaseUrl() + "/arrow-right.png");
+
+  opportunityInfoNode.append(opportunityAvatar).append(opportunityName);
+  opportunityInfoNode.append("<div class='sgn_flex_grow'></div>");
+  opportunityInfoNode.append(opportunityArrow);
+
+  addCRMNodeToSideBar(opportunityInfoNode, "sgn_crm_opportunity");
+
+  var _opportunityInfo = opportunityInfo;
+  var _email = email;
+  opportunityInfoNode.click(function(){
+    openCurrentOpportunity(_email, _opportunityInfo.id);
+  });
+  buildSgnCommentsNode(email, noteComments);
+
+};
+
+
 var updateGmailNotePosition = function(injectionNode, notePosition){
-  var preferences = SimpleGmailNotes.preferences;
+  var preferences = SGNC.preferences;
   //var logo = injectionNode.find(".sgn_bart_logo");
   var noticeNode = injectionNode.find(".sgn_notice");
 
@@ -611,14 +930,12 @@ var updateGmailNotePosition = function(injectionNode, notePosition){
 
   if(notePosition == "side-top" || notePosition == "side-bottom"){
     if(notePosition == "side-top"){
-      SimpleGmailNotes.getSidebarNode().prepend(injectionNode);
+      SGNC.getSidebarNode().prepend(injectionNode);
     }else{
-      SimpleGmailNotes.getSidebarNode().append(injectionNode);
+      SGNC.getSidebarNode().append(injectionNode);
     }
-    injectionNode.css("width", "300px");
+    injectionNode.addClass("sgn_sidebar");
     injectionNode.parent().find(".y4").css("display", "none");
-
-
   }else{
 
     if(notePosition == "bottom"){
@@ -636,7 +953,7 @@ var updateGmailNotePosition = function(injectionNode, notePosition){
 };
 
 var isEnableFlexibleHeight = function(){
-  var preferences = SimpleGmailNotes.preferences;
+  var preferences = SGNC.preferences;
   if(!preferences)
     return false;
 
@@ -646,7 +963,7 @@ var isEnableFlexibleHeight = function(){
 };
 
 var isRichTextEditor = function(){
-  var preferences = SimpleGmailNotes.preferences;
+  var preferences = SGNC.preferences;
   if(!preferences)
     return false;
 
@@ -655,9 +972,29 @@ var isRichTextEditor = function(){
   return enableRichtextEditor;
 };
 
+var isDisableConsecutiveWarning = function() {
+  var preferences = SGNC.preferences;
+  if(!preferences)
+    return false;
+
+  var disableConsecutiveWarning = (preferences["disableConsecutiveWarning"] === "true");
+
+  return disableConsecutiveWarning;
+};
+
+
+var isEnableNoteFontBold = function() {
+  var preferences = SGNC.preferences;
+  if(!preferences)
+    return false;
+
+  var enableNoteFontBold = (preferences["enableNoteFontBold"] === "true");
+
+  return enableNoteFontBold;
+};
 
 var isEnableNoDisturbMode = function(){
-  var preferences = SimpleGmailNotes.preferences;
+  var preferences = SGNC.preferences;
   var enableNoDisturbMode = (preferences["enableNoDisturbMode"] !== "false");
 
   return enableNoDisturbMode;
@@ -673,35 +1010,26 @@ var setupOfflineNotice = function(){
     return;
   }
 
-  var warningMessage = SimpleGmailNotes.offlineMessage;
-  var warningIconUrl = SimpleGmailNotes.getIconBaseUrl() + "/warning.3x.png";
+  var warningMessage = SGNC.offlineMessage;
+  var warningIconUrl = "https://www.simplegmailnotes.com/warning.3x.png";
   var warningNode = $("<div class='sgn_inactive_warning'><div class='sgn_offline_message'>" + 
                         "<img src='"+ warningIconUrl +"'>" +
                         warningMessage + "</div></div>");
   var warningNodeCount = $(".sgn_inactive_warning:visible");
 
-  if(SimpleGmailNotes.isInbox()){
-    var containerNode = $(".sgn_container:visible");
-    if(containerNode.find("> .sgn_inactive_warning").length === 0){
-      containerNode.prepend(warningNode);
-    }
-
-    var pageNode = $(".cM.bz");
-    if(pageNode.find("> .sgn_inactive_warning").length === 0){
-      pageNode.prepend(warningNode.clone());
-    }
+  var containerNode = $(".sgn_container:visible");
+  if(containerNode.find("> .sgn_inactive_warning").length === 0){
+    containerNode.prepend(warningNode);
   }
-  else{  //old and new gmail
-    var hookNode = $("#\\:5");
-    if(hookNode.find("> .sgn_inactive_warning").length === 0){
-      hookNode.append(warningNode);
-    }
+
+  var pageNode = $("div.aDP");
+  if(pageNode.find("> .sgn_inactive_warning").length === 0){
+    pageNode.prepend(warningNode.clone());
   }
 };
 
-
 var getNoteHeight = function(){
-  var preferences = SimpleGmailNotes.preferences;
+  var preferences = SGNC.preferences;
   if(!preferences)  //ui not ready
     return;
 
@@ -720,14 +1048,23 @@ var getNoteHeight = function(){
     }
   }
 
-  if(noteHeight && SimpleGmailNotes.isInbox() && noteHeight > 4)
+  if(noteHeight && SGNC.isInbox() && noteHeight > 4)
     noteHeight = 4;
 
   return noteHeight;
 };
 
+var getFontSize = function(preferences){
+  var fontSize = preferences["fontSize"];
+  if(fontSize == "default") {
+    fontSize = parseInt($(".sgn_input").css("font-size"));
+  }
+
+  return fontSize;
+};
+
 var updateUIByPreferences = function(){
-  var preferences = SimpleGmailNotes.preferences;
+  var preferences = SGNC.preferences;
   if(!preferences)  //ui not ready
     return;
   
@@ -737,27 +1074,23 @@ var updateUIByPreferences = function(){
     return;
   }
 
-  
   var fontColor = preferences["fontColor"];
-  if(fontColor)
-    $(".sgn_input").css("color", htmlEscape(fontColor));
-
-  /* 
-  var backgroundColor = preferences["backgroundColor"];
-  if(backgroundColor){
-    $(".sgn_history_note").css("background-color", backgroundColor);
-  }*/
-
-  var fontSize = preferences["fontSize"];
-  if(fontSize != "default"){
+  if(fontColor){
+    $(".sgn_input").css("color", SGNC.htmlEscape(fontColor));
+  }
+  
+  var fontSize = getFontSize(preferences);
+  if(preferences["fontSize"] != "default"){ // if default, do not set
     $(".sgn_input").css("font-size", fontSize + "pt");
   }
-  fontSize = parseInt($(".sgn_input").css("font-size"));
+
+
+  if(isEnableNoteFontBold() && !isRichTextEditor()) {
+    $(".sgn_input").css("font-weight", "bold");
+  }
 
   var noteHeight = getNoteHeight();
-
   $(".sgn_input").css("height", noteHeight * fontSize * 1.2 + 6 + "px");
-  var richTextNoteHeight = parseInt($(".sgn_input").css("height"));
 
   var firstVisible = $(".sgn_container:visible").first();
   $(".sgn_container:visible:not(:first)").hide();
@@ -766,18 +1099,9 @@ var updateUIByPreferences = function(){
   //firstVisible.show();
 
   var notePosition = preferences["notePosition"];
-  var baseUrl = getTinymceUrl();
-  if(isRichTextEditor() && SimpleGmailNotes.getCurrentBackgroundColor()){
-    backgroundColor = SimpleGmailNotes.getCurrentBackgroundColor();
+  if(isRichTextEditor() && SGNC.getCurrentBackgroundColor()){
+    backgroundColor = SGNC.getCurrentBackgroundColor();
   }
-  var tinymceProperties = {
-    baseUrl: baseUrl, 
-    fontSize: fontSize,
-    fontColor: fontColor,
-    //backgroundColor: backgroundColor,
-    height: richTextNoteHeight,
-    cssUrl: SimpleGmailNotes.getCssBaseUrl() + '/style.css'
-  };
 
   firstVisible.removeClass('sgn_position_top');
   firstVisible.removeClass('sgn_position_bottom');
@@ -787,12 +1111,12 @@ var updateUIByPreferences = function(){
   /*
   var showNoteTimeStamp = (preferences["showNoteTimeStamp"] !== "false");
 
-  if(showNoteTimeStamp && SimpleGmailNotes.getNoteTimeStampDom().length > 0 &&
-          SimpleGmailNotes.getNoteTimeStampDom().hasClass("sgn_is_hidden")){
+  if(showNoteTimeStamp && SGNC.getNoteTimeStampDom().length > 0 &&
+          SGNC.getNoteTimeStampDom().hasClass("sgn_is_hidden")){
     SGNC.getNoteTimeStampDom().removeClass("sgn_is_hidden");
   }*/
 
-  if(!SimpleGmailNotes.isInbox()){
+  if(!SGNC.isInbox()){
     updateGmailNotePosition(firstVisible, notePosition);
     //reset class attribute with current 'position' class
     firstVisible.addClass('sgn_position_' + notePosition);
@@ -802,19 +1126,17 @@ var updateUIByPreferences = function(){
       $(".sgn_prompt_logout").prepend(sgn_current_connection);
     }
   }else{
-    //var noteTimeStampDom = SimpleGmailNotes.getNoteTimeStampDom();
+    //var noteTimeStampDom = SGNC.getNoteTimeStampDom();
     //if($(".sgn_clear_right").length <= 0){
       //$("<div class='sgn_clear_right'></div>").insertAfter(noteTimeStampDom);
     //}
-  }
-  if(isRichTextEditor()){
-    sendEventMessage('SGN_tinyMCE_init', tinymceProperties);
   }
 
   var showConnectionPrompt = (preferences["showConnectionPrompt"] !== "false");
   if(!showConnectionPrompt){
     $(".sgn_current_connection").hide();
   }
+
 
   var showAddCalendar = (preferences["showAddCalendar"] !== "false");
   if(!showAddCalendar){
@@ -873,7 +1195,7 @@ var getCRMShareEmailData = function(email, messageId, hideEmailInfo) {
   var container = SGNC.getContainer();
   
   //do not upload the HTML
-  emailNote = stripHtml(emailNote);
+  emailNote = SGNC.stripHtml(emailNote);
 
   //get the contacts
   var contactElements =  $('span.gD, span.hb span');
@@ -910,32 +1232,24 @@ var getCRMShareEmailData = function(email, messageId, hideEmailInfo) {
 
       if($(this).parents(".qu").length){
         fromAddress = $(this).parents(".qu").first().text(); //this one will be overwritten by others
+        if (!SGNC.containsEmailTag(fromAddress)) {
+          var fromAddressNode = $(this).parents(".qu").first().find("span").first();
+          if (fromAddressNode.length) {
+            var fromEmail = fromAddressNode.attr("email");
+            var fromName = fromAddressNode.attr("name");
+
+            fromAddress = fromName + "<" + fromEmail + ">";
+          }
+        }
       }
 
     });
   }
 
   //get the thread id
-  var threadId = "";
-  var sgnLastMessageId = "";
-  if(SGNC.isNewGmail()){
-    sgnLastMessageId = sgnGmailDom.getLastMessageId();
-    threadId = sgnGmailDom.getCurrentThreadId();
-  }
-  else if(SGNC.isInbox()){
-    threadId = sgnGmailDom.getCurrentMessageId();
-  }
-  else {  //classic gmail
-    if(gClassicGmailConversation){
-      threadId = sgnGmailDom.getCurrentMessageId();
-    }
-    else{
-      //for classic gmail UI & non conversation mode, 
-      //it seems impossible to get thread id
-    }
-  }
-  
-
+  var sgnLastMessageId = getCrmLastMessageId();
+  var threadId = getCrmThreadId();
+  // debugLog("@1159----", threadId, sgnLastMessageId);
   //get email related stuff
   var subject = "";
   var excerpt = "";
@@ -958,19 +1272,22 @@ var getCRMShareEmailData = function(email, messageId, hideEmailInfo) {
   fontColor = rgb2hex(editorNode.css("color"));
 
   var hideSuccuess = "";
-  if(SimpleGmailNotes.preferences["showCRMSuccessPage"] === "false")
+  if(SGNC.preferences["showCRMSuccessPage"] === "false")
     hideSuccuess = "1";
 
   var opportunityId = container.attr("data-sgn-opp-id");
   var noteTimestamp = container.attr("data-note-timestamp");
   var isConversation = sgnGmailDom.isConversationMode();
   //var autoSync = container.hasClass("sgn-auto-sync");
+  var emailDate = sgnGmailDom.getEmailDate();
 
   //wrap up the data
   var data = {
     contacts: contacts.slice(0, 10),
     email: {
       id: messageId,
+      sgn_email_date: emailDate,
+      sgn_email_date_timezone_offset: new Date().getTimezoneOffset(),
       email_address: email,
       note: emailNote,
       subject: subject,
@@ -991,22 +1308,10 @@ var getCRMShareEmailData = function(email, messageId, hideEmailInfo) {
   };
 
 
-  //console.log("@633", data);
+  //debugLog("@633", data);
   return data;
 };
 
-var getStrWindowFeatures = function(newWindowWidth, newWindowHeight) {
-  var dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
-  var dualScreenTop = window.screenTop !== undefined ? window.screenTop : window.screenY;
-  var width = window.innerWidth;
-  var height = window.innerHeight;
-  var newWindowTop = (height - newWindowHeight) / 2 + dualScreenTop;
-  var newWindowLeft = (width - newWindowWidth) / 2 + dualScreenLeft;
-  var strWindowFeatures = ('innerHeight=' + newWindowHeight +
-                           ', innerWidth=' + newWindowWidth +
-                           ', top=' + newWindowTop + ', left=' + newWindowLeft);
-  return strWindowFeatures;
-};
 
 var getCrmUser = function(email) {
   var crmUser = gCrmUserEmail;
@@ -1015,14 +1320,16 @@ var getCrmUser = function(email) {
   return crmUser;
 };
 
+var gSharePopupWindowTime;
 var openCRMSharePopup = function(url){
   sendEventMessage(
     'SGN_PAGE_open_popup',
     { url: url,
       windowName: 'sgn-share-popup',
-      strWindowFeatures: getStrWindowFeatures(1000, 700)
+      strWindowFeatures: SGNC.getStrWindowFeatures(1000, 700)
     }
   );
+  gSharePopupWindowTime = Date.now();
 };
 
 var shareToCRM = function(email, messageId, isSilentShare, hideEmailInfo){
@@ -1038,14 +1345,16 @@ var shareToCRM = function(email, messageId, isSilentShare, hideEmailInfo){
   if(isSilentShare && !container.find(".sgn_share:visible"))
     return;
 
+  if(gSyncFutureNotesEnabled || gGmailWatchEnabled){
+    hideEmailInfo = false;  //if autosync, always collect
+  }
+
   var emailData = getCRMShareEmailData(email, messageId, hideEmailInfo);
   if(isSilentShare)
     emailData['action'] = 'silent-share';
   else{
     emailData['action'] = 'click-share';
     emailData['show_prefs'] = '1';
-    // For new login
-    emailData['locli'] = 'crx';
   }
 
   
@@ -1058,11 +1367,11 @@ var shareToCRM = function(email, messageId, isSilentShare, hideEmailInfo){
       dataType: "jsonp",
       jsonpCallback: "SimpleGmailNotes.silentShareCallBack",
       success: function(response){
-        // console.log("@389", response);
+        // debugLog("@389", response);
       },
       error: function(response){
         // even for timeout error, it would not return in this closure
-        //console.log("Failed to connect to server");
+        //debugLog("Failed to connect to server");
       }
     });
   }
@@ -1107,6 +1416,78 @@ var getLogoNode = function(className){
           ).attr('href', SGNC.getOfficalSiteUrl("ed")).append(imageNode);
 };
 
+var openCurrentOpportunity = function(email, opportunityId){
+  if(!opportunityId)
+    opportunityId = SGNC.getContainer().attr("data-sgn-opp-id");
+
+  if (!opportunityId)
+    return;
+
+  var container = SGNC.getContainer();
+  var errorNode = container.find(".sgn_error.sgn_custom:visible");
+  if (errorNode && errorNode.text())
+    return;
+
+  var url = getCRMOpportunityDetailUrl(
+    getCrmUser(email), opportunityId);
+
+  sendEventMessage(
+    'SGN_PAGE_open_popup',
+    {
+      url: url,
+      windowName: 'sgn-opportunity-popup',
+      strWindowFeatures: SGNC.getStrWindowFeatures(1000, 700)
+    }
+  );
+};
+
+gSgnPrintKey = "SGN_PRINT";
+var setPrintInfo = function(email, note) {
+  var properties = getPrintInfoProperties();
+  var printObj = {
+    'note': note,
+    'properties': properties,
+  };
+  SGNC.setStorage(email, gSgnPrintKey, JSON.stringify(printObj));
+
+};
+
+var getPrintInfo = function(email) {
+  // debugLog("@418 email print", email);
+  var printInfo = {};
+  var printInfoStr = SGNC.getStorage(email, gSgnPrintKey);
+  if (printInfoStr) {
+    printInfo = JSON.parse(printInfoStr);
+  }
+
+  return printInfo;
+};
+
+var removePrintInfo = function(email) {
+  SGNC.removeStorage(email, gSgnPrintKey);
+};
+
+var getPrintInfoProperties = function() {
+  var preferences = SimpleGmailNotes.preferences;
+  var showPrintingNote = (preferences["showPrintingNote"] !== "false");
+  var fontSize = preferences["fontSize"];
+  var properties = {"showPrintingNote": showPrintingNote,
+                    "isRichTextEditor": isRichTextEditor()};
+  if(fontSize != "default"){
+    properties['font-size'] = fontSize;
+  }
+
+  return properties;
+};
+
+var isGmailPrintView = function() {
+  if (window.location.href.indexOf("view=pt") > 0) {
+    return true;
+  }
+
+  return false;
+};
+
 var setupNoteEditor = function(email, messageId){
   SGNC.appendLog("enterSetupNote");
   debugLog("Start to set up notes");
@@ -1118,12 +1499,12 @@ var setupNoteEditor = function(email, messageId){
   var moreButton = $(".hA").parents("div[role=button]:first");
   moreButton.css("background", "gray");
   moreButton.on('click', function() {
-    console.log("@click");
+    debugLog("@click");
   });
   bindPrintButtons();
   */
   
-  if(SimpleGmailNotes.isInbox()){
+  if(SGNC.isInbox()){
     var dataNode = sgnGmailDom.inboxDataNode();
     injectionNode.addClass("sgn_inbox");
     subject = dataNode.parent().text();
@@ -1143,8 +1524,8 @@ var setupNoteEditor = function(email, messageId){
   }else{    //this works for both old and new gmail UI
     subject = $(".ha h2.hP:visible").text();
     var notePosition = "top";
-    if(SimpleGmailNotes.preferences){
-      notePosition = SimpleGmailNotes.preferences["notePosition"];
+    if(SGNC.preferences){
+      notePosition = SGNC.preferences["notePosition"];
     }
     updateGmailNotePosition(injectionNode, notePosition);
   }
@@ -1188,8 +1569,7 @@ var setupNoteEditor = function(email, messageId){
     }
 
     var content = SGNC.getCurrentContent();
-    var printInfoProperties = getPrintInfoProperties();
-    setPrintInfo(gSgnUserEmail, content, printInfoProperties);
+    setPrintInfo(gSgnUserEmail, content);
 
     //var content = currentInput.val();
     if(!isDisabled && !isSameContent(gPreviousContent, SGNC.getCurrentContent())){
@@ -1200,10 +1580,20 @@ var setupNoteEditor = function(email, messageId){
       showNotice("Saving note ...", "note_saving");
       postNote(email, messageId);
 
-      //do the auto push, only if used enabled auto sync or sync future
-      if(!$(event.relatedTarget).is(".sgn_share.sgn_action") &&
-      (gGmailWatchEnabled || gSyncFutureNotesEnabled))  
+      if(gGmailWatchEnabled || gSyncFutureNotesEnabled){  
+        // debugLog('@1412');
         shareToCRM(email, messageId, true);
+      }
+
+      //setTimeout(function(email, messageId){
+        //debugLog('@1409', gSharePopupWindowTime, Date.now() - gSharePopupWindowTime);
+        //do the auto push, only if used enabled auto sync or sync future
+        //if((!gSharePopupWindowTime ||  (Date.now() - gSharePopupWindowTime) > 200) &&
+         //  (gGmailWatchEnabled || gSyncFutureNotesEnabled)){  
+          //debugLog('@1412');
+          //shareToCRM(email, messageId, true);
+        //}
+      //}, 100, email, messageId);
     }
 
     return true;
@@ -1224,7 +1614,6 @@ var setupNoteEditor = function(email, messageId){
       textAreaNode.css("background-color", backgroundColor);
     }
   }
-
 
   var searchLogoutPrompt = $("<div class='sgn_prompt_logout'/></div>" )
     .html("" + 
@@ -1270,7 +1659,7 @@ var setupNoteEditor = function(email, messageId){
   var loginPrompt = $("<div class='sgn_prompt_login'/></div>" )
     .html("Please <a class='sgn_login sgn_action'>login</a> " +
             "your Google Drive to start using Simple Gmail Notes" + 
-            " <a class='sgn_disable_account sgn_action'>Disable extension for this Gmail Account</a>" )
+            " <a class='sgn_disable_account sgn_action'>Disable extension for this account</a>" )
     .hide();
   var emptyPrompt = $("<div class='sgn_padding'>&nbsp;<div>");
   var revokeErrorPrompt = $("<div class='sgn_error sgn_revoke'><div>")
@@ -1290,11 +1679,11 @@ var setupNoteEditor = function(email, messageId){
   var userErrorPrompt = $("<div class='sgn_error sgn_user'></div>")
                             .html("Failed to get Google Driver User");
 
-  var loginErrorPrompt = $("<div class='sgn_error sgn_login'></div>")
-                            .html("Failed to login Google Drive");
+  var loginErrorPrompt = $("<div class='sgn_error sgn_login'>Failed to login Google Drive: *error*<br/>" + 
+                            "<span class='sgn_alternate_login'>" + 
+                            "If the problem persists, please try the <a class='sgn_login_sgn_web sgn_action'>alternate login</a>.</span></div>");
 
-  var customErrorPrompt = $("<div class='sgn_error sgn_custom'></div>");
-
+  var customErrorPrompt = $("<div class='sgn_error sgn_custom'>*error*</div>");
 
   var crmErrorPrompt = $("<div class='sgn_error sgn_crm'></div>");
 
@@ -1303,12 +1692,15 @@ var setupNoteEditor = function(email, messageId){
                         "<span class='sgn_note_timestamp_content'></span>"+
                         "</div>");
 
+  if(!SGNC.isChrome()){ // only show alternate login for chrome
+    // loginErrorPrompt.find(".sgn_alternate_login").remove();
+  }
 
   if(isRichTextEditor()){
     sendEventMessage('SGN_tinyMCE_remove');
   }
 
-  if(SimpleGmailNotes.isInbox()){
+  if(SGNC.isInbox()){
     searchLogoutPrompt.find(".sgn_share").remove();
   }
 
@@ -1333,10 +1725,10 @@ var setupNoteEditor = function(email, messageId){
   injectionNode.prepend(searchLogoutPrompt);
   injectionNode.prepend(emptyPrompt);
   injectionNode.append(getLogoNode('sgn_bart_logo_bottom'));
-  console.log("@1329");
+  // debugLog("@1329");
   $(".sgn_error").hide();
 
-  $('.sgn_modal_list_notes').featherlight('text',{
+  injectionNode.find('.sgn_modal_list_notes').featherlight('text',{
     width: 800,
    	height: 600,
     beforeOpen: function(event){
@@ -1352,7 +1744,7 @@ var setupNoteEditor = function(email, messageId){
     }
   });
 
-  $(".sgn_action").click(function(){
+  injectionNode.on("click", ".sgn_action", function(){
     var classList =$(this).attr('class').split(/\s+/);
     $.each(classList, function(index, item){
       if(item != 'sgn_action'){  //for all other actions
@@ -1376,12 +1768,6 @@ var setupNoteEditor = function(email, messageId){
           appendTemplateContent(email, messageId);
         }
 
-        if(action == "disable_account"){
-          if(!confirm("Are you sure to disable Simple Gmail Notes for '" + email + "'?" +
-                      "\n(You could re-enable it later from the preferences page.)"))
-            return;
-
-        }
 
         /*
         if (action === "shared") {
@@ -1399,59 +1785,60 @@ var setupNoteEditor = function(email, messageId){
           return;
         }
 
+        if (action === 'login_sgn_web') {
+          launchSGNWebLogin(email, messageId);
+          return;
+        }
+
         if (action === "open_opportunity") {
-          var opportunityId = SGNC.getContainer().attr("data-sgn-opp-id");
-          if (!opportunityId)
-            return;
-
-          var container = SGNC.getContainer();
-          var errorNode = container.find(".sgn_error.sgn_custom:visible");
-          if (errorNode && errorNode.text())
-            return;
-
-          var url = getCRMOpportunityDetailUrl(
-            getCrmUser(email), opportunityId);
-
-          sendEventMessage(
-            'SGN_PAGE_open_popup',
-            {
-              url: url,
-              windowName: 'sgn-opportunity-popup',
-              strWindowFeatures: getStrWindowFeatures(1000, 700)
-            }
-          );
+          openCurrentOpportunity(email);
         }
 
-        if (action != "modal_list_notes"){
+        if(action == "disable_account"){
+          var confirmed = confirm("Are you sure to disable Simple Gmail Notes for '" + email + "'?" +
+                      "\n(You could re-enable it later from the preferences page.)");
+
+          if(!confirmed)
+            return;
+
+        }
+
+        if (action == "modal_list_notes"){
+          //do nothing
+        }
+        else {
+          // debugLog('@1703', action);
+          // by default, send all actions to background
           sendBackgroundMessage(request);
-
-          if (action == "disable_account"){
-            alert("Please refresh browser to make the changes effective.");
-          }
         }
 
+        if (action == "disable_account"){ // confirmed and worked
+          alert("Please refresh browser to make the changes effective.");
+        }
       }
     });
   });
 
 
-  $(".sgn_current_connection").attr("href", getSearchNoteURL());
+  injectionNode.find(".sgn_current_connection").attr("href", getSearchNoteURL());
   //$(".sgn_search").attr("href", getSearchNoteURL());
   
   /*$(".sgn_search").click(function(){
     sendBackgroundMessage({action: 'modal_list_notes', email: email, gdriveFolderId: gCurrentGDriveFolderId});
   });*/
 
-  $(".sgn_add_calendar").attr("href", getAddCalendarURL(messageId));
+  injectionNode.find(".sgn_add_calendar").attr("href", getAddCalendarURL(messageId));
   
   //set up color picker
-  $(".sgn_color_picker_value").simpleColor({columns:4, 
+  injectionNode.find(".sgn_color_picker_value").simpleColor({columns:4, 
                                       cellWidth: 30,
                                       cellHeight: 30,
                                       cellMargin: 5,
                                       colors: [
-                                          'D8EAFF', 'C7F6F5', 'FFFF99',
-                                          'ACFDC1', 'E1E1E1', 'FED0C4', 'DAD3FE', 'F1CDEF'
+                                          'D8EAFF', 'C7F6F5', 'FFFF99', 'ACFDC1', 
+                                          'E1E1E1', 'FED0C4', 'DAD3FE', 'F1CDEF',
+                                          'c6b3cc', 'c7d9c2', 'dedcab', 'afc0e6',     
+                                          'eaa09a', 'e6b798', 'e5a9bb', 'b3ea82'
                                       ],
                                       //colors: [
                                        // 'C8FBFE', 'CBFEF1', 'D6FFD1', 'E8FFC1', 'FAFDBB',
@@ -1472,9 +1859,9 @@ var setupNoteEditor = function(email, messageId){
                                  } 
                               });
 
-  $(".sgn_color_picker_button").click(function(e){
-	if(e.target != this){
-	  return;
+  injectionNode.find(".sgn_color_picker_button").click(function(e){
+    if(e.target != this){
+      return;
     }
 
 //$(this).parents(".sgn_color_picker").find(".simpleColorDisplay").click();
@@ -1519,7 +1906,7 @@ var setupOpportunityListOpener = function(email) {
       {
         url: url,
         windowName: 'sgn-opportunity-popup',
-        strWindowFeatures: getStrWindowFeatures(1000, 700)
+        strWindowFeatures: SGNC.getStrWindowFeatures(1000, 700)
       }
     );
   });
@@ -1548,10 +1935,39 @@ var revokeSummaryNote = function(messageId){
   sendEventMessage("SGN_PAGE_force_reload");  //no effect to the page script now
 };
 
-var updateNotesOnSummary = function(userEmail, pulledNoteList){
-  var preferences = SimpleGmailNotes.preferences;
-  var addAbstractNode = function(mailNode, abstractNode){
+var getEmailListCommentsNode = function(emailComments) {
+    if (!emailComments) {
+        return;
+    }
+
+    var emailCommentsNode = $("<div class='sgn_email_comments_container'><div class='sgn_email_comments_header'>CRM Comments</div></div>");
+    var emailCommentListNodeContainer = $("<div class='sgn_email_comments'></div>");
+    for (var i = 0; i < emailComments.length; i++) {
+        var emailComment = emailComments[i];
+
+      var commentFormatDay = new Date(parseInt(emailComment["created_datetime"]));
+      commentFormatDay = moment(commentFormatDay).fromNow();
+        var emailCommentNode = $("<div class='sgn_email_comment'></div>");
+        var authorName = emailComment["author_name"];
+        if (!authorName) {
+          authorName = emailComment["author"];
+        }
+        var emailCommentTitleNode = $("<div class='sgn_email_comment_title'><span class='sgn_email_comment_author'>" + authorName+ "</span>" +
+                                        "<span>" + commentFormatDay + "</span></div>");
+        var emailCommentContentNode = $("<div class='sgn_email_comment_content'>" + emailComment["content"] + "</div>");
+        emailCommentNode.append(emailCommentTitleNode);
+        emailCommentNode.append(emailCommentContentNode);
+        emailCommentListNodeContainer.append(emailCommentNode);
+    }
+
+    emailCommentsNode.append(emailCommentListNodeContainer);
+
+    return emailCommentsNode;
+}
+
+var getAbstractSummaryHook = function(mailNode) {
     var hook;
+    var preferences = SGNC.preferences;
     if(SGNC.isInbox()){
       hook = $(mailNode).find("div.bg");
     } else if (preferences["abstractStyle"] === "inbox_reminder") {
@@ -1567,8 +1983,15 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
         $(mailNode).find(".xT .y6").before("<div class='yi'>");
         hook = $(mailNode).find(".xT .yi"); //new gmail
       }
+   }
 
-    }
+   return hook;
+}
+
+var updateNotesOnSummary = function(userEmail, pulledNoteList){
+  var preferences = SGNC.preferences;
+  var addAbstractNode = function(mailNode, abstractNode){
+    var hook = getAbstractSummaryHook(mailNode);
     if(!hook.find(".sgn").length)
       if (preferences["abstractPosition"] === "before-labels"
           && preferences["abstractStyle"] !== "inbox_reminder") {
@@ -1576,6 +1999,7 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
       } else {
         hook.append(abstractNode);
       }
+
   };
 
   var hasMarked = function(mailNode, timestamp){
@@ -1593,27 +2017,43 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
     return true;
   };
 
+  var markCRMComments = function(mailNode, emailId) {
+    var emailCommentsNode;
+    var hook = getAbstractSummaryHook(mailNode);
+    var emailComments = gCRMPullHistoryCache[emailId];
+    if (emailComments && emailComments.length && !hook.find(".sgn_email_comments_container").length) {
+      var emailCommentsNode = getEmailListCommentsNode(emailComments.slice(0, 20));
+      var sgnConainer = hook.find(".sgn");
+      var commentIcon = $("<img class='sgn_comment_icon' src='"+ SGNC.getIconBaseUrl()+"/new-comment.png' />");
+      sgnConainer.prepend(commentIcon);
+      sgnConainer.prepend(emailCommentsNode);
+    }
+
+  };
+
   var markAbstract = function(mailNode, note, emailKey, timestamp){
     var abstractNode;
 
     if(note && note.description && note.description != gSgnEmtpy){
       if(SGNC.isInbox()){
         abstractNode = $('<span class="sgn sgn_inbox">' +
-                            '<span class="" title="' + htmlEscape(note.description) + '" style="">' + 
-                            htmlEscape(note.short_description) + '</span></span>' );
+                            '<span class="" title="' + SGNC.htmlEscape(note.description) + '" style="">' + 
+                            SGNC.htmlEscape(note.short_description) + '</span></span>' );
       } else {    //old and new gmail
         var abstractNote = note.short_description;
         if (preferences["abstractStyle"] === "inbox_reminder")
           abstractNote = note.description;
 
         abstractNode = $('<div class="ar as bg sgn">' +
-                            '<div class="at" title="' + htmlEscape(note.description) + 
-                            '" style="background-color: #ddd; border-color: #ddd;">' + 
+                            '<div class="at" title="' + SGNC.htmlEscape(note.description) + 
+                            '" style="background-color: #ddd; border-color: #ddd;display:inline-block">' + 
                             '<div class="au" style="border-color:#ddd"><div class="av" style="color: #666">' + 
-                            htmlEscape(abstractNote) + '</div></div>' +
+                            SGNC.htmlEscape(abstractNote) + '</div></div>' +
                        '</div></div>');
       }
+
       var backgroundColor = gAbstractBackgroundColor;
+
       var customNoteColor = getNoteProperty(note.properties, 'sgn-background-color');
       if(customNoteColor)
         backgroundColor = customNoteColor;
@@ -1651,20 +2091,23 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
     $.each(pulledNoteList, function(index, item){
       var currentItem = gEmailIdNoteDict[item.id];
 
+      var emailNoteInfo = {"description": item.description,
+                       "short_description": item.short_description,
+                       "properties": item.properties};
+
       if(currentItem && item){
         var currentTimestamp = getNoteProperty(currentItem.properties, "sgn-note-timestamp");
         var newTimestamp = getNoteProperty(item.properties, "sgn-note-timestamp");
 
-        //console.log("@1558", currentTimestamp, newTimestamp);
+        //debugLog("@1558", currentTimestamp, newTimestamp);
 
         //current note have a better timestamp
         if(currentTimestamp && newTimestamp && newTimestamp <= currentTimestamp)
           return;
       }
 
-      gEmailIdNoteDict[item.id] = {"description": item.description, 
-                                   "short_description": item.short_description,
-                                   "properties": item.properties};
+      gEmailIdNoteDict[item.id] = emailNoteInfo;
+
     });
   }
 
@@ -1672,6 +2115,10 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
   $("*[sgn_email_id]").each(function(){
     var emailId = $(this).attr("sgn_email_id");
     var emailNote = gEmailIdNoteDict[emailId];
+
+    if(typeof emailNote === 'undefined')
+      return;
+
 
     if(emailNote && emailNote.description && $(this).find(".sgn").css("display") == "none"){
       $(this).find(".sgn").remove();  //remove the element, so it would be filled later
@@ -1687,22 +2134,40 @@ var updateNotesOnSummary = function(userEmail, pulledNoteList){
     if(!timestamp.startsWith("20")) //invalid timestamp format
       timestamp = "";
 
-    //console.log("@1587", timestamp);
+    //debugLog("@1587", timestamp);
     if(!hasMarked($(this), timestamp)){
       markAbstract($(this), emailNote, emailId, timestamp);
     }
 
+    if (isCRMEnabled()) {
+      markCRMComments($(this), emailId);
+    }
+
+  });
+ $("div.sgn").hover(
+  function() {
+    var positionLeft = $(this).position().left;
+    var positionTop = $(this).position().top;
+    var commentContainer = $(this).find("div.sgn_email_comments_container");
+    commentContainer.css({"left": positionLeft, "top": positionTop + 20});
+    commentContainer.show();
+  },
+  function() {
+    var commentContainer = $(this).find("div.sgn_email_comments_container");
+    commentContainer.hide();
   });
 };
 
+
 var gPendingCRMPullList = [];
-var gCRMPullHistoryDict = {};
+var gCRMPullHistoryCache = {};
+
 var batchPullCRMNoteList = function(userEmail, requestList){
   if(!gCRMLoggedIn){
     if(gPendingCRMPullList.length < 500){  //CRM unlikely to be used in future
       gPendingCRMPullList = gPendingCRMPullList.concat(requestList);
-      requestList = [];
     }
+    requestList = [];
   }
   else{
     requestList = gPendingCRMPullList.concat(requestList);
@@ -1717,9 +2182,9 @@ var batchPullCRMNoteList = function(userEmail, requestList){
   //make sure the request was not done before
   for(var i=0; i<requestList.length; i++){
     var emailId = requestList[i];
-    if(!(emailId in gCRMPullHistoryDict)){
+    if(!(emailId in gCRMPullHistoryCache)){
       finalRequestList.push(emailId);
-      gCRMPullHistoryDict[emailId] = 1;
+      gCRMPullHistoryCache[emailId] = [];
     }
   }
 
@@ -1735,11 +2200,11 @@ var batchPullCRMNoteList = function(userEmail, requestList){
     jsonpCallback: "SimpleGmailNotes.batchPullNotesCallBack",
     timout: 3000,
     success: function(response){
-      //console.log("@389", response);
+      //debugLog("@389", response);
     },
     error: function(){
       //timeout found
-      //console.log("timeout for pull note request");
+      //debugLog("timeout for pull note request");
     }
   });
 
@@ -1750,7 +2215,6 @@ var pullNotes = function(userEmail, requestList){
   var pendingPullList = [];
 
   debugLog("@418, pulling notes");
-
 
   //batch pull logic here
   if(requestList.length){
@@ -1833,7 +2297,7 @@ var showSearchResult = function(notes, email){
     var emailUrl = getHistoryNoteURL(notes[i].messageId); 
     var properties = notes[i].properties;
     var modalNoteColor = getNoteProperty(properties, 'sgn-background-color');
-    var preferences = SimpleGmailNotes.preferences;
+    var preferences = SGNC.preferences;
     if(!modalNoteColor){
       modalNoteColor = preferences["backgroundColor"];  
     }
@@ -1843,7 +2307,7 @@ var showSearchResult = function(notes, email){
 
     var title = notes[i].title;
     var subject = title;
-    var shortDescription = htmlEscape(notes[i].shortDescription);
+    var shortDescription = SGNC.htmlEscape(notes[i].shortDescription);
 
     if(gSearchContent){
       var re = new RegExp(gSearchContent, 'gi');
@@ -1919,9 +2383,9 @@ var showSearchResult = function(notes, email){
 
 
 var getCRMShareEmailListData = function(email){
-  var fontColor = SimpleGmailNotes.preferences["fontColor"];
+  var fontColor = SGNC.preferences["fontColor"];
   var hideSuccuess = "";
-  if(SimpleGmailNotes.preferences["showCRMSuccessPage"] === "false")
+  if(SGNC.preferences["showCRMSuccessPage"] === "false")
     hideSuccuess = "1";
 
   var crmData = getSelectedNotesData();
@@ -2023,7 +2487,7 @@ var switchThead = function(email){
       sendEventMessage("SGN_PAGE_open_popup",
                 {url: url,
                 windowName: 'sgn-share-notes-popup',
-                strWindowFeatures: getStrWindowFeatures(816, 766)
+                strWindowFeatures: SGNC.getStrWindowFeatures(816, 766)
                 });
     });
 
@@ -2274,13 +2738,14 @@ var updateShareIconMeta = function(messageId, shareInfo){
     container.attr("data-sgn-opp-name", opportunityName);
     container.attr("data-sgn-opp-url", opportunityUrl);
     container.attr("data-note-timestamp", noteTimestamp);
+    //container.find(".sgn_opp_name").text(opportunityName);  //use sidebar to display now
 
-    container.find(".sgn_opp_name").text(opportunityName);
     container.find(".sgn_open_opportunity")
       .attr("title", "Click to view more details: " + opportunityName)
       .css('display', 'flex');
 
-    SGNC.getContainer().find(".sgn_error.sgn_custom").text("");
+    // hide the status by next request
+    // SGNC.getContainer().find(".sgn_error.sgn_custom").text("");
   }
 
 };
@@ -2296,17 +2761,34 @@ var searchModalNotes = function(email){
 
 };
 
-var showError = function(errorMessage, type){
+var hideError = function(errorNode){
+  errorNode.hide();
+  errorNode.text("");
+};
+
+var showError = function(errorNode, errorMessage){
   debugLog("Error in response:", errorMessage);
   var date = new Date();
   var timestamp = date.getHours() + ":" + date.getMinutes() + ":" + 
                     date.getSeconds();
-  $(".sgn_error_timestamp").text("(" +  timestamp + ")");
+
   $(".sgn_error").hide();
-  $(".sgn_error.sgn_" + type).show();
-  if(type == "custom"){
-    $(".sgn_error.sgn_custom").text(errorMessage);
-  }
+  $(".sgn_error_timestamp").text("(" +  timestamp + ")");
+
+
+  if(!errorMessage)
+    errorMessage = "";
+
+  var innerHTML = errorNode.html();
+  var upgradeURL = getCRMUpgradeUrl();
+
+  var finalErrorMessage = innerHTML;
+  finalErrorMessage = finalErrorMessage.replace("*error*", errorMessage);
+  finalErrorMessage = finalErrorMessage.replace("*upgrade*", "<a href='" + upgradeURL + "'>upgrade</a>");
+
+  errorNode.html("<div>" + finalErrorMessage + "</div>");
+  
+  errorNode.show();
 };
 
 var showOfflineNotice = function(){
@@ -2316,14 +2798,14 @@ var showOfflineNotice = function(){
 
 var showNoteModifiedTime = function(modifiedTime){
 
-  var preferences = SimpleGmailNotes.preferences;
+  var preferences = SGNC.preferences;
   if(!preferences)  //ui not ready
     return;
 
   var showNoteTimeStamp = (preferences["showNoteTimeStamp"] !== "false");
 
-  if(showNoteTimeStamp && SimpleGmailNotes.getNoteTimeStampDom().length > 0 &&
-          SimpleGmailNotes.getNoteTimeStampDom().hasClass("sgn_is_hidden")){
+  if(showNoteTimeStamp && SGNC.getNoteTimeStampDom().length > 0 &&
+          SGNC.getNoteTimeStampDom().hasClass("sgn_is_hidden")){
     SGNC.getNoteTimeStampDom().removeClass("sgn_is_hidden");
   }
 
@@ -2333,7 +2815,7 @@ var showNoteModifiedTime = function(modifiedTime){
 };
 
 var showNotice = function(message, type, duration){
-  var preferences = SimpleGmailNotes.preferences;
+  var preferences = SGNC.preferences;
   if(preferences['showSavingStatus'] === 'false' && type =='note_saving')
     return;
 
@@ -2349,14 +2831,23 @@ var showNotice = function(message, type, duration){
   }
 };
 
+var closeWindow = function() {
+    sendEventMessage("SGN_PAGE_close_window");
+};
+
 var logoutCRM = function(){
-    gCrmUserEmail = "";
-    sendBackgroundMessage({action:"update_crm_user_email", 
-                           email: ""});
+    sendBackgroundMessage({action:"update_crm_user_info", 
+                           email: gSgnUserEmail,
+                           crm_user_email: "",
+                           crm_user_token: ""});
     $(".sgn_opportunity_list_opener").remove();
+    gCrmUserEmail = "";
+    gCrmUserToken = "";
     gCRMLoggedIn = false;
+    setupLoginSidebarNode();
 
     updateShareIcon("default");
+    hideCRMSidebarNode();
     //SGNC.getContainer().find("a.sgn_share img").removeClass("sgn_shared").attr("title", "").attr("src", 
      //   SGNC.getIconBaseUrl() + "/share.24.png");
 };
@@ -2384,7 +2875,7 @@ var updateShareIcon = function(sharedStatus, title){
 
 
 var pullCRMStatus = function(email){
-    if (isCRMEnabled()) {
+    if (isCRMEnabled() && gCrmUserToken) {
       gCRMLoggedInChecked = true;
       $.ajax({
         url: getCheckCRMLoggedInUrl(email),
@@ -2397,14 +2888,15 @@ var pullCRMStatus = function(email){
 };
 
 var getCRMDeleteNotesUrl = function(userEmail, data){
-  var url = SimpleGmailNotes.getCRMBaseUrl() + '/crm/delete_note/?crm_user_email=' +
-                userEmail + '&data=' + encodeURIComponent(data) + "&format=json";
+  var url = SGNC.getCRMBaseUrl() + '/crm/delete_note/?crm_user_email=' + userEmail + 
+                '&token=' + gCrmUserToken +
+                '&data=' + encodeURIComponent(data) + "&format=json";
 
   return url;
 };
 
 var getCRMLoginURL = function(userEmail, idToken){
-  var url = SimpleGmailNotes.getCRMBaseUrl() + 
+  var url = SGNC.getCRMBaseUrl() + 
             '/crm/sgncrx_login/?crm_user_email=' + userEmail + 
             '&id_token=' + idToken;
 
@@ -2412,22 +2904,41 @@ var getCRMLoginURL = function(userEmail, idToken){
 };
 
 var getCRMLogoutURL = function(userEmail) {
-  var url = SimpleGmailNotes.getCRMBaseUrl() + '/crm/google_logout/' + userEmail + '/?is_crx=1';
+  var url = SGNC.getCRMBaseUrl() + '/crm/google_logout/' + userEmail + '/?is_crx=1';
 
   return url;
 };
 
 var getCRMMultipleShareNotesUrl = function(userEmail, syncType){
-  var url = SimpleGmailNotes.getCRMBaseUrl() +
+  var url = SGNC.getCRMBaseUrl() +
             '/crm/multiple_share_email/?crm_user_email=' + userEmail +
+            '&token=' + gCrmUserToken +
             '&sync_type=' + syncType;
+  return url;
+};
+
+var getCRMCommentUrl = function(userEmail, data){
+  var url = SGNC.getCRMBaseUrl() + '/crm/create_sgn_new_comment/?crm_user_email=' + userEmail +
+            "&is_sgn=True&token=" + gCrmUserToken +
+            '&data=' + encodeURIComponent(JSON.stringify(data));
   return url;
 };
 
 
 var getCRMShareUrl = function(userEmail, data){
-  var url = SimpleGmailNotes.getCRMBaseUrl() + '/crm/share_email/?crm_user_email=' +
-               userEmail + '&data=' + encodeURIComponent(JSON.stringify(data));
+  var url = SGNC.getCRMBaseUrl() + '/crm/share_email/?' +
+              'crm_user_email=' + userEmail + 
+              '&token=' + gCrmUserToken + 
+              '&data=' + encodeURIComponent(JSON.stringify(data));
+  return url;
+};
+
+
+var getCRMUpgradeUrl = function() {
+  var url = SGNC.getCRMBaseUrl() + '/crm/member_upgrade/?' +
+              'crm_user_email=' + gCrmUserEmail + 
+              '&token=' + gCrmUserToken;
+
   return url;
 };
 
@@ -2435,9 +2946,9 @@ var getCRMPullUrl = function(userEmail, messageId, noteTimestamp,
                                           sgnLastMessageId, sgnThreadId, 
                                           isConversation){
 
-  var url = SimpleGmailNotes.getCRMBaseUrl() + '/crm/pull_note/?crm_user_email=' +
-               userEmail + '&message_id=' + messageId + '&note_timestamp=' + 
-               noteTimestamp;
+  var url = SGNC.getCRMBaseUrl() + '/crm/pull_note/?crm_user_email=' + userEmail + 
+               '&token=' + gCrmUserToken + '&message_id=' + messageId + 
+               '&note_timestamp=' + noteTimestamp;
 
   if(sgnLastMessageId){
     url = url + "&latest_message_id=" + sgnLastMessageId;
@@ -2456,26 +2967,39 @@ var getCRMPullUrl = function(userEmail, messageId, noteTimestamp,
 };
 
 var getCRMOpportunityDetailUrl = function(userEmail, opportunityId){
-  var url = SimpleGmailNotes.getCRMBaseUrl() + '/crm/opportunity_detail/' +
-    opportunityId + '/?crm_user_email=' + userEmail;
+  var url = SGNC.getCRMBaseUrl() + '/crm/opportunity_detail/' +
+    opportunityId + '/?crm_user_email=' + userEmail + '&token=' + gCrmUserToken;
+  return url;
+};
+
+var getCRMInvitationMemberUrl = function(userEmail) {
+  var url = SGNC.getCRMBaseUrl() + 
+    '/crm/crm_member_invitation/?crm_user_email=' + userEmail + '&token=' + gCrmUserToken;
+  return url;
+};
+
+var getCRMLoginUrl = function() {
+  var url = SGNC.getCRMBaseUrl() +
+    '/crm/crm_login/';
   return url;
 };
 
 var getCRMOpportunityListUrl = function(userEmail){
-  var url = SimpleGmailNotes.getCRMBaseUrl() +
-    '/crm/opportunity_list/?crm_user_email=' + userEmail;
+  var url = SGNC.getCRMBaseUrl() +
+    '/crm/opportunity_list/?crm_user_email=' + userEmail + '&token=' + gCrmUserToken + '&page=1';
   return url;
 };
 
 var getCheckCRMLoggedInUrl = function(userEmail) {
-  return SimpleGmailNotes.getCRMBaseUrl() +
-         "/crm/ajax_check_crm_logged_in/?crm_user_email=" +
-         userEmail + "&action=check_crm_logged_in";
+  return SGNC.getCRMBaseUrl() +
+         '/crm/ajax_check_crm_logged_in/?crm_user_email=' + userEmail +
+         '&token=' + gCrmUserToken + '&action=check_crm_logged_in';
 };
 
 var getBatchPullNotesUrl = function(userEmail, requestList) {
-  var url = SimpleGmailNotes.getCRMBaseUrl() + 
+  var url = SGNC.getCRMBaseUrl() + 
               "/crm/batch_pull_notes/?crm_user_email=" + userEmail +
+              "&token=" + gCrmUserToken +
               "&request_list=" + encodeURIComponent(JSON.stringify(requestList));
 
   if(sgnGmailDom.isConversationMode()){
@@ -2488,25 +3012,21 @@ var getBatchPullNotesUrl = function(userEmail, requestList) {
 //for more information digging, check this:
 //https://developers.google.com/gmail/api/v1/reference/users/messages/get
 var getCRMUpdateMailInfoURL = function(userEmail, messageId, emailData){
-  var url = SimpleGmailNotes.getCRMBaseUrl() + 
+  var url = SGNC.getCRMBaseUrl() + 
               "/crm/update_email_info/?crm_user_email=" + userEmail +
+              "&token=" + gCrmUserToken + 
               "&message_id=" + messageId + "&thread_id=" + emailData["threadId"];
 
   return url;
 };
 
-var updateCRMEmailThreadId = function(userEmail, emailId) {
-  //no need to do that any more, gmail exposed thread id now
-  return;
-
-  if(!sgnGmailDom.isConversationMode()){
-    //trigger thread ID update logic
-    sendBackgroundMessage({action:"update_crm_email_thread_id", email:userEmail, 
-      messageId: emailId});    
+var updateCommentsTotal = function() {
+  var records = $("div.sgn_comment_record");
+  $("div.sgn_comment_tips").text("Comments");
+  if (records.length > 0) {
+    $("div.sgn_comment_tips").text(records.length.toString() + " Comments");
   }
 };
-
-
 
 var setupListeners = function(){
 
@@ -2548,13 +3068,21 @@ var setupListeners = function(){
   });
 
   document.addEventListener('SGN_check_crm_logged_in', function(e){
-    if(!gCRMLoggedInChecked)
+    if(!gCRMLoggedInChecked) {
       pullCRMStatus(e.detail.email);
+    }
+  });
+
+  document.addEventListener("SGN_show_crm_login", function(e) {
+    setupLoginSidebarNode();
   });
 
   document.addEventListener('SGN_crm_logged_in_success', function(e){
     gCRMLoggedIn = true;
+    removeLoginSidebarNode();
     setupOpportunityListOpener(e.detail.email);
+
+
     gGmailWatchEnabled = e.detail.auto_sync_enabled;
     gSyncFutureNotesEnabled = e.detail.sync_future_notes_enabled;
 
@@ -2608,7 +3136,7 @@ var setupListeners = function(){
 
   document.addEventListener('SGN_batch_pull_notes', function(e) {
     var emailList = e.detail['email_list'];
-    //console.log("@2432: " + emailList);
+    //debugLog("@2432: " + emailList);
     //package result for updateSummary
     var pulledNoteList = [];
     for(var i=0; i < emailList.length; i++){
@@ -2621,10 +3149,11 @@ var setupListeners = function(){
         email_id = email["email_id"];
 
       var description = email["note"];
+      var emailComments = email["email_comments"];
       var timestamp = email["timestamp"];
       var backgroundColor = email["background_color"];
-      var short_description = SimpleGmailNotes.getSummaryLabel(description, 
-                                SimpleGmailNotes.preferences);
+      var short_description = SGNC.getSummaryLabel(description, 
+                                SGNC.preferences);
       var properties = [{"key": "sgn-background-color", "value": backgroundColor},
                         {"key": "sgn-note-timestamp", "value": timestamp}];
       pulledNoteList.push({"id": email_id,  
@@ -2632,6 +3161,7 @@ var setupListeners = function(){
                              "short_description": short_description,
                              "timestamp": timestamp, 
                              "properties": properties});
+      gCRMPullHistoryCache[email_id] = emailComments;
     }
 
     updateNotesOnSummary(e.detail.email, pulledNoteList);
@@ -2664,18 +3194,24 @@ var setupListeners = function(){
 
   document.addEventListener('SGN_set_classic_gmail_conversation', function(e){
     gClassicGmailConversation = true; //this is a one-way road
-    //console.log("@1284, clasic gmail conversation", gClassicGmailConversation);
+    //debugLog("@1284, clasic gmail conversation", gClassicGmailConversation);
   });
 
   document.addEventListener('SGN_delete_notes', function(e){
     var data = e.detail;
     var editorNode = SGNC.getContainer();
     var errorNode = editorNode.find(".sgn_error.sgn_custom");
+
+    var message = data['message'];
+
+    if(message)
+      showError(errorNode, message);
+    else
+      hideError(errorNode);
+
     if(data["status"] == 'failed'){
       //:todo need to show error
     }else{
-      errorNode.hide();
-      errorNode.text("");
       var noteUpdateArray = data["email_info_list"];
       var messageId = "";
       var email = data["email"];
@@ -2691,46 +3227,86 @@ var setupListeners = function(){
     }
   });
 
+  document.addEventListener('SGN_comment_note', function(e) {
+    var data = e.detail;
+    updateCommentUI(false);
+    // debugLog("@3012---- data", data);
+    var commentErrorNode = $(".sgn_comment_container .sgn_comment_error");
+    var message = data['message'];
+
+    if(message)
+      showError(commentErrorNode, message);
+    else
+      hideError(commentErrorNode);
+
+    if(data['status'] == 'failed') {
+    }else{
+      commentErrorNode.hide();
+      commentErrorNode.text("");
+      var comment = data["comment"];
+      var userInfo = data["user_info"];
+      comment = Object.assign(comment, userInfo);
+      var commentRecordNode = generateCommentRecordNode(comment);
+      $(".sgn_comment_history").prepend(commentRecordNode);
+      updateCommentsTotal();
+      var tmpEmailComments = gCRMPullHistoryCache[gCurrentMessageId];
+      if (!tmpEmailComments) {
+        tmpEmailComments = [];
+      }
+      tmpEmailComments.unshift(comment);
+      gCRMPullHistoryCache[gCurrentMessageId] = tmpEmailComments;
+    }
+  });
+
   document.addEventListener('SGN_silent_share', function(e){
     var data = e.detail;
     var editorNode = SGNC.getContainer();
-    var errorNode = editorNode.find(".sgn_error.sgn_custom");
+    // var errorNode = editorNode.find(".sgn_error.sgn_custom");
+
+    var errorNode = $(".sgn_error.sgn_custom");
+    var message = data['message'];
+
+    if(message)
+      showError(errorNode, message);
+    else
+      hideError(errorNode);
 
     if(data['status'] == 'failed'){
-      // possible error message:
-      // 1. 
-      var errorMessage = data['message'];
-      errorNode.text(errorMessage);
-      errorNode.show();
-
       editorNode.find("a.sgn_share img").attr("title", "Auto-Sync Failed").attr("src", 
         SGNC.getIconBaseUrl() + "/share-outdated.24.png");
     }
     else{
-      errorNode.hide();
-      errorNode.text("");
+      var email = e.detail.email;
 
       if(data['update_info']){  //need to push the latest note into gdrive
         var updateInfo = data['update_info'];
 
 
         //it's possible email page changed during the network response
-        var email = e.detail.email;
-        var messageId = updateInfo["message_id"];
-        var content = updateInfo['sgn-content'];
-
-        if(messageId == gCurrentMessageId && updateInfo["note_updated"]){
-          SGNC.getCurrentInput().val(getDisplayContent(content));
-          if(isRichTextEditor()){
-            sendEventMessage('SGN_tinyMCE_update_note', {content: content});
+        if(updateInfo['sgn-shared']){
+          var messageId = updateInfo["message_id"];
+          var content = updateInfo['sgn-content'];
+          if(messageId == gCurrentMessageId && updateInfo["note_updated"]){
+            SGNC.getCurrentInput().val(getDisplayContent(content));
+            if(isRichTextEditor()){
+              sendEventMessage('SGN_tinyMCE_update_note', {content: content});
+            }
           }
 
+          updateShareIconMeta(messageId, updateInfo);
+          setBackgroundColorWithPicker(updateInfo["sgn-background-color"]);
+          postNote(email, messageId, updateInfo);
         }
 
-        updateShareIconMeta(messageId, updateInfo);
-        setBackgroundColorWithPicker(updateInfo["sgn-background-color"]);
-        postNote(email, messageId, updateInfo);
-        updateCRMEmailThreadId(email, messageId);
+        if(updateInfo['opportunity_info']){
+          //debugLog('@2753', noteComments);
+          setupCRMSidebarNode(email, updateInfo['opportunity_info'], 
+            data['note_comments']);
+          if (data['note_comments']) {
+            var comments = data['note_comments'].slice(0, 20);
+            gCRMPullHistoryCache[gCurrentMessageId] = comments.reverse();
+          }
+        }
       }
     }
 
@@ -2766,8 +3342,21 @@ var setupListeners = function(){
         break;
       case "enable_edit":
         enableEdit();
-        preferences = SimpleGmailNotes.preferences;
+        preferences = SGNC.preferences;
         updateUIByPreferences();
+        if(isRichTextEditor()){
+          var richTextNoteHeight = parseInt($(".sgn_input").css("height"));
+          var tinymceProperties = {
+            baseUrl: getTinymceUrl(), 
+            fontSize: getFontSize(preferences),
+            fontColor: preferences["fontColor"],
+            //backgroundColor: backgroundColor,
+            height: richTextNoteHeight,
+            cssUrl: SGNC.getCssBaseUrl() + '/style.css'
+          };
+          sendEventMessage('SGN_tinyMCE_init', tinymceProperties);
+        }
+
         backgroundColor = preferences["backgroundColor"];
         if(request.messageId && request.messageId == gCurrentMessageId){
           gPreviousContent = request.content;
@@ -2775,8 +3364,7 @@ var setupListeners = function(){
           var content = SGNC.getCurrentContent();
           properties = request.properties;
 
-          var printInfoProperties = getPrintInfoProperties();
-          setPrintInfo(gSgnUserEmail, content, printInfoProperties);
+          setPrintInfo(gSgnUserEmail, content);
           //warningMessage = SGNC.offlineMessage;
           customNoteColor = getNoteProperty(properties, 'sgn-background-color');
           
@@ -2793,11 +3381,11 @@ var setupListeners = function(){
               jsonpCallback: "SimpleGmailNotes.silentPullCallBack",
               timout: 3000,
               success: function(response){
-                //console.log("@389", response);
+                //debugLog("@389", response);
               },
               error: function(){
                 //timeout found
-                console.log("timeout for pull note request");
+                debugLog("timeout for pull note request");
             //    if(request.messageId == gCurrentMessageId){
                 //  enableEdit();
             var injectionNode = SGNC.getContainer();
@@ -2815,7 +3403,7 @@ var setupListeners = function(){
 
           /*
           updateShareIconMeta(request.messageId, properties);
-          if(isMarkCrmDeleted(properties)){
+          if(SGNC.isMarkCrmDeleted(properties)){
             var noteList = [];
             noteList.push({"messageId":request.messageId, "properties": properties});
             deleteCrmNotes(request.gdriveEmail, noteList);
@@ -2840,7 +3428,7 @@ var setupListeners = function(){
         if (request.messageId && request.messageId == gCurrentMessageId) {
           updateShareIconMeta(request.messageId, properties);
           /*
-          if(isMarkCrmDeleted(properties)){
+          if(SGNC.isMarkCrmDeleted(properties)){
             var noteList = [];
             noteList.push({"messageId":request.messageId, "properties": properties});
             deleteCrmNotes(request.gdriveEmail, noteList);
@@ -2892,13 +3480,15 @@ var setupListeners = function(){
         debugLog("Show login");
         showLoginPrompt();
         disableEdit();
+        hideHistorySidebarNode();
         break;
       case "show_error":
-        showError(request.message, request.type);
+        var errorNode = $(".sgn_error.sgn_" + request.type);
+        showError(errorNode, request.message);
         break;
       case "show_timestamp_and_notice":
         if(request.messageId && request.messageId == gCurrentMessageId){
-          showNotice("Note saved", "note_saving", 2000);
+          showNotice("", "note_saving", 2000);
           showNoteModifiedTime(request.modifiedTime);
         }
         break;
@@ -2915,11 +3505,11 @@ var setupListeners = function(){
           dataType: "jsonp",
           jsonpCallback: "SimpleGmailNotes.crmLoggedInCallBack",
           success: function(response){
-            // console.log("@389", response);
+            // debugLog("@389", response);
           },
           error: function(response){
             // even for timeout error, it would not return in this closure
-            //console.log("Failed to connect to server");
+            //debugLog("Failed to connect to server");
           }
         });
         break;
@@ -2930,11 +3520,11 @@ var setupListeners = function(){
           dataType: "jsonp",
           jsonpCallback: "SimpleGmailNotes.crmLoggedOutCallBack",
           success: function(response){
-            // console.log("@389", response);
+            // debugLog("@389", response);
           },
           error: function(response){
             // even for timeout error, it would not return in this closure
-            //console.log("Failed to connect to server");
+            //debugLog("Failed to connect to server");
           }
         });
         logoutCRM();
@@ -2950,8 +3540,7 @@ var setupListeners = function(){
 
           gPreviousContent = request.content;
 
-          var printInfoProperties = getPrintInfoProperties();
-          setPrintInfo(gSgnUserEmail, displayContent, printInfoProperties);
+          setPrintInfo(gSgnUserEmail, displayContent);
           SGNC.getCurrentInput().val(displayContent);
           showNoteModifiedTime(request.modifiedTime);
           if(isRichTextEditor()){
@@ -2966,25 +3555,32 @@ var setupListeners = function(){
         if(SGNC.isInbox())  //no history for inbox
           break;
 
+        // debugLog('@3076');
+
         //work for both new and old gmail
         if(request.title == gCurrentEmailSubject){
           var history = request.data;
+
 
           if(!history.length)
             break;
 
           //alert(JSON.stringify(request.data));
           $(".sgn_history").remove(); //hide all previous history
+          cleanupSideBar();
           //var historyInjectionNode = $(".nH.adC:visible");
           var historyInjectionNode = SGNC.getSidebarNode();
-          var historyNode = $("<div class='sgn_history'><div class='sgn_history_header'><b>SGN History</b>" +
-                                  "<a class='sgn_show_all'><img title='Show All' src='" + SGNC.getIconBaseUrl() + 
-                                  "/chat.24.png'></a></div></div>");
+          var historyNode = $("<div class='sgn_history sgn_sidebar'>" +
+            "<div class='sgn_sidebar_container'>" +
+              "<div class='sgn_sidebar_title'>SGN History</div>" +
+              "<div class='sgn_history_detail'></div>" +
+            "</div></div>");
           historyInjectionNode.append(historyNode);
-          var isDisplayHistoryPosition = $('.Bs.nH .Bu.y3 .y4').is(":visible");
-          if(isDisplayHistoryPosition){
-            $('.Bs.nH .Bu.y3 .y4').css('height', '0px'); //change history position in main page
-          }
+          /*
+          */
+
+          var detailNode = historyNode.find(".sgn_history_detail");
+
 
           for(var i=0; i<history.length; i++){
             var note = history[i];
@@ -3001,12 +3597,16 @@ var setupListeners = function(){
             }
 
             var node = $("<div class='sgn_history_note'>" +
-                                      "<a target='_blank' href='" + getHistoryNoteURL(note.id) + "'>"  + 
-                                      noteDate.toString().substring(0, 24) + "</a><br/><br/>" + 
-                                      description + "</div>");
+                           "<div class='sgn_history_timestamp'><a target='_blank' href='" + 
+                              getHistoryNoteURL(note.id) + "'>"  + 
+                              noteDate.toString().substring(0, 24) + "</a></div>" + 
+                           "<div class='sgn_history_content'>" + description + "</div>" +
+                        "</div>");
 
-            node.css("background-color", backgroundColor).css("color", preferences["fontColor"]);
-            historyNode.append(node);
+            node.find('.sgn_history_content').css(
+              "background-color", backgroundColor).css(
+              "color", preferences["fontColor"]);
+            detailNode.append(node);
             
 
             //historyNode.find(".sgn_history_note").css("background-color", backgroundColor)
@@ -3016,6 +3616,7 @@ var setupListeners = function(){
               break;
           }
 
+          //this feature is disabled for now
           var fullHistoryNode = historyNode.clone();
           fullHistoryNode.find('.sgn_history_header').remove();
 
@@ -3045,6 +3646,7 @@ var setupListeners = function(){
         var updateNoteList = request.noteList;
         updateNotesOnSummary(request.email, updateNoteList);
         updateUIByPreferences();
+        gSummaryPulled = true;
         break;
       case "revoke_summary_note":
         revokeSummaryNote(request.messageId);
@@ -3070,6 +3672,9 @@ var setupListeners = function(){
         if(request.crmUserEmail)
           gCrmUserEmail = request.crmUserEmail;
 
+        if(request.crmUserToken)
+          gCrmUserToken = request.crmUserToken;
+
         preferences = request.preferences;
 
 
@@ -3081,7 +3686,7 @@ var setupListeners = function(){
         }
 
         if(preferenceString != gLastPreferenceString){
-          SimpleGmailNotes.preferences = preferences;
+          SGNC.preferences = preferences;
           gAbstractBackgroundColor = preferences["abstractBackgroundColor"];
           gAbstractFontColor = preferences["abstractFontColor"];
           gAbstractFontSize = preferences["abstractFontSize"];
@@ -3158,24 +3763,38 @@ var setupListeners = function(){
       }
       else{
         messageId = updateInfo["message_id"];
+        // debugLog('@3357', updateInfo);
         if(messageId === gCurrentMessageId){
           updateShareIconMeta(messageId, updateInfo);
+          setupCRMSidebarNode(gSgnUserEmail, updateInfo['opportunity_info'],
+            updateInfo['note_comments']);
         } 
         postNote(gSgnUserEmail, messageId, updateInfo);
-        updateCRMEmailThreadId(gSgnUserEmail, messageId);
       }
     }
     else if(e.data.startsWith('sgncrm:login_success')){
-      var crm_user_email= e.data.split(":")[2];
+      var data_parts = e.data.split(":");
+      var crm_user_email= data_parts[2];
+      var crm_user_token = "";
+      if(data_parts.length > 3){
+        crm_user_token = data_parts[3];
+      }
       gCrmUserEmail = crm_user_email;
-      sendBackgroundMessage({action:"update_crm_user_email", 
-                             email: crm_user_email});
+      gCrmUserToken = crm_user_token;
+      sendBackgroundMessage({action:"update_crm_user_info", 
+                             email: gSgnUserEmail,
+                             crm_user_email: crm_user_email,
+                             crm_user_token: crm_user_token});
 
       gCRMLoggedIn = true;
+      removeLoginSidebarNode();
       setupOpportunityListOpener(gSgnUserEmail);
       pullCRMStatus(gSgnUserEmail);
     }
     else if(e.data.startsWith('sgncrm:logout_success')){
+      if (gCRMLoggedIn) {
+        closeWindow();
+      }
       logoutCRM();
     }
     else if(e.data.startsWith('sgncrm:hide_success_page')){
@@ -3209,6 +3828,30 @@ var setupListeners = function(){
     }
   }, true);
 
+  // event listern for sgn login
+  window.addEventListener("message", function(e){
+    if(!e.data.startsWith("sgnlogin:"))
+      return;
+
+    if (e.data.startsWith("sgnlogin:")) {
+      var data = e.data.split(":");
+      var state = data[1];
+      var code = data[2];
+      var error = data[3];
+
+      var stateData = state.split("/");
+      var email = stateData[0];
+      var tabId = parseInt(stateData[1]);
+      var messageId = stateData[2];
+
+      //simulate state
+      sendBackgroundMessage({action: "login_sgn_web", 
+                             email: email,
+                             messageId: messageId,
+                             code: code});
+    }
+    debugLog('@1835', e.data);
+  }, true);
 
 };
 
@@ -3232,7 +3875,7 @@ var setupPrintNote = function(printInfo) {
   var showPrintingNote = properties["showPrintingNote"];
   if (note && showPrintingNote) {
     var isRichTextEditor = false;
-    console.log("@3215 properties", properties);
+    // debugLog("@3215 properties", properties);
     if (!$.isEmptyObject(properties)) {
       var printNoteNode = $("<div class='gmail-note'></div>");
       $("div.maincontent").prepend(printNoteNode);
@@ -3297,7 +3940,7 @@ var setupPage = function(retryCount){
 
 var fireContentLoadedEvent = function() {
   if(contentLoadStarted){
-    console.log("@3190 content");
+    // debugLog("@3190 content");
     SGNC.appendLog("skipLoading");
     return;
   }
@@ -3314,10 +3957,45 @@ var fireContentLoadedEvent = function() {
   SGNC.appendLog("contentLoadDone");
 };
 
+var getSGNWebLoginURL = function(url) {
+  var result= SGNC.getSGNWebBaseURL() + "/sgn/signin/?url=" + encodeURIComponent(url);
+
+  // debugLog('@242', result);
+  return result;
+};
+
+var launchSGNWebLogin = function(email, messageId) {
+  debugLog("Trying to login SGN Web");
+  var clientId = SGNC.settings.CLIENT_ID;
+  var scope = SGNC.settings.SCOPE;
+  var state = email + "/1/" + messageId;
+  var redirectURL = SGNC.getSGNWebBaseURL() + "/sgn/signin_done/";
+
+  var url = getSGNWebLoginURL("https://accounts.google.com/o/oauth2/auth?" + $.param({"client_id": clientId,
+          "scope": scope,
+          "redirect_uri": SGNC.getRedirectUri('sgn_web'),
+          "response_type": "code",
+          "access_type": "offline",
+          "login_hint": email,
+          "state": state,
+          //"login_hint":"",
+          "prompt":"consent select_account" })); 
+
+  sendEventMessage(
+    'SGN_PAGE_open_popup',
+    {
+      url: url,
+      windowName: 'sgn_web_login',
+      strWindowFeatures: SGNC.getStrWindowFeatures(1000, 700)
+    }
+  );
+
+};
+
 $(document).ready(function(){
 
-  SimpleGmailNotes.executeCatchingError(function(){
-    SimpleGmailNotes.$ = $;
+  SGNC.executeCatchingError(function(){
+    SGNC.$ = $;
     SGNC.appendLog("documentReady");
     //if(SGNC.isInbox())
      // sgnInbox.fireContentLoadedEvent();
@@ -3329,3 +4007,4 @@ $(document).ready(function(){
 });
 
 debugLog("Finished content script (common)");
+

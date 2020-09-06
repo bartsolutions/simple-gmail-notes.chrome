@@ -1,7 +1,7 @@
 $(document).ready(function(){
   var SGNP = SimpleGmailNotes;
 
-  SGNB.getBrowser().browserAction.setBadgeText({"text": ""});
+  SGNC.getBrowser().browserAction.setBadgeText({"text": ""});
 
   $(".sgn-menu-table a").attr("target", "_blank");
   $("#open_options").click(function(){

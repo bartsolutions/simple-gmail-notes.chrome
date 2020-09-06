@@ -11,8 +11,13 @@ if (typeof SimpleGmailNotes === 'undefined' || SimpleGmailNotes === null) {
 }
 
 SimpleGmailNotes.isDebug = function(callback){
-  //return true;
+  // return true;
   return false;
+};
+
+SimpleGmailNotes.settings = {
+  CLIENT_ID: "38131814991-p4u809qrr5ee1bsehregd4os69jf2n7i.apps.googleusercontent.com",
+  SCOPE: 'https://www.googleapis.com/auth/drive.file',
 };
 
 SimpleGmailNotes.offlineMessage = "WARNING! Simple Gmail Notes is currently unavailable.\n\n<br/>" +
@@ -165,6 +170,18 @@ SimpleGmailNotes.getLogoImageSrc = function(type){
 	   "-" + SimpleGmailNotes.getExtensionTypeShortName();
 };
 
+SimpleGmailNotes.getSgnLogoImageSrc = function(type) {
+  return "https://api.lazycrm.com/media/sgn_logo.png" +
+           "?v=" + SimpleGmailNotes.getExtensionVersion() + 
+           "&from=" + SimpleGmailNotes.getBrowserShortName() + "-" + type;
+}
+
+SimpleGmailNotes.getBartLogoImageSrc = function(type) {
+  return "https://api.lazycrm.com/media/bart_logo_for_sgn.png" +
+           "?v=" + SimpleGmailNotes.getExtensionVersion() + 
+           "&from=" + SimpleGmailNotes.getBrowserShortName() + "-" + type;
+}
+
 SimpleGmailNotes.getWhiteLogoImageSrc = function(type){
   return "https://www.simplegmailnotes.com/bart-logo-white.png" +
            "?v=" + SimpleGmailNotes.getExtensionVersion() + 
@@ -208,6 +225,12 @@ SimpleGmailNotes.getReviewUrl = function(){
 
 SimpleGmailNotes.getCRMBaseUrl = function(){
   return 'https://sgn.mobilecrm.io';
+  // return 'https://sgn.mobilecrm.io';
+  // return 'https://sgn.mobilecrm.io';
+};
+
+SimpleGmailNotes.getSGNWebBaseURL = function(){
+  return "https://app.simplegmailnotes.com";
 };
 
 SimpleGmailNotes.debugLogInfo = {};
@@ -296,7 +319,8 @@ SimpleGmailNotes.getShortDescription = function(description, length){
     description.indexOf('<div') === 0 ||
     description.indexOf('<ol') === 0 ||
     description.indexOf('<ul') === 0){
-    shortDescription = htmlUnescape(stripHtml(description)).substring(0, length);
+    shortDescription = SimpleGmailNotes.htmlUnescape(
+      SimpleGmailNotes.stripHtml(description)).substring(0, length);
   }else{
     shortDescription = description.substring(0, length);
   }
@@ -342,7 +366,22 @@ SimpleGmailNotes.getSummaryLabel = function(description, preferences){
   return shortDescription;
 };
 
-var htmlEscape = function(str) {
+SimpleGmailNotes.containsEmailTag = function(emailAddress) {
+  const re = /.*<[\w\.-]+@[\w\.-]+>/;
+  return re.test(emailAddress);
+};
+
+SimpleGmailNotes.validateEmail = function(email) {
+  const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  return re.test(email);
+};
+
+SimpleGmailNotes.nl2br = function(str){
+  return String(str)
+          .replace(/\n/g, '<br/>');
+};
+
+SimpleGmailNotes.htmlEscape = function(str) {
   return String(str)
           .replace(/&/g, '&amp;')
           .replace(/"/g, '&quot;')
@@ -358,7 +397,7 @@ var removeHtmlTag = function(str){
 */
 
 // I needed the opposite function today, so adding here too:
-var htmlUnescape = function(value){
+SimpleGmailNotes.htmlUnescape = function(value){
   return String(value)
       .replace(/&nbsp;/g, ' ')
       .replace(/&quot;/g, '"')
@@ -368,14 +407,14 @@ var htmlUnescape = function(value){
       .replace(/&amp;/g, '&');
 };
 
-var stripHtml = function(value){
+SimpleGmailNotes.stripHtml = function(value){
   var specialCharRe = new RegExp(String.fromCharCode(160), 'g');
   return value.replace(/<(?:.|\n)*?>/gm, '')
               .replace(/&nbsp;/g, '')
               .replace(specialCharRe, ' ');
 };
 
-var isMarkCrmDeleted = function(properties){
+SimpleGmailNotes.isMarkCrmDeleted = function(properties){
   // not load crm delete
   if(!properties)
     return false;
@@ -390,7 +429,7 @@ var isMarkCrmDeleted = function(properties){
 };
 
 
-var getArrayChunk = function(array, chunk){
+SimpleGmailNotes.getArrayChunk = function(array, chunk){
   if(chunk === 0){
     debugLog("chunk is not 0");
     return;
@@ -405,82 +444,25 @@ var getArrayChunk = function(array, chunk){
 };
 
 
-var gSgnPrintKey = "SGN_PRINT";
-var setPrintInfo = function(email, note, properties) {
-  var printObj = {
-    'note': note,
-    'properties': properties,
-  };
-  setStorage(email, gSgnPrintKey, JSON.stringify(printObj))
-};
-
-var getPrintInfo = function(email) {
-  console.log("@418 email print", email);
-  var printInfo = {};
-  var printInfoStr = getStorage(email, gSgnPrintKey)
-  if (printInfoStr) {
-    printInfo = JSON.parse(printInfoStr);
-  }
-
-  return printInfo;
-};
-
-var removePrintInfo = function(email) {
-  removeStorage(email, gSgnPrintKey);
-};
-
-
-var isGmailPrintView = function() {
-  if (window.location.href.indexOf("view=pt") > 0) {
-    return true;
-  }
-
-  return false;
-};
-
-var getPrintInfoProperties = function() {
-  var preferences = SimpleGmailNotes.preferences;
-  var showPrintingNote = (preferences["showPrintingNote"] !== "false");
-  var fontSize = preferences["fontSize"];
-  var properties = {"showPrintingNote": showPrintingNote,
-                    "isRichTextEditor": isRichTextEditor()};
-  if(fontSize != "default"){
-    properties['font-size'] = fontSize;
-  }
-
-  return properties;
-};
-
-var isSgnInputFocused = function() {
-  return $(".sgn_input").is(":focus");
-};
-
-var focusTextArea = function() {
-  $(".sgn_input").focus();
-};
-
-var debugTextareaFocus = function() {
-  console.log("textarea focus status:", $(".sgn_input").is(":focus"));
-  console.trace();
-};
-
-
-var getRawStorageObject = function(){
+SimpleGmailNotes.getRawStorageObject = function(){
   return localStorage;
 };
 
-var setStorage = function(sender, key, value) {
+SimpleGmailNotes.setStorage = function(sender, key, value) {
   var email = sender;
   if(sender !== null && typeof sender === "object") {
     email = sender.email;
   }
 
   var storageKey = email + "||" + key;
-  var storage = getRawStorageObject();
-  storage[storageKey] = value;
+  var storage = SimpleGmailNotes.getRawStorageObject();
+  if(value)
+    storage.setItem(storageKey, value);
+  else
+    storage.removeItem(storageKey);
 };
 
-var removeStorage = function(sender, key) {
+SimpleGmailNotes.removeStorage = function(sender, key) {
   var email = sender;
   if(sender !== null && typeof sender === "object") {
     email = sender.email;
@@ -490,14 +472,14 @@ var removeStorage = function(sender, key) {
   }
 
   var storageKey = email + "||" + key;
-  var storage = getRawStorageObject();
+  var storage = SimpleGmailNotes.getRawStorageObject();
   if(storage.getItem(storageKey)) {
     storage.removeItem(storageKey);
   }
 };
 
 
-var getStorage = function(sender, key) {
+SimpleGmailNotes.getStorage = function(sender, key) {
   var email = sender;
   if(sender !== null && typeof sender === "object") {
     email = sender.email;
@@ -507,7 +489,7 @@ var getStorage = function(sender, key) {
   }
 
   var storageKey = email + "||" + key;
-  var storage = getRawStorageObject();
+  var storage = SimpleGmailNotes.getRawStorageObject();
   value = storage[storageKey];
 
   debugLog("Get storage result", email, key, value);
@@ -515,4 +497,47 @@ var getStorage = function(sender, key) {
 };
 
 
+SimpleGmailNotes.getPopupDimensions = function(newWindowWidth, newWindowHeight){
+  var dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
+  var dualScreenTop = window.screenTop !== undefined ? window.screenTop : window.screenY;
+  var width = window.innerWidth ? window.innerWidth : window.screen.width;
+  var height = window.innerHeight ? window.innerHeight : window.screen.height;
+  
+  if(!width)
+    width = 0;
+
+  if(!height)
+    height = 0;
+
+  var newWindowTop = (height - newWindowHeight) / 2 + dualScreenTop;
+  var newWindowLeft = (width - newWindowWidth) / 2 + dualScreenLeft;
+  
+  return {height: newWindowHeight, width: newWindowWidth, top: parseInt(newWindowTop), 
+          left: parseInt(newWindowLeft)}; 
+};
+
+SimpleGmailNotes.getStrWindowFeatures = function(newWindowWidth, newWindowHeight) {
+  var dimensions = SimpleGmailNotes.getPopupDimensions(newWindowWidth, newWindowHeight);
+  newWindowTop = dimensions.top;
+  newWindowLeft = dimensions.left;
+
+  var strWindowFeatures = ('innerHeight=' + newWindowHeight +
+                           ', innerWidth=' + newWindowWidth +
+                           ', top=' + newWindowTop + ', left=' + newWindowLeft);
+  // console.log('@489', strWindowFeatures);
+  return strWindowFeatures;
+};
+
+SimpleGmailNotes.getRedirectUri = function(loginType) {
+  var result;
+
+  if(loginType === 'sgn_web'){
+    result = SimpleGmailNotes.getSGNWebBaseURL() + "/sgn/signin_done/";
+  }
+  else {
+    result = SimpleGmailNotes.getBrowser().identity.getRedirectURL();
+  }
+
+  return result;
+};
 // ***************** end **********************

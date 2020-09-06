@@ -7,18 +7,15 @@
  * This script is going to be shared for both Firefox and Chrome extensions.
  */
 
-var gIsWindowFocused;
-$(window).focus(function() {
-  gIsWindowFocused = true;
-}).blur(function() {
-  gIsWindowFocused = false;
-});
+var gIsWindowFocused = true;
+
 SimpleGmailNotes.start = function(){
 
 (function(SimpleGmailNotes, localJQuery){
   var $ = localJQuery;
 
   /* global variables (inside the closure)*/
+  var SGNC = SimpleGmailNotes;
   var sgnGmailPage;
   var gEmailIdDict = new LRUMap(2000);  //at most ~2MB memory
   var gClassicGmailConversation = false;
@@ -27,13 +24,13 @@ SimpleGmailNotes.start = function(){
   var gCRMLoggedInChecked = false;
   //var gDebugInfoErrorTrace = "";
   //followings are for network request locking control
-  var sgn = SimpleGmailNotes;
   var sgnGmailDom = new SGNGmailDOM(localJQuery);
+  var mceEditor = null;
 
-  sgn.gdriveEmail = "";
-  sgn.preferences = {};
-  sgn.startHeartBeat = Date.now();
-  sgn.lastHeartBeat = sgn.startHeartBeat;
+  SGNC.gdriveEmail = "";
+  SGNC.preferences = {};
+  SGNC.startHeartBeat = Date.now();
+  SGNC.lastHeartBeat = SGNC.startHeartBeat;
   /* -- end -- */
  
   //send message to content script
@@ -48,7 +45,7 @@ SimpleGmailNotes.start = function(){
 
   //utils
   var debugLog = function(){
-    if (sgn.isDebug()) {
+    if (SGNC.isDebug()) {
         console.log.apply(console, arguments);
     }
   };
@@ -68,7 +65,7 @@ SimpleGmailNotes.start = function(){
 
   var gPreviousDebugLog = "";
   var sendDebugLog = function(){
-    var debugLog = sgn.getLog();
+    var debugLog = SGNC.getLog();
     if(debugLog && debugLog != gPreviousDebugLog){
       sendContentMessage('SGN_update_debug_page_info', {debugInfo:debugLog});
       gPreviousDebugLog = debugLog;
@@ -76,18 +73,6 @@ SimpleGmailNotes.start = function(){
   };
 
   SimpleGmailNotes.sendPageDebugLog = sendDebugLog;
-
-
-  var htmlEscape = function(str) {
-    return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-  };
-
- 
 
   var isNumeric = function(str){
     var code, i, len;
@@ -106,8 +91,8 @@ SimpleGmailNotes.start = function(){
     var thresholdTime = 8;
     var currentTime = Date.now();
       //copy out to avoid race condition
-    var lastHeartBeat = sgn.lastHeartBeat; 
-    if(sgn.isDebug())
+    var lastHeartBeat = SGNC.lastHeartBeat; 
+    if(SGNC.isDebug())
       thresholdTime = 300;
 
     var isDead = (currentTime - lastHeartBeat > thresholdTime * 1000);
@@ -121,11 +106,11 @@ SimpleGmailNotes.start = function(){
   //var heartBeatAlertSent = false;
   var focusedErrorCount = 0;
   var sendHeartBeat = function(){
-  sgn.executeCatchingError(function(){
+  SGNC.executeCatchingError(function(){
     sendContentMessage("SGN_heart_beat_request");
     sendDebugLog();
 
-    var warningMessage = sgn.offlineMessage;
+    var warningMessage = SGNC.offlineMessage;
 
     if(isBackgroundDead() && gIsWindowFocused){
       focusedErrorCount += 1;
@@ -156,12 +141,12 @@ SimpleGmailNotes.start = function(){
   // === GMAIL ONLY FUNCTION START ===
   var getEmailKey = function(title, sender, time, excerpt){
     time = time.split("\n")[0]; //some extension will mess up with this
-    var emailKey = sender + "|" + time + "|" + stripHtml(title) + "|" + stripHtml(excerpt);
+    var emailKey = sender + "|" + time + "|" + SGNC.stripHtml(title) + "|" + SGNC.stripHtml(excerpt);
 
     //debugLog("@209, generalted email key:" + emailKey);
 
     //in case already escaped
-    emailKey = htmlEscape(emailKey);
+    emailKey = SGNC.htmlEscape(emailKey);
     return emailKey;
   };
 
@@ -231,57 +216,58 @@ SimpleGmailNotes.start = function(){
    
   //set up note editor in the email detail page
   var setupNoteEditor = function(){
-    sgn.executeCatchingError(function(){
+    SGNC.executeCatchingError(function(){
     //No email selected, happened when page up or page down
-      if(!sgn.isInbox() && !$(".nH.aHU:visible").length && sgnGmailDom.isPreviewPane()){
-        sgn.appendLog("No email selected");
+      if(!SGNC.isInbox() && !$(".nH.aHU:visible").length && sgnGmailDom.isPreviewPane()){
+        SGNC.appendLog("No email selected");
         return;
       }
 
       var visible_container = $(".sgn_container:visible");
       if(visible_container.length && visible_container.height())  
       {
-        sgn.appendLog("textarea already exists");
+        SGNC.appendLog("textarea already exists");
         return;
       }
 
       var messageId = sgnGmailDom.getCurrentMessageId();
       if(!messageId){
-        sgn.appendLog("message not found");
+        SGNC.appendLog("message not found");
         return;
       }
 
-      sgn.appendLog("Page URL: " + window.location.href);
+      SGNC.appendLog("Page URL: " + window.location.href);
 
     //if(!acquireNetworkLock()){
-        //sgn.appendLog("Network lock failed");
+        //SGNC.appendLog("Network lock failed");
         //debugLog("setupNoteEditor failed to get network lock");
         //return;
     //}
 
       sendContentMessage('SGN_setup_note_editor', {messageId:messageId});
 
-      sgn.appendLog("set up request sent");
+      SGNC.appendLog("set up request sent");
       sendDebugLog();
     });
   };
 
   var checkCRMLoggedIn = function() {
-    sgn.executeCatchingError(function() {
+    SGNC.executeCatchingError(function() {
+      sendContentMessage('SGN_show_crm_login');
       if (gCRMLoggedInChecked) {
-        sgn.appendLog("crm logged in already checked");
+        SGNC.appendLog("crm logged in already checked");
         return;
       }
 
       sendContentMessage('SGN_check_crm_logged_in');
 
-      sgn.appendLog("check crm logged in request sent");
+      SGNC.appendLog("check crm logged in request sent");
       sendDebugLog();
     });
-  }
+  };
 
   var updateEmailIdDictByJSON = function(dataString){
-    sgn.executeCatchingError(function(dataString){
+    SGNC.executeCatchingError(function(dataString){
       var startString = ")]}'\n\n";
       var totalLength = dataString.length;
 
@@ -376,7 +362,7 @@ SimpleGmailNotes.start = function(){
       
       for(i=0; i < email_list.length; i++){
         var email = email_list[i];
-        var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time, htmlUnescape(email.excerpt));
+        var emailKey = getEmailKey(SGNC.htmlUnescape(email.title), email.sender, email.time, SGNC.htmlUnescape(email.excerpt));
         gEmailIdDict.set(emailKey, email);
 
         if(!gClassicGmailConversation && email.id != email.lastMessageId){
@@ -389,7 +375,7 @@ SimpleGmailNotes.start = function(){
   };
 
   var updateEmailIdDictByJS = function(dataString){
-  sgn.executeCatchingError(function(dataString){
+  SGNC.executeCatchingError(function(dataString){
     var totalLength = dataString.length;
     var signatureString = "var GM_TIMING_START_CHUNK2=";
 
@@ -416,14 +402,14 @@ SimpleGmailNotes.start = function(){
 
     for(var i=0; i< email_list.length; i++){
       var email = email_list[i];
-      var emailKey = getEmailKey(htmlUnescape(email.title), email.sender, email.time, htmlUnescape(email.excerpt));
+      var emailKey = getEmailKey(SGNC.htmlUnescape(email.title), email.sender, email.time, SGNC.htmlUnescape(email.excerpt));
       gEmailIdDict.set(emailKey, email);
     }
   }, dataString);
   };
 
   var isLoggedIn = function(){
-    return sgn.gdriveEmail && sgn.gdriveEmail !== "";
+    return SGNC.gdriveEmail && SGNC.gdriveEmail !== "";
   };
 
   var lastPullDiff = 0;
@@ -431,14 +417,14 @@ SimpleGmailNotes.start = function(){
   var lastPullItemRange = null;
   var lastPendingCount = 0;
   var lastAbstractSignature = "";
-  sgn.duplicateRequestCount = 0;
+  SGNC.duplicateRequestCount = 0;
   var markAbstracts = function(){
-  sgn.executeCatchingError(function(){
-    if(!sgn.isInbox() && 
-       !sgn.isNewGmail() &&
+  SGNC.executeCatchingError(function(){
+    if(!SGNC.isInbox() && 
+       !SGNC.isNewGmail() &&
        (!$("tr.zA").length ||
          (sgnGmailDom.isInsideEmail() && !sgnGmailDom.isPreviewPane()))){
-      sgn.appendLog("mark email id skipped");
+      SGNC.appendLog("mark email id skipped");
       //debugLog("Skipped pulling because no tr to check with");
       return;  
     }
@@ -449,7 +435,7 @@ SimpleGmailNotes.start = function(){
     }
 
     var visibleRows;
-    if(sgn.isInbox()){
+    if(SGNC.isInbox()){
       visibleRows = $(".an.b9[data-action-data]:visible");
     }
     else{   //work for both old and new gmail
@@ -488,18 +474,18 @@ SimpleGmailNotes.start = function(){
                                 thisPullItemRange + "|" + thisPendingCount;
 
     if(thisAbstractSignature == lastAbstractSignature){
-      sgn.duplicateRequestCount += 1;
+      SGNC.duplicateRequestCount += 1;
     }
     else
-      sgn.duplicateRequestCount = 0;
+      SGNC.duplicateRequestCount = 0;
 
-    if(sgn.duplicateRequestCount > 3){
-      sgn.appendLog("3 duplicate requests");
+    if(SGNC.duplicateRequestCount > 3){
+      SGNC.appendLog("3 duplicate requests");
       return; //danger, may be endless loop here
     }
 
     if(unmarkedRows.length === 0 && pendingRows.length === 0){
-      sgn.appendLog("no need to check");
+      SGNC.appendLog("no need to check");
       return;
     }
 
@@ -507,11 +493,11 @@ SimpleGmailNotes.start = function(){
     //mark the email ID for each row
     unmarkedRows.each(function(){
       var emailId;
-      if(sgn.isInbox()){
+      if(SGNC.isInbox()){
         var actionData = $(this).attr("data-action-data");
         emailId = sgnGmailDom.getInboxEmailId(actionData);
       }
-      else if(sgn.isNewGmail()){
+      else if(SGNC.isNewGmail()){
         emailId = sgnGmailDom.getNewGmailEmailIdFromNode($(this));
       }
       else{
@@ -525,8 +511,8 @@ SimpleGmailNotes.start = function(){
     });
 
     if(!isLoggedIn()){
-      sgn.appendLog("not logged in, skipped pull requests");
-      sgn.duplicateRequestCount = 0;
+      SGNC.appendLog("not logged in, skipped pull requests");
+      SGNC.duplicateRequestCount = 0;
       return;
     }
 
@@ -556,7 +542,7 @@ SimpleGmailNotes.start = function(){
 
     if(requestList.length === 0){
       debugLog("no need to pull rows");
-      sgn.appendLog("no need to pull rows");
+      SGNC.appendLog("no need to pull rows");
       return;
     }
 
@@ -568,14 +554,14 @@ SimpleGmailNotes.start = function(){
     //g_pnc += 1;
     //the lock must be acaquired right before the request is issued
     //if(!acquireNetworkLock()){
-    //  sgn.appendLog("markAbstracts failed to get network lock");
+    //  SGNC.appendLog("markAbstracts failed to get network lock");
     //  return;
     //}
     sendContentMessage("SGN_pull_notes",
                      {email: sgnGmailDom.userEmail(), requestList:requestList});
 
 
-    sgn.appendLog("pull request sent");
+    SGNC.appendLog("pull request sent");
     sendDebugLog();
   });
   };
@@ -585,18 +571,25 @@ SimpleGmailNotes.start = function(){
     sendContentMessage('SGN_delete_notes', data);
   };
 
+  var commentNoteCallBack = function(data) {
+    sendContentMessage('SGN_comment_note', data);
+  }
+
   var silentShareCallBack = function(data){
     // show handle the result in content script
     sendContentMessage('SGN_silent_share', data);
-    //console.log(data);
+    //debugLog(data);
   };
 
   var checkCRMLoggedInCallBack = function(data) {
     gCRMLoggedInChecked = true;
+    debugLog("@593------ data", data["status"]);
     if (data["status"] === "success") {
       sendContentMessage('SGN_crm_logged_in_success', data);
+    } else {
+      sendContentMessage('SGN_show_crm_login', {});
     }
-  }
+  };
 
   var batchPullNotesCallBack = function(data) {
     sendContentMessage('SGN_batch_pull_notes', data);
@@ -607,11 +600,11 @@ SimpleGmailNotes.start = function(){
   };
 
   var main = function(){
-    sgn.$ = $;
+    SGNC.$ = $;
 
-    sgn.appendLog("page main start");
+    SGNC.appendLog("page main start");
 
-    sgn.appendLog("Browser Version: " + navigator.userAgent + "\n" + 
+    SGNC.appendLog("Browser Version: " + navigator.userAgent + "\n" + 
                     gDebugInfoSummary + "\n" + gDebugInfoDetail);
 
 
@@ -621,7 +614,7 @@ SimpleGmailNotes.start = function(){
                          "\nIs Preview Pane: " + sgnGmailDom.isPreviewPane() +
                          "\nIs Multiple Inbox: " + sgnGmailDom.isMultipleInbox() +
                          "\nIs Conversation: " + sgnGmailDom.isConversationMode();
-    sgn.appendLog(debugSummary);
+    SGNC.appendLog(debugSummary);
     sendDebugLog();
     //sgnGmailDom = new SimpleGmailNotes_Gmail(localJQuery);
 
@@ -644,15 +637,6 @@ SimpleGmailNotes.start = function(){
 
     sgnGmailPage = new SGNGmailPage(localJQuery, sgnGmailPageOptions);
 
-    var isTinyMCELoaded = function(){
-      if(window.tinymce){
-        return true;
-      }
-      else{
-        return false;
-      }
-    };
-
     var tinymceInit = function(tinymceProperties){
       tinymce.baseURL = tinymceProperties.baseUrl;
       tinymce.init({
@@ -665,17 +649,33 @@ SimpleGmailNotes.start = function(){
         plugins: ["lists", "link"],
         toolbar: "bold italic underline strikethrough | numlist bullist | link",
         init_instance_callback: function(editor){
+          mceEditor = editor;
+          // debugLog('@668', tinymceProperties);
           var editorBody = $(editor.getBody());
           $(".mce-edit-area").css('height', tinymceProperties.height);
           $(".mce-edit-area iframe").css('height', tinymceProperties.height);
-          editorBody.css('background-color', tinymceProperties.backgroundColor);
-          editorBody.css('color', htmlEscape(tinymceProperties.fontColor));
-          editorBody.css('font-size', tinymceProperties.fontSize + "pt");
+          if(tinymceProperties.backgroundColor)
+            editorBody.css('background-color', tinymceProperties.backgroundColor);
+          if(tinymceProperties.fontColor)
+            editorBody.css('color', SGNC.htmlEscape(tinymceProperties.fontColor));
+          if(tinymceProperties.fontSize)
+            editorBody.css('font-size', tinymceProperties.fontSize + "pt");
+
           editor.on('blur', function(e){
-            var content = tinymce.activeEditor.getContent();
+            var content = mceEditor.getContent();
             $('.sgn_input').val(content);
             sendContentMessage('SGN_save_content', true);
           });
+
+          var visible_container = $(".sgn_container:visible");
+          visible_container.find(".mce-widget.mce-first.mce-last").each(function(){
+            if($(this).css("visibility") == "hidden"){
+              $(this).hide();
+            }
+          });
+
+          // debugLog('@680');
+          editor.editorLoaded = true;
         }
       });
     };
@@ -684,137 +684,124 @@ SimpleGmailNotes.start = function(){
       var tinymceUrl = tinymceProperties.baseUrl + '/tinymce.min.js';
       $.getScript(tinymceUrl)
         .done(function(){
-          console.log('load tinymce.min.js successfully');  
+          debugLog('load tinymce.min.js successfully');  
             tinymceInit(tinymceProperties);
         })
         .fail(function(){
-          console.log('fail to load tinymce.min.js');
+          debugLog('fail to load tinymce.min.js');
         });
     };
 
+    var waitUntilEditorReady = function(func, retryCount) {
+      if(retryCount === undefined){
+        retryCount = 20;
+      }
 
-    document.addEventListener('SGN_tinyMCE_update_note', function(e){
-      if(!isTinyMCELoaded()){
+      if(!retryCount)
+        return;
+
+      var editor;
+      
+      if(!mceEditor || !mceEditor.getBody()){
+        retryCount = retryCount - 1;
+        setTimeout(waitUntilEditorReady, 100, func, retryCount);
+        // debugLog('waiting for editor', retryCount);
         return;
       }
 
-      var tinymceProperties = JSON.parse(e.detail); 
-      var content = tinymceProperties.content;
-      if(!content.startsWith("<p>") && 
-         !content.startsWith("<ul>") &&
-         !content.startsWith("<ol>")){          //deal with linebreak when content in plainText showed up in richTextarea
-        var plainTextSplit = content.split('\n');
-        content = "";
-        for(var i = 0;i < plainTextSplit.length;i++){
-          content = content + "<p>" + plainTextSplit[i] + "</p>";
+      // debugLog("@729, editor loaded");
+
+      // editor loaded now
+      func();
+    };
+
+    document.addEventListener('SGN_tinyMCE_update_note', function(e){
+      waitUntilEditorReady(function(){
+        var tinymceProperties = JSON.parse(e.detail); 
+        var content = tinymceProperties.content;
+        if(!content.startsWith("<p>") && 
+           !content.startsWith("<ul>") &&
+           !content.startsWith("<ol>")){          //deal with linebreak when content in plainText showed up in richTextarea
+          var plainTextSplit = content.split('\n');
+          content = "";
+          for(var i = 0;i < plainTextSplit.length;i++){
+            content = content + "<p>" + plainTextSplit[i] + "</p>";
+          }
+          
         }
-        
-      }
-      if(tinymce.activeEditor){
-          tinymce.activeEditor.setContent(content); 
-      }
+        if(mceEditor){
+          // debugLog('@721, content', content);
+          mceEditor.setContent(content); 
+        }
+      });
       
     });
    
 
     document.addEventListener('SGN_tinyMCE_delete_message', function(e){
-      if(!isTinyMCELoaded()){
-        return;
-      }
-
-      var tinymceProperties = JSON.parse(e.detail);
-      if(tinymce.activeEditor){
-        tinymce.activeEditor.setContent('');
-      }
-     
+      waitUntilEditorReady(function(){
+        var tinymceProperties = JSON.parse(e.detail);
+        if(mceEditor){
+          mceEditor.setContent('');
+        }
+      });
     });
     
 
     document.addEventListener('SGN_tinyMCE_disable', function(e){
-      if(!isTinyMCELoaded()){
-        return;
-      }
-
-      var tinymceProperties = JSON.parse(e.detail);
-      var editor = tinymce.activeEditor;
-      if(editor){
-        editor.setMode('readonly');
-        $(editor.getBody()).css("background-color", "");
-        editor.setContent("");
-      }
-
+      waitUntilEditorReady(function(){
+        var tinymceProperties = JSON.parse(e.detail);
+        var editor = mceEditor;
+        if(editor){
+          editor.setMode('readonly');
+          $(editor.getBody()).css("background-color", "");
+          editor.setContent("");
+        }
+      });
     });
 
-
-    // start set textarea to edit but can't focus
-    var setEditorCommandState = function (cmd, state) {
-      var editor = tinymce.activeEditor;
-      try {
-        editor.getDoc().execCommand(cmd, false, state);
-      } catch (ex) {
-      }
+    var executeEditorCommand = function (editor, cmd, state) {
+      editor.getDoc().execCommand(cmd, false, state);
     };
-
-    var setEditorModeCode = function(){
-      var editor = tinymce.activeEditor;
-      editor.readonly = false;
-      editor.getBody().contentEditable = true;
-      setEditorCommandState(editor, 'StyleWithCSS', false);
-      setEditorCommandState(editor, 'enableInlineTableEditing', false);
-      setEditorCommandState(editor, 'enableObjectResizing', false);
-      editor.nodeChanged();
-      editor.fire('SwitchMode', { mode: 'code' });
-    };
-    //end
 
     document.addEventListener('SGN_tinyMCE_enable', function(e){
-      if(!isTinyMCELoaded()){
-        return;
-      }
+      waitUntilEditorReady(function(){
+        var editor = mceEditor;
 
-      var tinymceProperties = JSON.parse(e.detail);
-      if(tinymce.activeEditor){
-        var editor = tinymce.activeEditor;
-        if(editor.getBody()){
-          setEditorModeCode();
-        }
-        else {  //give some time for the editor to get loaded
-          setTimeout(setEditorModeCode, 300);
-        }
-      }
-      
+        // debugLog('@73, set up tinymce editor');
+        editor.readonly = false;
+        editor.getBody().contentEditable = true;
+        editor.fire('SwitchMode', { mode: 'code' });
+        executeEditorCommand(editor, 'StyleWithCSS', false);
+        executeEditorCommand(editor, 'enableInlineTableEditing', false);
+        executeEditorCommand(editor, 'enableObjectResizing', false);
+        editor.nodeChanged();
+      });
     });
-    
-
-    document.addEventListener('SGN_tinyMCE_remove', function(e){
-      if(!isTinyMCELoaded()){
-        return;
-      }
-
-      var tinymceProperties = JSON.parse(e.detail);
-      if(tinymce.activeEditor){
-        tinymce.activeEditor.remove();
-      }
-      
-    });
-
     
     document.addEventListener('SGN_tinyMCE_set_backgroundColor', function(e){
-      if(!isTinyMCELoaded()){
-        return;
-      }
-      var tinymceProperties = JSON.parse(e.detail);
-      var backgroundColor = tinymceProperties.backgroundColor;
-      if(tinymce.activeEditor){
-          editor = $(tinymce.activeEditor.getBody());
-          editor.css('background-color', backgroundColor); 
-      }
+      waitUntilEditorReady(function(){ 
+        var tinymceProperties = JSON.parse(e.detail);
+        var backgroundColor = tinymceProperties.backgroundColor;
+        if(mceEditor && mceEditor.editorLoaded && backgroundColor){
+            editor = $(mceEditor.getBody());
+            // debugLog('@833', backgroundColor);
+            editor.css('background-color', backgroundColor); 
+        }
+      });
     });
 
+    document.addEventListener('SGN_tinyMCE_remove', function(e){
+      if(!mceEditor){
+        return;
+      }
+
+      mceEditor.remove();
+    });
     
     document.addEventListener('SGN_tinyMCE_init', function(e){
       var tinymceProperties = JSON.parse(e.detail);
-      if(!isTinyMCELoaded())
+      if(!window.tinymce)
         loadTinymceScript(tinymceProperties);
       else{
         if(tinymce.activeEditor){  //only init once
@@ -828,21 +815,30 @@ SimpleGmailNotes.start = function(){
     document.addEventListener('SGN_PAGE_share_notes', function(e){
       var detail = JSON.parse(e.detail);
       var shareData = {"source": "sgn_share_notes", "data": detail["data"]};
-      popupWindow['sgn-share-notes-popup'].postMessage(shareData, "*");
+      popupWindow['SGNC-share-notes-popup'].postMessage(shareData, "*");
     });
 
+
     document.addEventListener('SGN_PAGE_heart_beat_response', function(e) {
-      sgn.lastHeartBeat = Date.now();
-      sgn.gdriveEmail = JSON.parse(e.detail);
+      SGNC.lastHeartBeat = Date.now();
+      SGNC.gdriveEmail = JSON.parse(e.detail);
       return true;
     });
     
     var popupWindow = {
-      'sgn-share-popup': null,
-      'sgn-share-notes-popup': null,
-      'sgn-opportunity-popup': null
+      'SGNC-share-popup': null,
+      'SGNC-share-notes-popup': null,
+      'SGNC-opportunity-popup': null
     };
     var previousPopupInfo = null;
+
+    document.addEventListener('SGN_PAGE_close_window', function(e) {
+      Object.keys(popupWindow).forEach(function(key) {
+        if (popupWindow[key]) {
+          popupWindow[key].close();
+        }
+      });
+    });
 
     document.addEventListener('SGN_PAGE_open_popup', function(e){
       var detail = JSON.parse(e.detail);
@@ -875,15 +871,15 @@ SimpleGmailNotes.start = function(){
 
 
     $(window).on('beforeunload', function(){
-      var popupShareWindow = popupWindow['sgn-share-popup'];
+      var popupShareWindow = popupWindow['SGNC-share-popup'];
       if (popupShareWindow)
         popupShareWindow.close();
 
-      var popupShareNotesWindow = popupWindow['sgn-share-notes-popup'];
+      var popupShareNotesWindow = popupWindow['SGNC-share-notes-popup'];
       if (popupShareNotesWindow)
         popupShareWindow.close();
 
-      var popupOpportunityWindow = popupWindow['sgn-opportunity-popup'];
+      var popupOpportunityWindow = popupWindow['SGNC-opportunity-popup'];
       if (popupOpportunityWindow)
         popupOpportunityWindow.close();
     });
@@ -914,21 +910,34 @@ SimpleGmailNotes.start = function(){
     //setInterval(sendDebugLog, 3000); //update debug info to background
 
     //======= INTERFACE TO EXPOSE =====
-    sgn.silentShareCallBack = silentShareCallBack;
-    sgn.deleteNoteCallBack = deleteNoteCallBack;
-    sgn.checkCRMLoggedInCallBack = checkCRMLoggedInCallBack;
-    sgn.crmLoggedInCallBack = crmLoggedInCallBack;
-    sgn.crmLoggedOutCallBack = crmLoggedOutCallBack;
-    sgn.batchPullNotesCallBack = batchPullNotesCallBack;
-    sgn.dummyCallBack = dummyCallBack;
+    SGNC.silentShareCallBack = silentShareCallBack;
+    SGNC.commentNoteCallBack = commentNoteCallBack;
+    SGNC.deleteNoteCallBack = deleteNoteCallBack;
+    SGNC.checkCRMLoggedInCallBack = checkCRMLoggedInCallBack;
+    SGNC.crmLoggedInCallBack = crmLoggedInCallBack;
+    SGNC.crmLoggedOutCallBack = crmLoggedOutCallBack;
+    SGNC.batchPullNotesCallBack = batchPullNotesCallBack;
+    SGNC.dummyCallBack = dummyCallBack;
 
     //======= FOR DEBUG =======
-    sgn._sgnGmailDom = sgnGmailDom;
-    sgn._sgnGmailPage = sgnGmailPage;
-    sgn._sendPreference = debugSendPreference;
-    sgn._resetPreferences = debugResetPreferences;
-    sgn._deleteNote = debugDeleteNote;
-    sgn._sendDebugLog = sendDebugLog;
+    SGNC._sgnGmailDom = sgnGmailDom;
+    SGNC._sgnGmailPage = sgnGmailPage;
+    SGNC._sendPreference = debugSendPreference;
+    SGNC._resetPreferences = debugResetPreferences;
+    SGNC._deleteNote = debugDeleteNote;
+    SGNC._sendDebugLog = sendDebugLog;
+
+    $(document).on('visibilitychange', function() {
+        if(document.visibilityState == 'hidden') {
+          // page is hidden
+          console.log('@SGN, window blurred');
+          gIsWindowFocused = false;
+        } else {
+          // page is visible
+          console.log('@SGN, window focused');
+          gIsWindowFocused = true;
+        }
+    });
   };
 
   main();

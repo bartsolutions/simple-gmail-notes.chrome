@@ -54,9 +54,15 @@
     margin: 0;
 }
 
-.subscription{
-  margin-top:20px;
+.notification.subscription{
+  margin-top: 10px;
+  margin-bottom: 0;
   line-height: 2;
+  background-color: #fdddd0;
+}
+
+.preferences-header {
+  margin-top: 35px;
 }
 
 .logo img{
@@ -88,6 +94,21 @@ textarea::-webkit-input-placeholder {
   font-size: 12px;
 }
 
+.social img {
+  height: 24px;
+}
+
+.column .notification {
+  height: 100%;
+}
+
+.notification.review {
+  padding: 8px;
+}
+
+.notification.review a {
+  text-decoration: none;
+}
 </style>
 
   <script>
@@ -97,24 +118,57 @@ textarea::-webkit-input-placeholder {
 
 
 <div class="container">
-  <div class="logo">
-    <a target="_blank" id="bart_logo" href="#">
-      <img src="https://www.bart.com.hk/wp-content/logo2.png">
-    </a>
 
-    <a target="_blank" id="bart_logo" href="https://cloud.withgoogle.com/partners/detail/?id=CIGAgICAgMCE8wE%3D&hl=en-GB&language=en">
-      <img src="https://www.bart.com.hk/wp-content/partner-badge_2x.png">
-    </a>
+  <div class="level">
+    <div class="level-left logo">
+      <div class="level-item">
+          <a target="_blank" id="bart_logo" href="https://www.bart.com.hk/">
+            <img src="https://www.bart.com.hk/wp-content/logo2.png">
+          </a>
+      </div>
+      <div class="level-item">
+          <a target="_blank" id="bart_logo" href="https://cloud.withgoogle.com/partners/detail/?id=CIGAgICAgMCE8wE%3D&hl=en-GB&language=en">
+            <img src="https://www.bart.com.hk/wp-content/google_partner_badge.png">
+          </a>
+      </div>
+    </div>
+    <div class="level-right">
+      <div class="level-item social has-text-centered">
+        Follow us for latest releases, bug fixes and features:&nbsp;
+      </div>
+      <div class="level-item social">
+        <a href="https://www.facebook.com/bartsolutions/" target='_blank'>
+          <img src="https://www.bart.com.hk/wp-content/facebook.png">
+        </a>
+      </div>
+      <div class="level-item social">
+        <a href='https://twitter.com/bartsolutions' target='_blank'>
+          <img src="https://www.bart.com.hk/wp-content/twitter.png">
+        </a>
+      </div>
+    </div>
   </div>
+
+
   <div class="subscription notification is-warning has-padding">
     If you do like this extension, please 
-    <a target='_blank' href='https://www.bart.com.hk/simple-gmail-notes-support-package/?f=p'><strong>subscribe to Support Package</strong></a>. <br/>
-    This not only helps support our development, you will also receive the prioritized email support (normally within 24 hours) regarding to any questions for Simple Gmail Notes.
+    <a target='_blank' class='has-text-link' href='https://www.bart.com.hk/simple-gmail-notes-support-package/?f=p'><strong>subscribe to SGN Support Package</strong></a>. 
+    This not only helps support our development, you will also get the prioritized email support (normally within 24 hours) regarding to any questions for Simple Gmail Notes.
+    If you have already made a subscription, you might <a target='_blank' class="has-text-link" href='https://portal.simplegmailnotes.com/'><strong>review your subscription and invoices here</strong></a>.
+    <br/><br/>
+     <div>You may also be interested to <a href="https://www.bart.com.hk/products/?f=sgn" class='has-text-link' target="_blank">other products of ours</a> :)</div>
   </div>
 
   
   <br/>
-    <h2 class="title">Preferences</h2>
+  <div class="level preferences-header">
+    <div class="level-left">
+      <div class="level-item">
+        <h2 class="title">Preferences</h2>
+      </div>
+    </div>
+  </div>
+
     <nav class="panel">
     <p class="panel-heading">Notes Appearance</p>
     <div class="panel-block">
@@ -180,34 +234,46 @@ textarea::-webkit-input-placeholder {
         <br/>
         <br/>
         <br/>
-        <div> <button id="reset" class="button is-danger">Reset to Default Values</button> &nbsp; <button id="revoke" class="button is-link">Manage Access Tokens</button> </div>
+        <div>
+          <button id="reset" class="button is-danger">Reset to Default Values</button> &nbsp; 
+          <button id="revoke" class="button is-link">Manage Access Tokens</button>&nbsp;
+          <button id="review" class="button is-link">Give Us a Five Star Review</button>
+        </div>
+
       </td>
     </tr>
    </table>
 
-  <br/>
-
   <hr/>
   <h2 class="title">FAQ</h2>
   <ul>
-    <li><b>How do I view the notes on mobile devices?</b></li>
-    <li>Due to limitation from Google side, chrome extensions are not available on mobile devices. However, you could click the share button above text area, and view the notes from <a href='https://mobilecrm.io'>Simple Mobile CRM.</a> The app is available for iPhone, iPad and Android, and is free.</li>
+    <li><b>How to use Simple Gmail Notes (SGN)?</b></li>
+    <li>After installation, simply refresh the Gmail page (presss enter in address bar) to activate the extension.<br/>
+      Then click into any email, and click the 'login' url above the text area.<br/>
+      After login, you could type the notes in the text area, the notes will be saved automatically. <br/>
+      <a target='_blank' href='https://www.bart.com.hk/how-to-use-simple-gmail-notes/'>View here for more detailed instructions</a>.
+
   </ul>
   <ul>
-    <li><b>Would the current extension be affected after <a href=https://mobilecrm.io">Simple Mobile CRM</a> integration?</b></li>
-    <li>The short answer is <span class="has-text-danger">'no, your existing notes, services and privacies would NOT be affected'</span>. In case you have further concerns, please visit our <a target="_blank" href='https://mobilecrm.io/faq'>CRM FAQ</a> for the detailed answers.</li>
+    <li><b>How do I view the notes on mobile devices?</b></li>
+    <li>Currently, it's impossible to install any Chrome extension / Firefox add-on on mobile devices.<br/>
+      However, the notes from SGN could be synced into mobile devices by <a href='https://mobilecrm.io'>Simple Mobile CRM</a>, which is another product of Bart Solutions.<br/><br/>
+      Simple Mobile CRM also provides extra features like email tracking and team collaboration,
+      <a target='_blank' href='https://mobilecrm.io/faq/'>view here for more details</a>.
+  </ul>
+  <ul>
+    <li><b>Would SGN be affected after <a href=https://mobilecrm.io">Simple Mobile CRM</a> integration?</b></li>
+    <li>No, your existing notes, services and privacies would NOT be affected. In case you have further concerns, please visit our <a target="_blank" href='https://mobilecrm.io/sgn-crm-faq/'>SGN CRM FAQ</a> for the detailed answers.</li>
   </ul>
 
   <ul>
-    <li><b>When the note is saved?</b></li>
-    <li>By default, the note is saved whenever the text area is out of focus (e.g. click anywhere else on the page, or view another email).</li>
+    <li><b>When and where are the notes saved?</b></li>
+    <li>By default, the notes are saved whenever the text area is out of focus (e.g. click anywhere else on the page, or view another email).<br/>
+      The notes are saved in your own Google drive. Click the magnifier glass above the SGN textarea and then click the Google drive icon, you should see the storage folder</li>
   </ul>
   <ul>
     <li><b>May I get more information about the extension?</b></li>
-    <li>Please visit the <a  target="_blank" href='https://www.bart.com.hk/simple-gmail-notes/'>https://www.bart.com.hk/simple-gmail-notes/</a> for the detailed instructions and policies.</li></ul>
-  <ul>
-      <li><b>How do I refresh the Gmail page?</b></li>
-      <li>Please left click the address bar and press 'Enter' key to do a full refresh.</li>
+    <li>Please <a  target="_blank" href='https://www.bart.com.hk/simple-gmail-notes/'>visit here</a> for the detailed instructions and policies.</li>
   </ul>
   <ul>
       <li><b>Why I can't see the note abstract?</b></li>
@@ -219,7 +285,7 @@ textarea::-webkit-input-placeholder {
   </ul>
   <ul>
       <li><b>How do I report a bug?</b></li>
-      <li><div>Please report your bug in the <a id='support' target='_blank' href='#'>supporting site</a>.</div> 
+      <li><div>Please <a target='_blank' href='https://www.bart.com.hk/#ContactUs'>report your bug here</a>.</div> 
           <div>And please also <b>include the following debug information</b> in the bug report: </div>
           <div class="debugInfo container">
             <pre id='debug_page_info'> </pre>

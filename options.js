@@ -23,7 +23,7 @@ function savePreferences() {
     }
   }
   var disabledAccounts = [];
-  $("#disabledAccounts input").each(function(){
+  $("#disabled_accounts input").each(function(){
     if($(this).is(":checked")){
       var email = $(this).attr("data-email");
       disabledAccounts.push(email);
@@ -63,7 +63,7 @@ function updateControls(preferences){
   var disabledAccounts = JSON.parse(preferences["disabledAccounts"]);
   for(var i=0; i < disabledAccounts.length; i++){
     var disable_email = disabledAccounts[i];
-    $("#disabledAccounts").append("<label>" +
+    $("#disabled_accounts").append("<label>" +
                                     "<input type=checkbox data-email='" + 
                                       disable_email + "' checked='checked'> " +
                                     disable_email + 
@@ -194,10 +194,6 @@ function initDebugMessage(){
 
 }
 
-function revokeToken(){
-  window.open("https://accounts.google.com/IssuedAuthSubTokens", "_blank");
-}
-
 $(document).ready(function(){
   initPreferences();
   var SGNO = SimpleGmailNotes;
@@ -213,13 +209,19 @@ $(document).ready(function(){
 
   $("#save").click(savePreferences);
   $("#reset").click(resetPreferences);
-  $("#revoke").click(revokeToken);
+
+  $("#revoke").click(function(){
+    window.open("https://accounts.google.com/IssuedAuthSubTokens", "_blank");
+  });
+  $("#review").click(function(){
+    window.open(SGNO.getReviewUrl(), "_blank");
+  });
+
   $("#donation").attr("href", SGNO.getDonationUrl("pr"));
   $("#contact_us").attr("href", SGNO.getOfficalSiteUrl("pr"));
 
   $("#bart_logo").attr("href", SGNO.getOfficalSiteUrl("pr"));
   $("#support").attr("href", SGNO.getSupportUrl());
-  $("#review").attr("href", SGNO.getReviewUrl());
 
   pullPreferences();
 

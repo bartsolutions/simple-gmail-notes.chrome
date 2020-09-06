@@ -3,7 +3,7 @@
   "name": "Simple Gmail Notes",
   "short_name": "SGNotes",
   "description": "__MSG_extDescription__",
-  "version": "2.2.1.7",
+  "version": "2.5.2.4",
   "default_locale": "en",
   "icons": {
     "16": "image/icon.16.png",
@@ -20,6 +20,7 @@
   "web_accessible_resources": [
     "lib/jquery-3.1.0.min.js",
     "lib/jquery.popupoverlay.js",
+    "lib/moment.min.js",
     "lib/lru.js",
     "lib/tinymce/tinymce.min.js",
     "lib/tinymce/jquery.tinymce.min.js",
@@ -56,7 +57,11 @@
     "image/note-timestamp.png",
     "image/warning.3x.png",
     "image/crm-logo.24.png",
-    "image/template.png"
+    "image/template.png",
+    "image/arrow-right.png",
+    "image/comment-icon.png",
+    "image/new-comment.png",
+    "image/login-comment-icon.3x.png"
   ],
   "background": {
     "scripts": [
@@ -77,6 +82,7 @@
         "lib/jquery-3.1.0.min.js",
         "lib/jquery.popupoverlay.js",
         "lib/jquery.simple-color.js",
+        "lib/moment.min.js",
         "lib/featherlight/featherlight.min.js",
         "common/shared-common.js",
         "common/gmail-sgn-dom.js",
@@ -94,5 +100,11 @@
     "default_popup": "popup.html"
   },
   "options_page": "options.html",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgyUBS53d5P2ograP4JKK656jrrauipHsAdgcTZyL1j5MKBMD4yBmHl9BcmS+sfhmOE5fS38ng7XRZIErp8SrWbJwwstMWx+FTDKlrFS3J5so85CgOpRNge+Ge8UyhxAkPB7zui1AU3wD/XieaGN2L9pmT4MN1u6pPs2Lf/8i96Vp8YjUKaKIWmevKeqsGr1HNHZt41/dcBBIr6vW6OoWlViI1bae+p4Cv6VertdadkuW4hc7z8jVrlC0Lyu43oETmXWflUhw/hCctktI+KwJNk47Pm9vX2Bgw7EdovukrYPV+iNzzE49jirbQkZvMGuNV3fA+NbUwmo7c9dypCAweQIDAQAB"
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "@simple-gmail-notes",
+      "strict_min_version": "53.0"
+    }
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo7O+U62H87NuYtvkzxIZVq24v32jlUO3BEl7VnSfPv9BQfc1WB4BgmY2ytebmB/CwHNvg/Gq8qZ8WSUw0X8IolfgyrO6t53+XyhQ6d+I0vgJ4RzHefWjkvGXu7GGO0Mq71/UUuzgmAaqSIHJEFcLAgAiqaYl89NVm2nQgYKrm9vAmUp0/YOLiJJuA4VfO9X0trbLHQvlgIuAR91ZjXl3Wk2xACM1/BUQrIuf+SawIxPA97blwG/j7UFz5NQivXa15RdpUgY0xEWanwZXQSC5M/cI85XAIwyao+WJI8OiH/3E7+I/uqwIk7vXwk97Ev4tea8FbYtsAX/xjkbqNFQ7TwIDAQAB"
 }
